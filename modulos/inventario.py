@@ -21,20 +21,38 @@ def convertir_a_libras(cantidad, unidad):
         return cantidad
 
 
-# 🔹 Resaltar stock bajo (menos de 10 libras)
+# 🔹 Convertir desde libras a unidad seleccionada
+def convertir_desde_libras(stock_lb, unidad_destino):
+    if unidad_destino == "Libras":
+        return stock_lb
+    elif unidad_destino == "Quintal":
+        return stock_lb / 100
+    elif unidad_destino == "Arroba":
+        return stock_lb / 25
+
+
+# 🔹 Resaltar stock bajo (menos de 10 libras reales)
 def resaltar_stock_bajo(fila):
-    color = 'background-color: #ffcccc' if fila["Stock Libras"] < 10 else ''
-    return ['' if col != "Stock Libras" else color for col in fila.index]
+    stock_real_lb = fila["_stock_lb"]
+    color = 'background-color: #ffcccc' if stock_real_lb < 10 else ''
+    return [color if col == "Stock" else '' for col in fila.index]
 
 
 def modulo_inventario():
-    st.title("📦 Inventario Actual (agrupado por nombre)")
+    st.title("📦 Inventario Actual")
 
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
         st.stop()
 
     id_tienda = st.session_state["id_tienda"]
+
+    # 🔥 Selector de unidad dinámica
+    unidad_visualizacion = st.selectbox(
+        "📏 Ver inventario en:",
+        ("Libras", "Quintal", "Arroba"),
+        index=0
+    )
 
     opcion_orden = st.selectbox(
         "📑 Ordenar inventario por:",
@@ -49,13 +67,8 @@ def modulo_inventario():
 
     try:
         conn = obtener_conexion()
-        if not conn:
-            st.error("❌ No se pudo conectar a la base de datos.")
-            st.stop()
-
         cursor = conn.cursor()
 
-        # 🔹 Obtener productos de la tienda
         cursor.execute("""
             SELECT Cod_barra, Nombre, IFNULL(Tipo_producto,'N/A')
             FROM Producto
@@ -64,7 +77,7 @@ def modulo_inventario():
         productos = cursor.fetchall()
 
         if not productos:
-            st.info("ℹ️ No hay productos registrados para esta tienda.")
+            st.info("ℹ️ No hay productos registrados.")
             return
 
         inventario_detalle = []
@@ -79,7 +92,6 @@ def modulo_inventario():
             """, (cod_barra, id_tienda))
 
             compras = cursor.fetchall()
-
             total_comprado_lb = sum(
                 convertir_a_libras(c[0], c[1]) for c in compras
             )
@@ -92,31 +104,27 @@ def modulo_inventario():
             """, (cod_barra, id_tienda))
 
             ventas = cursor.fetchall()
-
             total_vendido_lb = sum(
                 convertir_a_libras(v[0], v[1]) for v in ventas
             )
 
-            stock_libras = total_comprado_lb - total_vendido_lb
+            stock_lb = total_comprado_lb - total_vendido_lb
 
             inventario_detalle.append({
                 "Nombre": nombre,
                 "Tipo": tipo_producto,
-                "Stock Libras": stock_libras,
-                "Stock Quintal": stock_libras / 100,
-                "Stock Arroba": stock_libras / 25,
+                "Stock": convertir_desde_libras(stock_lb, unidad_visualizacion),
+                "_stock_lb": stock_lb,
                 "_Total_vendidos": int(total_vendido_lb)
             })
 
-        # 🔹 Crear DataFrame
         df = pd.DataFrame(inventario_detalle)
 
         df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
             "Nombre": "first",
             "Tipo": "first",
-            "Stock Libras": "sum",
-            "Stock Quintal": "sum",
-            "Stock Arroba": "sum",
+            "Stock": "sum",
+            "_stock_lb": "sum",
             "_Total_vendidos": "sum"
         })
 
@@ -126,9 +134,9 @@ def modulo_inventario():
         elif opcion_orden == "Nombre (Z-A)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=False)
         elif opcion_orden == "Stock (Ascendente)":
-            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=True)
+            df_agrupado = df_agrupado.sort_values("Stock", ascending=True)
         elif opcion_orden == "Stock (Descendente)":
-            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=False)
+            df_agrupado = df_agrupado.sort_values("Stock", ascending=False)
         elif opcion_orden == "Más vendidos":
             df_agrupado = df_agrupado.sort_values("_Total_vendidos", ascending=False)
         else:
@@ -137,12 +145,10 @@ def modulo_inventario():
         df_agrupado = df_agrupado.drop(columns=["_Total_vendidos"])
 
         styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
-            "Stock Libras": "{:.2f}",
-            "Stock Quintal": "{:.2f}",
-            "Stock Arroba": "{:.2f}"
+            "Stock": "{:.2f}"
         })
 
-        st.subheader("📋 Inventario agrupado por nombre")
+        st.subheader(f"📋 Inventario en {unidad_visualizacion}")
         st.dataframe(styled_df, use_container_width=True)
 
         # 🔹 Productos próximos a vencer
