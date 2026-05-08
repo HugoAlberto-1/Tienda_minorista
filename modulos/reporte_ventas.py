@@ -23,16 +23,16 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # Consulta de ventas
+        # Consulta de ventas: SOLO traemos Cantidad y Precio
         query = """
             SELECT
-                p.Nombre            AS Nombre,
-                pv.Cantidad_vendida AS CantidadVendida,
-                pv.Precio_Venta     AS PrecioVenta,
-                v.Fecha             AS FechaVenta
+                p.Nombre,
+                pv.Cantidad_Vendida,
+                pv.Precio_Venta,
+                v.Fecha
             FROM Venta v
             JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-            JOIN Producto p       ON p.Cod_barra = pv.Cod_barra
+            JOIN Producto p ON p.Cod_barra = pv.Cod_barra
             WHERE v.Fecha BETWEEN %s AND %s
             ORDER BY v.Fecha DESC, p.Nombre ASC
         """
@@ -43,32 +43,21 @@ def reporte_ventas():
             st.info("No se encontraron ventas en el rango seleccionado.")
             return
 
-        # Crear DataFrame sin alterar decimales
+        # Convertimos a DataFrame
         df = pd.DataFrame(rows, columns=["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta"])
 
-        # Mantener valores EXACTOS como están en MySQL (en texto)
-        df["Cantidad Vendida"] = df["Cantidad Vendida"].astype(str)
-        df["Precio Venta"] = df["Precio Venta"].astype(str)
-
-        # Convertimos la fecha
+        # Asegurar formatos correctos
+        df["Cantidad Vendida"] = pd.to_numeric(df["Cantidad Vendida"], errors="coerce").fillna(0)
+        df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
         df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
 
-        # Calcular total sin modificar decimales originales
-        df["Total"] = df.apply(
-            lambda row: float(row["Cantidad Vendida"]) * float(row["Precio Venta"]),
-            axis=1
-        )
-
-        # Mantener total sin redondear ni agregar ceros
-        df["Total"] = df["Total"].map(lambda x: format(x, "f"))
-
-        # Orden de columnas
-        df = df[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta"]]
+        # 🔥 CALCULAR EL TOTAL SOLO AQUÍ (NO TRAERLO DE BD)
+        df["Total"] = (df["Cantidad Vendida"] * df["Precio Venta"]).round(2)
 
         # Mostrar tabla
         st.markdown("---")
         st.markdown("### 🗂 Detalles de Ventas")
-        st.table(df)
+        st.dataframe(df)
 
         st.markdown("---")
 
@@ -77,13 +66,12 @@ def reporte_ventas():
             st.session_state["page"] = "menu_principal"
             st.session_state["module"] = None
 
-        # Exportar datos
+        # Exportar Excel
         st.markdown("---")
         st.markdown("### 📁 Exportar ventas filtradas")
 
         col1, col2 = st.columns(2)
 
-        # Exportar Excel
         with col1:
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
@@ -105,32 +93,24 @@ def reporte_ventas():
             pdf.cell(190, 10, txt="Reporte de Ventas", ln=True, align="C")
             pdf.ln(5)
 
-            pdf.set_font("Arial", "B", 11)
-            widths = [80, 25, 25, 25, 35]
             headers = ["Producto", "Cantidad", "Precio", "Total", "Fecha"]
+            widths = [70, 25, 25, 25, 40]
 
+            pdf.set_font("Arial", "B", 11)
             for w, h in zip(widths, headers):
                 pdf.cell(w, 8, h, 1, 0, "C")
             pdf.ln(8)
 
             pdf.set_font("Arial", size=10)
             for _, row in df.iterrows():
-                nombre = str(row["Nombre"])[:45]
-                cantidad = row["Cantidad Vendida"]
-                precio = row["Precio Venta"]
-                total = row["Total"]
-                fecha = row["Fecha Venta"].strftime("%Y-%m-%d")
-
-                pdf.cell(widths[0], 8, nombre, 1)
-                pdf.cell(widths[1], 8, cantidad, 1, 0, "R")
-                pdf.cell(widths[2], 8, precio, 1, 0, "R")
-                pdf.cell(widths[3], 8, total, 1, 0, "R")
-                pdf.cell(widths[4], 8, fecha, 1, 0, "C")
+                pdf.cell(widths[0], 8, str(row["Nombre"])[:30], 1)
+                pdf.cell(widths[1], 8, str(row["Cantidad Vendida"]), 1, 0, "R")
+                pdf.cell(widths[2], 8, f"{row['Precio Venta']:.2f}", 1, 0, "R")
+                pdf.cell(widths[3], 8, f"{row['Total']:.2f}", 1, 0, "R")
+                pdf.cell(widths[4], 8, row["Fecha Venta"].strftime("%Y-%m-%d"), 1, 0, "C")
                 pdf.ln(8)
 
-            # Convertir PDF a bytes
-            out = pdf.output(dest="S")
-            pdf_bytes = out.encode("latin-1") if isinstance(out, str) else bytes(out)
+            pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
             st.download_button(
                 label="⬇️ Descargar PDF",
@@ -147,7 +127,7 @@ def reporte_ventas():
         if "con" in locals(): con.close()
 
 
-# Router simple
+# Router
 if "page" not in st.session_state:
     st.session_state["page"] = "reporte_ventas"
 
