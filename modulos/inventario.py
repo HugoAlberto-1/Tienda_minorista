@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 # 🔹 Conversión a unidad base (LIBRAS)
@@ -25,11 +25,11 @@ def convertir_a_libras(cantidad, unidad):
 def resaltar_stock_bajo(fila):
     if "Stock Libras" in fila.index:
         color = 'background-color: #ffcccc' if fila["Stock Libras"] < 10 else ''
-        return ['' if col != "Stock Libras" else color for col in fila.index]
+        return [color if col == "Stock Libras" else '' for col in fila.index]
 
     if "Stock Unidades" in fila.index:
         color = 'background-color: #ffcccc' if fila["Stock Unidades"] < 5 else ''
-        return ['' if col != "Stock Unidades" else color for col in fila.index]
+        return [color if col == "Stock Unidades" else '' for col in fila.index]
 
     return ['' for _ in fila.index]
 
@@ -43,7 +43,7 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔥 NUEVO FILTRO
+    # 🔥 Filtro principal
     filtro_tipo = st.selectbox(
         "🔎 Ver productos:",
         ("Todos", "Perecederos", "No perecederos"),
@@ -53,8 +53,7 @@ def modulo_inventario():
     opcion_orden = st.selectbox(
         "📑 Ordenar inventario por:",
         ("Nombre (A-Z)", "Nombre (Z-A)",
-         "Stock (Ascendente)", "Stock (Descendente)",
-         "Más vendidos", "Menos vendidos"),
+         "Stock (Ascendente)", "Stock (Descendente)"),
         index=0
     )
 
@@ -73,10 +72,12 @@ def modulo_inventario():
 
         for cod_barra, nombre, tipo_producto in productos:
 
-            # Aplicar filtro
-            if filtro_tipo == "Perecederos" and tipo_producto.lower() != "perecedero":
+            tipo_lower = tipo_producto.lower()
+
+            # 🔹 Aplicar filtro
+            if filtro_tipo == "Perecederos" and tipo_lower != "perecedero":
                 continue
-            if filtro_tipo == "No perecederos" and tipo_producto.lower() == "perecedero":
+            if filtro_tipo == "No perecederos" and tipo_lower == "perecedero":
                 continue
 
             # 🔹 Compras
@@ -85,7 +86,6 @@ def modulo_inventario():
                 FROM ProductoxCompra
                 WHERE Cod_barra = %s AND id_tienda = %s
             """, (cod_barra, id_tienda))
-
             compras = cursor.fetchall()
 
             # 🔹 Ventas
@@ -94,13 +94,12 @@ def modulo_inventario():
                 FROM ProductoxVenta
                 WHERE Cod_barra = %s AND id_tienda = %s
             """, (cod_barra, id_tienda))
-
             ventas = cursor.fetchall()
 
             # -----------------------
-            # 🟢 PRODUCTOS PERECEDEROS
+            # 🟢 PERECEDEROS
             # -----------------------
-            if tipo_producto.lower() == "perecedero":
+            if tipo_lower == "perecedero":
 
                 total_comprado_lb = sum(
                     convertir_a_libras(c[0], c[1]) for c in compras
@@ -110,19 +109,18 @@ def modulo_inventario():
                     convertir_a_libras(v[0], v[1]) for v in ventas
                 )
 
-                stock_libras = total_comprado_lb - total_vendido_lb
+                stock_lb = total_comprado_lb - total_vendido_lb
 
                 inventario_detalle.append({
                     "Nombre": nombre,
                     "Tipo": tipo_producto,
-                    "Stock Libras": stock_libras,
-                    "Stock Quintal": stock_libras / 100,
-                    "Stock Arroba": stock_libras / 25,
-                    "_Total_vendidos": int(total_vendido_lb)
+                    "Stock Libras": stock_lb,
+                    "Stock Quintal": stock_lb / 100,
+                    "Stock Arroba": stock_lb / 25
                 })
 
             # -----------------------
-            # 🔵 PRODUCTOS NO PERECEDEROS
+            # 🔵 NO PERECEDEROS
             # -----------------------
             else:
 
@@ -134,8 +132,7 @@ def modulo_inventario():
                 inventario_detalle.append({
                     "Nombre": nombre,
                     "Tipo": tipo_producto,
-                    "Stock Unidades": stock_unidades,
-                    "_Total_vendidos": int(total_vendido)
+                    "Stock Unidades": stock_unidades
                 })
 
         if not inventario_detalle:
@@ -144,9 +141,9 @@ def modulo_inventario():
 
         df = pd.DataFrame(inventario_detalle)
 
-        df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg("sum")
-        df_agrupado["Nombre"] = df.groupby(df["Nombre"].str.lower())["Nombre"].first().values
-        df_agrupado["Tipo"] = df.groupby(df["Nombre"].str.lower())["Tipo"].first().values
+        # 🔹 Agrupar por nombre
+        df_agrupado = df.groupby("Nombre", as_index=False).sum(numeric_only=True)
+        df_agrupado["Tipo"] = df.groupby("Nombre")["Tipo"].first().values
 
         # 🔹 Ordenación
         if opcion_orden == "Nombre (A-Z)":
@@ -154,13 +151,24 @@ def modulo_inventario():
         elif opcion_orden == "Nombre (Z-A)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=False)
         elif "Stock Libras" in df_agrupado.columns:
-            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=(opcion_orden=="Stock (Ascendente)"))
+            df_agrupado = df_agrupado.sort_values(
+                "Stock Libras",
+                ascending=(opcion_orden == "Stock (Ascendente)")
+            )
         elif "Stock Unidades" in df_agrupado.columns:
-            df_agrupado = df_agrupado.sort_values("Stock Unidades", ascending=(opcion_orden=="Stock (Ascendente)"))
+            df_agrupado = df_agrupado.sort_values(
+                "Stock Unidades",
+                ascending=(opcion_orden == "Stock (Ascendente)")
+            )
 
-        df_agrupado = df_agrupado.drop(columns=["_Total_vendidos"])
+        # 🔹 Formateo seguro SOLO columnas numéricas
+        columnas_numericas = df_agrupado.select_dtypes(include=['number']).columns
 
-        styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format("{:.2f}")
+        styled_df = df_agrupado.style.apply(
+            resaltar_stock_bajo, axis=1
+        ).format(
+            {col: "{:.2f}" for col in columnas_numericas}
+        )
 
         st.subheader("📋 Inventario")
         st.dataframe(styled_df, use_container_width=True)
