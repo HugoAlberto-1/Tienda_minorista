@@ -28,7 +28,7 @@ def resaltar_stock_bajo(fila):
 
 
 def modulo_inventario():
-    st.title("📦 Inventario Actual (agrupado por nombre)")
+    st.title("📦 Inventario Actual")
 
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
