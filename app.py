@@ -12,6 +12,7 @@ from modulos.editar_producto import modulo_editar_producto
 from modulos.dashboard import dashboard
 from modulos.empleado import modulo_empleado
 from modulos.inventario import modulo_inventario
+from modulos.reporte_ventas import reporte_ventas  # Asegúrate que este archivo exista
 
 
 def menu_principal():
@@ -32,19 +33,18 @@ def menu_principal():
             if st.button("✏️ Ingresa nueva información"):
                 st.session_state["macro_modulo"] = "registro"
                 st.rerun()
+
         with col2:
             if st.button("💸 Compra y vende productos"):
                 st.session_state["macro_modulo"] = "transacciones"
                 st.rerun()
 
         with col3:
-            
             if st.button("📋 Consulta tu inventario"):
                 st.session_state.module = "Inventario"
                 st.rerun()
 
         with col4:
-            
             if st.button("📊 Consulta tus reportes"):
                 st.session_state["macro_modulo"] = "reportes"
                 st.rerun()
@@ -53,14 +53,17 @@ def menu_principal():
     elif st.session_state["macro_modulo"] == "registro":
         st.markdown("#### ✏️ Registra información")
         col1, col2, col3 = st.columns(3)
+
         with col1:
             if st.button("📦 Registra un nuevo producto"):
                 st.session_state.module = "Producto"
                 st.rerun()
+
         with col2:
             if st.button("✏️ Edita información de un producto"):
                 st.session_state.module = "Editar"
                 st.rerun()
+
         with col3:
             if st.button("👩‍💼 Registra una nueva asociada"):
                 st.session_state.module = "Empleado"
@@ -69,22 +72,24 @@ def menu_principal():
     elif st.session_state["macro_modulo"] == "transacciones":
         st.markdown("#### 💸 Haz una compra o una venta")
         col1, col2 = st.columns(2)
+
         with col1:
             if st.button("🛒 Realizar una nueva venta"):
                 st.session_state.module = "Ventas"
                 st.rerun()
+
         with col2:
             if st.button("📥 Realizar una nueva compra"):
                 st.session_state.module = "Compras"
                 st.rerun()
 
     elif st.session_state["macro_modulo"] == "reportes":
-        st.markdown("#### 📊 Consulta tus reportes información")
+        st.markdown("#### 📊 Consulta tus reportes")
         col1, col2 = st.columns(2)
 
         with col1:
             if st.button("📊 Reporte de ventas"):
-                st.session_state.module = "ReportesVentas"
+                st.session_state.module = "Reportes_Ventas"  # CORREGIDO
                 st.rerun()
 
         with col2:
@@ -92,14 +97,14 @@ def menu_principal():
                 st.session_state.module = "productomasvendido"
                 st.rerun()
 
-    # Botón para volver
+    # Botón para volver atrás en submenú
     if st.session_state["macro_modulo"]:
         st.markdown("---")
         if st.button("🔙 Volver al menú principal"):
             st.session_state["macro_modulo"] = None
             st.rerun()
 
-    # Cerrar sesión
+    # Botón cerrar sesión
     st.markdown("---")
     if st.button("🔓 Cerrar sesión"):
         for key in ['logueado', 'usuario', 'module', 'nombre_empleado', 'macro_modulo']: 
@@ -108,34 +113,53 @@ def menu_principal():
         st.success("✅ Sesión cerrada correctamente.")
         st.rerun()
 
+
+# ─────────────────────────────────────────────
+# 🔄 ROUTER DE MÓDULOS (CORREGIDO)
+# ─────────────────────────────────────────────
 def cargar_modulo():
     if "module" in st.session_state:
+
         if st.session_state.module == "Ventas":
-            modulo_ventas()  
+            modulo_ventas()
+
         elif st.session_state.module == "Compras":
             modulo_compras()
+
         elif st.session_state.module == "Producto":
             modulo_producto()
+
         elif st.session_state.module == "Editar":
             modulo_editar_producto()
+
         elif st.session_state.module == "Dashboard":
-            dashboard()  
+            dashboard()
+
         elif st.session_state.module == "Empleado":
             modulo_empleado()
+
         elif st.session_state.module == "Inventario":
             modulo_inventario()
-        elif st.session_state.module == "Reportes Ventas":  # Agregado el manejo del módulo de reportes
-            reporte_ventas()  # Llamar a la función que genera el reporte de ventas
+
+        elif st.session_state.module == "Reportes_Ventas":  # NOMBRE CORREGIDO
+            reporte_ventas()
+
         else:
             menu_principal()
+
     else:
         menu_principal()
 
+
+# ─────────────────────────────────────────────
+# 🟢 MAIN APP
+# ─────────────────────────────────────────────
 def app():
     if "logueado" not in st.session_state or not st.session_state["logueado"]:
-        login() 
+        login()
     else:
-        cargar_modulo()  
+        cargar_modulo()
+
 
 if __name__ == "__main__":
     app()
