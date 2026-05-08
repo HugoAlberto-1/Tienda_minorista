@@ -21,10 +21,22 @@ def convertir_a_libras(cantidad, unidad):
         return cantidad
 
 
-# 🔹 Resaltar stock bajo (menos de 10 libras)
-def resaltar_stock_bajo(fila):
+# 🔹 Conversión a unidades para perecederos
+def convertir_a_quintal(cantidad_libras):
+    return cantidad_libras / 100
+
+def convertir_a_arroba(cantidad_libras):
+    return cantidad_libras / 25
+
+
+# 🔹 Resaltar stock bajo (menos de 10 libras para perecederos / menos de 10 unidades para no perecederos)
+def resaltar_stock_bajo_perecederos(fila):
     color = 'background-color: #ffcccc' if fila["Stock Libras"] < 10 else ''
     return ['' if col != "Stock Libras" else color for col in fila.index]
+
+def resaltar_stock_bajo_no_perecederos(fila):
+    color = 'background-color: #ffcccc' if fila["Stock Unidades"] < 10 else ''
+    return ['' if col != "Stock Unidades" else color for col in fila.index]
 
 
 def modulo_inventario():
@@ -36,7 +48,7 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔹 Filtro por tipo de producto (NUEVO)
+    # 🔹 Filtro por tipo de producto
     col1, col2 = st.columns([1, 2])
     with col1:
         filtro_tipo = st.selectbox(
@@ -80,7 +92,7 @@ def modulo_inventario():
 
         for cod_barra, nombre, tipo_producto in productos:
 
-            # 🔹 Aplicar filtro por tipo (NUEVO)
+            # 🔹 Aplicar filtro por tipo
             if filtro_tipo == "Perecedero" and tipo_producto != "Perecedero":
                 continue
             elif filtro_tipo == "No perecedero" and tipo_producto != "No perecedero":
@@ -95,9 +107,13 @@ def modulo_inventario():
 
             compras = cursor.fetchall()
 
+            # Para perecederos (en libras)
             total_comprado_lb = sum(
                 convertir_a_libras(c[0], c[1]) for c in compras
             )
+
+            # Para no perecederos (en unidades)
+            total_comprado_unidades = sum(c[0] for c in compras)
 
             # 🔹 Ventas
             cursor.execute("""
@@ -108,20 +124,34 @@ def modulo_inventario():
 
             ventas = cursor.fetchall()
 
+            # Para perecederos (en libras)
             total_vendido_lb = sum(
                 convertir_a_libras(v[0], v[1]) for v in ventas
             )
 
-            stock_libras = total_comprado_lb - total_vendido_lb
+            # Para no perecederos (en unidades)
+            total_vendido_unidades = sum(v[0] for v in ventas)
 
-            inventario_detalle.append({
-                "Nombre": nombre,
-                "Tipo": tipo_producto,
-                "Stock Libras": stock_libras,
-                "Stock Quintal": stock_libras / 100,
-                "Stock Arroba": stock_libras / 25,
-                "_Total_vendidos": int(total_vendido_lb)
-            })
+            stock_libras = total_comprado_lb - total_vendido_lb
+            stock_unidades = total_comprado_unidades - total_vendido_unidades
+
+            # 🔹 Construir diccionario según el tipo de filtro
+            if filtro_tipo == "No perecedero":
+                inventario_detalle.append({
+                    "Nombre": nombre,
+                    "Tipo": tipo_producto,
+                    "Stock Unidades": stock_unidades,
+                    "_Total_vendidos": int(total_vendido_unidades)
+                })
+            else:  # Para "Todos" o "Perecedero"
+                inventario_detalle.append({
+                    "Nombre": nombre,
+                    "Tipo": tipo_producto,
+                    "Stock Libras": stock_libras,
+                    "Stock Quintal": convertir_a_quintal(stock_libras),
+                    "Stock Arroba": convertir_a_arroba(stock_libras),
+                    "_Total_vendidos": int(total_vendido_lb) if tipo_producto == "Perecedero" else int(total_vendido_unidades)
+                })
 
         # 🔹 Crear DataFrame
         df = pd.DataFrame(inventario_detalle)
@@ -130,24 +160,35 @@ def modulo_inventario():
             st.warning(f"⚠️ No hay productos del tipo '{filtro_tipo}' para mostrar.")
             return
 
-        df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
-            "Nombre": "first",
-            "Tipo": "first",
-            "Stock Libras": "sum",
-            "Stock Quintal": "sum",
-            "Stock Arroba": "sum",
-            "_Total_vendidos": "sum"
-        })
+        # 🔹 Agrupar por nombre
+        if filtro_tipo == "No perecedero":
+            df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
+                "Nombre": "first",
+                "Tipo": "first",
+                "Stock Unidades": "sum",
+                "_Total_vendidos": "sum"
+            })
+        else:
+            df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
+                "Nombre": "first",
+                "Tipo": "first",
+                "Stock Libras": "sum",
+                "Stock Quintal": "sum",
+                "Stock Arroba": "sum",
+                "_Total_vendidos": "sum"
+            })
 
         # 🔹 Ordenación
+        columna_stock = "Stock Libras" if filtro_tipo != "No perecedero" else "Stock Unidades"
+        
         if opcion_orden == "Nombre (A-Z)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
         elif opcion_orden == "Nombre (Z-A)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=False)
         elif opcion_orden == "Stock (Ascendente)":
-            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=True)
+            df_agrupado = df_agrupado.sort_values(columna_stock, ascending=True)
         elif opcion_orden == "Stock (Descendente)":
-            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=False)
+            df_agrupado = df_agrupado.sort_values(columna_stock, ascending=False)
         elif opcion_orden == "Más vendidos":
             df_agrupado = df_agrupado.sort_values("_Total_vendidos", ascending=False)
         else:
@@ -155,21 +196,30 @@ def modulo_inventario():
 
         df_agrupado = df_agrupado.drop(columns=["_Total_vendidos"])
 
-        styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
-            "Stock Libras": "{:.2f}",
-            "Stock Quintal": "{:.2f}",
-            "Stock Arroba": "{:.2f}"
-        })
-
-        # 🔹 Mostrar información del filtro activo
-        if filtro_tipo == "Todos":
-            st.subheader("📋 Inventario agrupado por nombre (Todos los productos)")
+        # 🔹 Aplicar estilo según el tipo de filtro
+        if filtro_tipo == "No perecedero":
+            styled_df = df_agrupado.style.apply(resaltar_stock_bajo_no_perecederos, axis=1).format({
+                "Stock Unidades": "{:.0f}"
+            })
         else:
-            st.subheader(f"📋 Inventario agrupado por nombre - Tipo: {filtro_tipo}")
+            styled_df = df_agrupado.style.apply(resaltar_stock_bajo_perecederos, axis=1).format({
+                "Stock Libras": "{:.2f}",
+                "Stock Quintal": "{:.2f}",
+                "Stock Arroba": "{:.2f}"
+            })
+
+        # 🔹 Mostrar información del filtro activo y las columnas
+        if filtro_tipo == "Todos":
+            st.subheader("📋 Inventario completo - Unidades mixtas")
+            st.info("ℹ️ Mostrando productos perecederos en Libras/Quintal/Arroba y no perecederos en Unidades")
+        elif filtro_tipo == "Perecedero":
+            st.subheader("📋 Inventario de productos perecederos (Libras, Quintal, Arroba)")
+        else:
+            st.subheader("📋 Inventario de productos no perecederos (Unidades)")
         
         st.dataframe(styled_df, use_container_width=True)
 
-        # 🔹 Productos próximos a vencer (solo se muestran si hay productos perecederos)
+        # 🔹 Productos próximos a vencer (solo para perecederos o todos)
         if filtro_tipo != "No perecedero":
             hoy = datetime.now().date()
             prox_mes = (datetime.now() + timedelta(days=30)).date()
