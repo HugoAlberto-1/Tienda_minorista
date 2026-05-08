@@ -23,7 +23,7 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # Consulta de ventas SIN TOTAL, solo Cantidad y Precio
+        # Consulta de ventas: NO TRAE TOTAL DE BD
         query = """
             SELECT
                 p.Nombre,
@@ -43,18 +43,17 @@ def reporte_ventas():
             st.info("No se encontraron ventas en el rango seleccionado.")
             return
 
-        # DataFrame
+        # ---- DataFrame ----
         df = pd.DataFrame(rows, columns=["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta"])
 
-        # Formatos
         df["Cantidad Vendida"] = pd.to_numeric(df["Cantidad Vendida"], errors="coerce").fillna(0)
         df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
         df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
 
-        # 🔥 Calcular TOTAL con Python
+        # ➤ CALCULAR TOTAL
         df["Total"] = (df["Cantidad Vendida"] * df["Precio Venta"]).round(2)
 
-        # 🔥 Calcular total general
+        # ➤ CALCULAR GRAN TOTAL
         gran_total = df["Total"].sum().round(2)
 
         # Mostrar tabla
@@ -62,11 +61,12 @@ def reporte_ventas():
         st.markdown("### 🗂 Detalles de Ventas")
         st.dataframe(df)
 
-        # Mostrar total general abajo
+        # ➤ Mostrar GRAN TOTAL debajo
+        st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
         st.markdown(f"""
-        <h2 style='text-align: right; color: green;'>
-            Total General: ${gran_total}
-        </h2>
+        <div style='font-size:30px; font-weight:bold; color:green;'>
+            ${gran_total}
+        </div>
         """, unsafe_allow_html=True)
 
         st.markdown("---")
@@ -76,7 +76,7 @@ def reporte_ventas():
             st.session_state["page"] = "menu_principal"
             st.session_state["module"] = None
 
-        # Exportar Excel
+        # ➤ Exportar a Excel
         st.markdown("---")
         st.markdown("### 📁 Exportar ventas filtradas")
 
@@ -94,7 +94,7 @@ def reporte_ventas():
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-        # Exportar PDF
+        # ➤ Exportar PDF
         with col2:
             pdf = FPDF()
             pdf.add_page()
@@ -114,19 +114,18 @@ def reporte_ventas():
             pdf.set_font("Arial", size=10)
             for _, row in df.iterrows():
                 pdf.cell(widths[0], 8, str(row["Nombre"])[:30], 1)
-                pdf.cell(widths[1], 8, f"{row['Cantidad Vendida']}", 1, 0, "R")
+                pdf.cell(widths[1], 8, str(row["Cantidad Vendida"]), 1, 0, "R")
                 pdf.cell(widths[2], 8, f"{row['Precio Venta']:.2f}", 1, 0, "R")
                 pdf.cell(widths[3], 8, f"{row['Total']:.2f}", 1, 0, "R")
                 pdf.cell(widths[4], 8, row["Fecha Venta"].strftime("%Y-%m-%d"), 1, 0, "C")
                 pdf.ln(8)
 
-            # TOTAL general en el PDF
+            # ➤ Agregar total general al PDF
             pdf.set_font("Arial", "B", 12)
             pdf.ln(5)
             pdf.cell(190, 10, f"TOTAL GENERAL: ${gran_total}", 0, 1, "R")
 
-            # 🔥 CORRECCIÓN — convertir a bytes SIN encode()
-            pdf_bytes = bytes(pdf.output(dest="S"))
+            pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
             st.download_button(
                 label="⬇️ Descargar PDF",
