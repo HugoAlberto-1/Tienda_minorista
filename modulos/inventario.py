@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 # 🔹 Conversión a unidad base (LIBRAS)
@@ -18,49 +18,45 @@ def convertir_a_libras(cantidad, unidad):
     elif unidad in ["libra", "libras", "lb"]:
         return cantidad
     else:
-        return cantidad  # Para productos por unidad
+        return cantidad
 
 
-# 🔹 Resaltar stock bajo
+# 🔹 Resaltar stock bajo (menos de 10 libras)
 def resaltar_stock_bajo(fila):
-    if "Stock Libras" in fila.index:
-        color = 'background-color: #ffcccc' if fila["Stock Libras"] < 10 else ''
-        return [color if col == "Stock Libras" else '' for col in fila.index]
-
-    if "Stock Unidades" in fila.index:
-        color = 'background-color: #ffcccc' if fila["Stock Unidades"] < 5 else ''
-        return [color if col == "Stock Unidades" else '' for col in fila.index]
-
-    return ['' for _ in fila.index]
+    color = 'background-color: #ffcccc' if fila["Stock Libras"] < 10 else ''
+    return ['' if col != "Stock Libras" else color for col in fila.index]
 
 
 def modulo_inventario():
+    st.title("📦 Inventario Actual (agrupado por nombre)")
     st.title("📦 Inventario Actual")
 
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
-        st.error("❌ No has iniciado sesión.")
+        st.error("❌ No has iniciado sesión. Inicia sesión primero.")
         st.stop()
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔥 Filtro principal
-    filtro_tipo = st.selectbox(
-        "🔎 Ver productos:",
-        ("Todos", "Perecederos", "No perecederos"),
-        index=0
-    )
-
     opcion_orden = st.selectbox(
         "📑 Ordenar inventario por:",
         ("Nombre (A-Z)", "Nombre (Z-A)",
-         "Stock (Ascendente)", "Stock (Descendente)"),
+         "Stock (Ascendente)", "Stock (Descendente)",
+         "Más vendidos", "Menos vendidos"),
         index=0
     )
 
+    conn = None
+    cursor = None
+
     try:
         conn = obtener_conexion()
+        if not conn:
+            st.error("❌ No se pudo conectar a la base de datos.")
+            st.stop()
+
         cursor = conn.cursor()
 
+        # 🔹 Obtener productos de la tienda
         cursor.execute("""
             SELECT Cod_barra, Nombre, IFNULL(Tipo_producto,'N/A')
             FROM Producto
@@ -68,17 +64,13 @@ def modulo_inventario():
         """, (id_tienda,))
         productos = cursor.fetchall()
 
+        if not productos:
+            st.info("ℹ️ No hay productos registrados para esta tienda.")
+            return
+
         inventario_detalle = []
 
         for cod_barra, nombre, tipo_producto in productos:
-
-            tipo_lower = tipo_producto.lower()
-
-            # 🔹 Aplicar filtro
-            if filtro_tipo == "Perecederos" and tipo_lower != "perecedero":
-                continue
-            if filtro_tipo == "No perecederos" and tipo_lower == "perecedero":
-                continue
 
             # 🔹 Compras
             cursor.execute("""
@@ -86,7 +78,12 @@ def modulo_inventario():
                 FROM ProductoxCompra
                 WHERE Cod_barra = %s AND id_tienda = %s
             """, (cod_barra, id_tienda))
+
             compras = cursor.fetchall()
+
+            total_comprado_lb = sum(
+                convertir_a_libras(c[0], c[1]) for c in compras
+            )
 
             # 🔹 Ventas
             cursor.execute("""
@@ -94,84 +91,88 @@ def modulo_inventario():
                 FROM ProductoxVenta
                 WHERE Cod_barra = %s AND id_tienda = %s
             """, (cod_barra, id_tienda))
+
             ventas = cursor.fetchall()
 
-            # -----------------------
-            # 🟢 PERECEDEROS
-            # -----------------------
-            if tipo_lower == "perecedero":
+            total_vendido_lb = sum(
+                convertir_a_libras(v[0], v[1]) for v in ventas
+            )
 
-                total_comprado_lb = sum(
-                    convertir_a_libras(c[0], c[1]) for c in compras
-                )
+            stock_libras = total_comprado_lb - total_vendido_lb
 
-                total_vendido_lb = sum(
-                    convertir_a_libras(v[0], v[1]) for v in ventas
-                )
+            inventario_detalle.append({
+                "Nombre": nombre,
+                "Tipo": tipo_producto,
+                "Stock Libras": stock_libras,
+                "Stock Quintal": stock_libras / 100,
+                "Stock Arroba": stock_libras / 25,
+                "_Total_vendidos": int(total_vendido_lb)
+            })
 
-                stock_lb = total_comprado_lb - total_vendido_lb
-
-                inventario_detalle.append({
-                    "Nombre": nombre,
-                    "Tipo": tipo_producto,
-                    "Stock Libras": stock_lb,
-                    "Stock Quintal": stock_lb / 100,
-                    "Stock Arroba": stock_lb / 25
-                })
-
-            # -----------------------
-            # 🔵 NO PERECEDEROS
-            # -----------------------
-            else:
-
-                total_comprado = sum(c[0] for c in compras)
-                total_vendido = sum(v[0] for v in ventas)
-
-                stock_unidades = total_comprado - total_vendido
-
-                inventario_detalle.append({
-                    "Nombre": nombre,
-                    "Tipo": tipo_producto,
-                    "Stock Unidades": stock_unidades
-                })
-
-        if not inventario_detalle:
-            st.info("ℹ️ No hay productos para este filtro.")
-            return
-
+        # 🔹 Crear DataFrame
         df = pd.DataFrame(inventario_detalle)
 
-        # 🔹 Agrupar por nombre
-        df_agrupado = df.groupby("Nombre", as_index=False).sum(numeric_only=True)
-        df_agrupado["Tipo"] = df.groupby("Nombre")["Tipo"].first().values
+        df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
+            "Nombre": "first",
+            "Tipo": "first",
+            "Stock Libras": "sum",
+            "Stock Quintal": "sum",
+            "Stock Arroba": "sum",
+            "_Total_vendidos": "sum"
+        })
 
         # 🔹 Ordenación
         if opcion_orden == "Nombre (A-Z)":
-            df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower())
+            df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
         elif opcion_orden == "Nombre (Z-A)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=False)
-        elif "Stock Libras" in df_agrupado.columns:
-            df_agrupado = df_agrupado.sort_values(
-                "Stock Libras",
-                ascending=(opcion_orden == "Stock (Ascendente)")
-            )
-        elif "Stock Unidades" in df_agrupado.columns:
-            df_agrupado = df_agrupado.sort_values(
-                "Stock Unidades",
-                ascending=(opcion_orden == "Stock (Ascendente)")
-            )
+        elif opcion_orden == "Stock (Ascendente)":
+            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=True)
+        elif opcion_orden == "Stock (Descendente)":
+            df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=False)
+        elif opcion_orden == "Más vendidos":
+            df_agrupado = df_agrupado.sort_values("_Total_vendidos", ascending=False)
+        else:
+            df_agrupado = df_agrupado.sort_values("_Total_vendidos", ascending=True)
 
-        # 🔹 Formateo seguro SOLO columnas numéricas
-        columnas_numericas = df_agrupado.select_dtypes(include=['number']).columns
+        df_agrupado = df_agrupado.drop(columns=["_Total_vendidos"])
 
-        styled_df = df_agrupado.style.apply(
-            resaltar_stock_bajo, axis=1
-        ).format(
-            {col: "{:.2f}" for col in columnas_numericas}
-        )
+        styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
+            "Stock Libras": "{:.2f}",
+            "Stock Quintal": "{:.2f}",
+            "Stock Arroba": "{:.2f}"
+        })
 
-        st.subheader("📋 Inventario")
+        st.subheader("📋 Inventario agrupado por nombre")
         st.dataframe(styled_df, use_container_width=True)
+
+        # 🔹 Productos próximos a vencer
+        hoy = datetime.now().date()
+        prox_mes = (datetime.now() + timedelta(days=30)).date()
+
+        cursor.execute("""
+            SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+            FROM ProductoxCompra pc
+            JOIN Producto p ON pc.Cod_barra = p.Cod_barra
+            WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+              AND pc.id_tienda = %s
+              AND p.id_tienda = %s
+            ORDER BY pc.fecha_vencimiento ASC
+        """, (hoy, prox_mes, id_tienda, id_tienda))
+
+        proximos = cursor.fetchall()
+
+        if proximos:
+            df_v = pd.DataFrame(
+                proximos,
+                columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
+            )
+            df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
+
+            st.subheader("⏳ Productos próximos a vencer (30 días)")
+            st.dataframe(df_v, use_container_width=True)
+        else:
+            st.info("✅ No hay productos próximos a vencer.")
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
