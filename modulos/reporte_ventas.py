@@ -43,20 +43,26 @@ def reporte_ventas():
             st.info("No se encontraron ventas en el rango seleccionado.")
             return
 
-        # Construcción DataFrame
+        # Crear DataFrame sin alterar decimales
         df = pd.DataFrame(rows, columns=["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta"])
-        df["Cantidad Vendida"] = pd.to_numeric(df["Cantidad Vendida"], errors="coerce").fillna(0)
-        df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
+
+        # Mantener valores EXACTOS como están en MySQL (en texto)
+        df["Cantidad Vendida"] = df["Cantidad Vendida"].astype(str)
+        df["Precio Venta"] = df["Precio Venta"].astype(str)
+
+        # Convertimos la fecha
         df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
 
-        df["Total"] = df["Cantidad Vendida"] * df["Precio Venta"]
+        # Calcular total sin modificar decimales originales
+        df["Total"] = df.apply(
+            lambda row: float(row["Cantidad Vendida"]) * float(row["Precio Venta"]),
+            axis=1
+        )
 
-        # 🔥 Formateamos todo a 2 decimales
-        df["Cantidad Vendida"] = df["Cantidad Vendida"].astype(float).round(2)
-        df["Precio Venta"] = df["Precio Venta"].astype(float).round(2)
-        df["Total"] = df["Total"].astype(float).round(2)
+        # Mantener total sin redondear ni agregar ceros
+        df["Total"] = df["Total"].map(lambda x: format(x, "f"))
 
-        # Orden final
+        # Orden de columnas
         df = df[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta"]]
 
         # Mostrar tabla
@@ -110,9 +116,9 @@ def reporte_ventas():
             pdf.set_font("Arial", size=10)
             for _, row in df.iterrows():
                 nombre = str(row["Nombre"])[:45]
-                cantidad = f"{float(row['Cantidad Vendida']):.2f}"
-                precio = f"{float(row['Precio Venta']):.2f}"
-                total = f"{float(row['Total']):.2f}"
+                cantidad = row["Cantidad Vendida"]
+                precio = row["Precio Venta"]
+                total = row["Total"]
                 fecha = row["Fecha Venta"].strftime("%Y-%m-%d")
 
                 pdf.cell(widths[0], 8, nombre, 1)
@@ -122,6 +128,7 @@ def reporte_ventas():
                 pdf.cell(widths[4], 8, fecha, 1, 0, "C")
                 pdf.ln(8)
 
+            # Convertir PDF a bytes
             out = pdf.output(dest="S")
             pdf_bytes = out.encode("latin-1") if isinstance(out, str) else bytes(out)
 
