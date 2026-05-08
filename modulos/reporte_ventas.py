@@ -148,5 +148,4 @@ if "page" not in st.session_state:
 
 if st.session_state["page"] == "reporte_ventas":
     reporte_ventas()
-elif st.session_state["page"] == "menu_principal":
-    st.title("🏠 Menú Principal")
+
