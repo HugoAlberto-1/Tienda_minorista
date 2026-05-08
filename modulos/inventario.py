@@ -36,6 +36,15 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
+    # 🔹 Filtro por tipo de producto (NUEVO)
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        filtro_tipo = st.selectbox(
+            "🔍 Filtrar por tipo de producto:",
+            ("Todos", "Perecedero", "No perecedero"),
+            index=0
+        )
+
     opcion_orden = st.selectbox(
         "📑 Ordenar inventario por:",
         ("Nombre (A-Z)", "Nombre (Z-A)",
@@ -70,6 +79,12 @@ def modulo_inventario():
         inventario_detalle = []
 
         for cod_barra, nombre, tipo_producto in productos:
+
+            # 🔹 Aplicar filtro por tipo (NUEVO)
+            if filtro_tipo == "Perecedero" and tipo_producto != "Perecedero":
+                continue
+            elif filtro_tipo == "No perecedero" and tipo_producto != "No perecedero":
+                continue
 
             # 🔹 Compras
             cursor.execute("""
@@ -111,6 +126,10 @@ def modulo_inventario():
         # 🔹 Crear DataFrame
         df = pd.DataFrame(inventario_detalle)
 
+        if df.empty:
+            st.warning(f"⚠️ No hay productos del tipo '{filtro_tipo}' para mostrar.")
+            return
+
         df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
             "Nombre": "first",
             "Tipo": "first",
@@ -142,36 +161,47 @@ def modulo_inventario():
             "Stock Arroba": "{:.2f}"
         })
 
-        st.subheader("📋 Inventario agrupado por nombre")
+        # 🔹 Mostrar información del filtro activo
+        if filtro_tipo == "Todos":
+            st.subheader("📋 Inventario agrupado por nombre (Todos los productos)")
+        else:
+            st.subheader(f"📋 Inventario agrupado por nombre - Tipo: {filtro_tipo}")
+        
         st.dataframe(styled_df, use_container_width=True)
 
-        # 🔹 Productos próximos a vencer
-        hoy = datetime.now().date()
-        prox_mes = (datetime.now() + timedelta(days=30)).date()
+        # 🔹 Productos próximos a vencer (solo se muestran si hay productos perecederos)
+        if filtro_tipo != "No perecedero":
+            hoy = datetime.now().date()
+            prox_mes = (datetime.now() + timedelta(days=30)).date()
 
-        cursor.execute("""
-            SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
-            FROM ProductoxCompra pc
-            JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-            WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-              AND pc.id_tienda = %s
-              AND p.id_tienda = %s
-            ORDER BY pc.fecha_vencimiento ASC
-        """, (hoy, prox_mes, id_tienda, id_tienda))
+            cursor.execute("""
+                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                FROM ProductoxCompra pc
+                JOIN Producto p ON pc.Cod_barra = p.Cod_barra
+                WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                  AND pc.id_tienda = %s
+                  AND p.id_tienda = %s
+                ORDER BY pc.fecha_vencimiento ASC
+            """, (hoy, prox_mes, id_tienda, id_tienda))
 
-        proximos = cursor.fetchall()
+            proximos = cursor.fetchall()
 
-        if proximos:
-            df_v = pd.DataFrame(
-                proximos,
-                columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
-            )
-            df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
+            if proximos:
+                df_v = pd.DataFrame(
+                    proximos,
+                    columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
+                )
+                df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
 
-            st.subheader("⏳ Productos próximos a vencer (30 días)")
-            st.dataframe(df_v, use_container_width=True)
+                st.subheader("⏳ Productos próximos a vencer (30 días)")
+                st.dataframe(df_v, use_container_width=True)
+            else:
+                if filtro_tipo == "Perecedero":
+                    st.info("✅ No hay productos perecederos próximos a vencer.")
+                else:
+                    st.info("✅ No hay productos próximos a vencer.")
         else:
-            st.info("✅ No hay productos próximos a vencer.")
+            st.info("📌 Los productos no perecederos no tienen fecha de vencimiento.")
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
