@@ -43,13 +43,20 @@ def reporte_ventas():
             st.info("No se encontraron ventas en el rango seleccionado.")
             return
 
-        # DataFrame limpio
+        # Construcción DataFrame
         df = pd.DataFrame(rows, columns=["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta"])
         df["Cantidad Vendida"] = pd.to_numeric(df["Cantidad Vendida"], errors="coerce").fillna(0)
         df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
         df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
 
-        df["Total"] = (df["Cantidad Vendida"] * df["Precio Venta"]).round(2)
+        df["Total"] = df["Cantidad Vendida"] * df["Precio Venta"]
+
+        # 🔥 Formateamos todo a 2 decimales
+        df["Cantidad Vendida"] = df["Cantidad Vendida"].astype(float).round(2)
+        df["Precio Venta"] = df["Precio Venta"].astype(float).round(2)
+        df["Total"] = df["Total"].astype(float).round(2)
+
+        # Orden final
         df = df[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta"]]
 
         # Mostrar tabla
@@ -104,8 +111,8 @@ def reporte_ventas():
             for _, row in df.iterrows():
                 nombre = str(row["Nombre"])[:45]
                 cantidad = f"{float(row['Cantidad Vendida']):.2f}"
-                precio = f"${float(row['Precio Venta']):.2f}"
-                total = f"${float(row['Total']):.2f}"
+                precio = f"{float(row['Precio Venta']):.2f}"
+                total = f"{float(row['Total']):.2f}"
                 fecha = row["Fecha Venta"].strftime("%Y-%m-%d")
 
                 pdf.cell(widths[0], 8, nombre, 1)
@@ -115,7 +122,6 @@ def reporte_ventas():
                 pdf.cell(widths[4], 8, fecha, 1, 0, "C")
                 pdf.ln(8)
 
-            # Convertir PDF a bytes
             out = pdf.output(dest="S")
             pdf_bytes = out.encode("latin-1") if isinstance(out, str) else bytes(out)
 
