@@ -3,6 +3,15 @@ import pandas as pd
 from config.conexion import obtener_conexion
 from datetime import datetime, timedelta
 
+# ---------------------------------------------------------
+# 🔥 TABLA DE CONVERSIONES (EDITABLE)
+# ---------------------------------------------------------
+CONVERSIONES = {
+    "quintal": {"libras": 100, "arrobas": 4, "quintales": 1},
+    "arroba": {"libras": 25, "arrobas": 1, "quintales": 0.25},
+    "libra": {"libras": 1, "arrobas": 0.04, "quintales": 0.01},
+}
+
 def resaltar_stock_bajo(fila):
     color = 'background-color: #ffcccc' if fila["Stock actual"] < 10 else ''
     return ['' if col != "Stock actual" else color for col in fila.index]
@@ -10,7 +19,7 @@ def resaltar_stock_bajo(fila):
 def modulo_inventario():
     st.title("📦 Inventario Actual (agrupado por nombre)")
 
-    # ✅ Validación multi-tienda
+    # Validación
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
         st.stop()
@@ -35,7 +44,7 @@ def modulo_inventario():
 
         cursor = conn.cursor()
 
-        # ✅ Obtener SOLO productos de la tienda
+        # SOLO productos de la tienda
         cursor.execute("""
             SELECT Cod_barra, Nombre, IFNULL(Tipo_producto,'N/A')
             FROM Producto
@@ -50,7 +59,8 @@ def modulo_inventario():
         inventario_detalle = []
 
         for cod_barra, nombre, tipo_producto in productos:
-            # ✅ Compras SOLO de la tienda
+
+            # Compras
             cursor.execute("""
                 SELECT IFNULL(SUM(cantidad_comprada),0),
                        IFNULL(AVG(precio_compra),0)
@@ -59,7 +69,7 @@ def modulo_inventario():
             """, (cod_barra, id_tienda))
             total_comprado, precio_promedio = cursor.fetchone()
 
-            # ✅ Unidad SOLO de la tienda
+            # Unidad
             cursor.execute("""
                 SELECT unidad
                 FROM ProductoxCompra
@@ -70,7 +80,7 @@ def modulo_inventario():
             fila = cursor.fetchone()
             unidad = fila[0] if fila else "N/A"
 
-            # ✅ Ventas SOLO de la tienda
+            # Ventas
             cursor.execute("""
                 SELECT IFNULL(SUM(Cantidad_vendida),0)
                 FROM ProductoxVenta
@@ -78,7 +88,7 @@ def modulo_inventario():
             """, (cod_barra, id_tienda))
             total_vendido = cursor.fetchone()[0] or 0
 
-            # ✅ Precio venta SOLO de la tienda
+            # Precio venta
             cursor.execute("""
                 SELECT Precio_Venta
                 FROM ProductoxVenta
@@ -89,11 +99,27 @@ def modulo_inventario():
             fila_pv = cursor.fetchone()
             precio_venta = float(fila_pv[0]) if fila_pv and fila_pv[0] is not None else 0.0
 
+            # ---------------------------------------
+            # 🔥 CALCULAR CONVERSIONES
+            # ---------------------------------------
+            stock_actual = (total_comprado or 0) - (total_vendido or 0)
+
+            conv = CONVERSIONES.get(
+                str(unidad).lower(),
+                {"libras": 0, "arrobas": 0, "quintales": 0}
+            )
+
             inventario_detalle.append({
                 "Nombre": nombre,
                 "Tipo": tipo_producto,
-                "Stock actual": (total_comprado or 0) - (total_vendido or 0),
+                "Stock actual": stock_actual,
                 "Unidad": unidad,
+
+                # Nuevas columnas
+                "Equivalente (libras)": stock_actual * conv["libras"],
+                "Equivalente (arrobas)": stock_actual * conv["arrobas"],
+                "Equivalente (quintales)": stock_actual * conv["quintales"],
+
                 "Precio venta ($)": precio_venta,
                 "Precio promedio compra ($)": float(precio_promedio or 0),
                 "_Total_vendidos": int(total_vendido or 0)
@@ -106,6 +132,12 @@ def modulo_inventario():
             "Tipo": "first",
             "Stock actual": "sum",
             "Unidad": "first",
+
+            # Nuevas columnas agregadas al agrupado
+            "Equivalente (libras)": "sum",
+            "Equivalente (arrobas)": "sum",
+            "Equivalente (quintales)": "sum",
+
             "Precio venta ($)": "mean",
             "Precio promedio compra ($)": "mean",
             "_Total_vendidos": "sum"
@@ -135,7 +167,7 @@ def modulo_inventario():
         st.subheader("📋 Inventario agrupado por nombre")
         st.dataframe(styled_df, use_container_width=True)
 
-        # ✅ Productos próximos a vencer (solo tienda)
+        # Productos próximos a vencer
         hoy = datetime.now().date()
         prox_mes = (datetime.now() + timedelta(days=30)).date()
 
