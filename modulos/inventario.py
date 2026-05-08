@@ -48,12 +48,12 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔹 Filtro por tipo de producto
+    # 🔹 Filtro por tipo de producto (sin opción "Todos")
     col1, col2 = st.columns([1, 2])
     with col1:
         filtro_tipo = st.selectbox(
             "🔍 Filtrar por tipo de producto:",
-            ("Todos", "Perecedero", "No perecedero"),
+            ("Perecedero", "No perecedero"),
             index=0
         )
 
@@ -92,7 +92,7 @@ def modulo_inventario():
 
         for cod_barra, nombre, tipo_producto in productos:
 
-            # 🔹 Aplicar filtro por tipo
+            # 🔹 Aplicar filtro por tipo (solo perecedero o no perecedero)
             if filtro_tipo == "Perecedero" and tipo_producto != "Perecedero":
                 continue
             elif filtro_tipo == "No perecedero" and tipo_producto != "No perecedero":
@@ -143,14 +143,14 @@ def modulo_inventario():
                     "Stock Unidades": stock_unidades,
                     "_Total_vendidos": int(total_vendido_unidades)
                 })
-            else:  # Para "Todos" o "Perecedero"
+            else:  # Para "Perecedero"
                 inventario_detalle.append({
                     "Nombre": nombre,
                     "Tipo": tipo_producto,
                     "Stock Libras": stock_libras,
                     "Stock Quintal": convertir_a_quintal(stock_libras),
                     "Stock Arroba": convertir_a_arroba(stock_libras),
-                    "_Total_vendidos": int(total_vendido_lb) if tipo_producto == "Perecedero" else int(total_vendido_unidades)
+                    "_Total_vendidos": int(total_vendido_lb)
                 })
 
         # 🔹 Crear DataFrame
@@ -168,7 +168,7 @@ def modulo_inventario():
                 "Stock Unidades": "sum",
                 "_Total_vendidos": "sum"
             })
-        else:
+        else:  # Para "Perecedero"
             df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
                 "Nombre": "first",
                 "Tipo": "first",
@@ -179,7 +179,7 @@ def modulo_inventario():
             })
 
         # 🔹 Ordenación
-        columna_stock = "Stock Libras" if filtro_tipo != "No perecedero" else "Stock Unidades"
+        columna_stock = "Stock Libras" if filtro_tipo == "Perecedero" else "Stock Unidades"
         
         if opcion_orden == "Nombre (A-Z)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
@@ -201,26 +201,23 @@ def modulo_inventario():
             styled_df = df_agrupado.style.apply(resaltar_stock_bajo_no_perecederos, axis=1).format({
                 "Stock Unidades": "{:.0f}"
             })
-        else:
+        else:  # Para "Perecedero"
             styled_df = df_agrupado.style.apply(resaltar_stock_bajo_perecederos, axis=1).format({
                 "Stock Libras": "{:.2f}",
                 "Stock Quintal": "{:.2f}",
                 "Stock Arroba": "{:.2f}"
             })
 
-        # 🔹 Mostrar información del filtro activo y las columnas
-        if filtro_tipo == "Todos":
-            st.subheader("📋 Inventario completo - Unidades mixtas")
-            st.info("ℹ️ Mostrando productos perecederos en Libras/Quintal/Arroba y no perecederos en Unidades")
-        elif filtro_tipo == "Perecedero":
+        # 🔹 Mostrar información del filtro activo
+        if filtro_tipo == "Perecedero":
             st.subheader("📋 Inventario de productos perecederos (Libras, Quintal, Arroba)")
         else:
             st.subheader("📋 Inventario de productos no perecederos (Unidades)")
         
         st.dataframe(styled_df, use_container_width=True)
 
-        # 🔹 Productos próximos a vencer (solo para perecederos o todos)
-        if filtro_tipo != "No perecedero":
+        # 🔹 Productos próximos a vencer (solo para perecederos)
+        if filtro_tipo == "Perecedero":
             hoy = datetime.now().date()
             prox_mes = (datetime.now() + timedelta(days=30)).date()
 
@@ -246,12 +243,7 @@ def modulo_inventario():
                 st.subheader("⏳ Productos próximos a vencer (30 días)")
                 st.dataframe(df_v, use_container_width=True)
             else:
-                if filtro_tipo == "Perecedero":
-                    st.info("✅ No hay productos perecederos próximos a vencer.")
-                else:
-                    st.info("✅ No hay productos próximos a vencer.")
-        else:
-            st.info("📌 Los productos no perecederos no tienen fecha de vencimiento.")
+                st.info("✅ No hay productos perecederos próximos a vencer.")
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
