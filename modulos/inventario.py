@@ -71,9 +71,9 @@ def modulo_inventario():
 
         for cod_barra, nombre, tipo_producto in productos:
 
-            # 🔹 Obtener todas las compras del producto
+            # 🔹 Compras
             cursor.execute("""
-                SELECT cantidad_comprada, unidad, precio_compra
+                SELECT cantidad_comprada, unidad
                 FROM ProductoxCompra
                 WHERE Cod_barra = %s AND id_tienda = %s
             """, (cod_barra, id_tienda))
@@ -84,12 +84,9 @@ def modulo_inventario():
                 convertir_a_libras(c[0], c[1]) for c in compras
             )
 
-            precios_compra = [c[2] for c in compras if c[2] is not None]
-            precio_promedio = sum(precios_compra) / len(precios_compra) if precios_compra else 0
-
-            # 🔹 Obtener todas las ventas del producto
+            # 🔹 Ventas
             cursor.execute("""
-                SELECT Cantidad_vendida, unidad, Precio_Venta
+                SELECT Cantidad_vendida, unidad
                 FROM ProductoxVenta
                 WHERE Cod_barra = %s AND id_tienda = %s
             """, (cod_barra, id_tienda))
@@ -100,9 +97,6 @@ def modulo_inventario():
                 convertir_a_libras(v[0], v[1]) for v in ventas
             )
 
-            precios_venta = [v[2] for v in ventas if v[2] is not None]
-            precio_venta = precios_venta[-1] if precios_venta else 0.0
-
             stock_libras = total_comprado_lb - total_vendido_lb
 
             inventario_detalle.append({
@@ -111,12 +105,10 @@ def modulo_inventario():
                 "Stock Libras": stock_libras,
                 "Stock Quintal": stock_libras / 100,
                 "Stock Arroba": stock_libras / 25,
-                "Precio venta ($)": float(precio_venta),
-                "Precio promedio compra ($)": float(precio_promedio),
                 "_Total_vendidos": int(total_vendido_lb)
             })
 
-        # 🔹 Agrupar por nombre
+        # 🔹 Crear DataFrame
         df = pd.DataFrame(inventario_detalle)
 
         df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
@@ -125,8 +117,6 @@ def modulo_inventario():
             "Stock Libras": "sum",
             "Stock Quintal": "sum",
             "Stock Arroba": "sum",
-            "Precio venta ($)": "mean",
-            "Precio promedio compra ($)": "mean",
             "_Total_vendidos": "sum"
         })
 
@@ -149,9 +139,7 @@ def modulo_inventario():
         styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
             "Stock Libras": "{:.2f}",
             "Stock Quintal": "{:.2f}",
-            "Stock Arroba": "{:.2f}",
-            "Precio venta ($)": "{:.2f}",
-            "Precio promedio compra ($)": "{:.2f}"
+            "Stock Arroba": "{:.2f}"
         })
 
         st.subheader("📋 Inventario agrupado por nombre")
