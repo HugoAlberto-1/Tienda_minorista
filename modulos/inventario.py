@@ -166,13 +166,33 @@ def modulo_inventario():
 
                     compras = cursor.fetchall()
 
+                    # Para carnes y congelados, determinar la unidad principal de compra
+                    unidad_principal = None
+                    if categoria == "Carnes y congelados" and compras:
+                        # Obtener la unidad más usada en compras
+                        unidades_compra = {}
+                        for compra in compras:
+                            unidad = compra[1] if compra[1] else "unidad"
+                            if unidad.lower() in ["libra", "libras", "lb"]:
+                                unidad_principal = "libras"
+                            elif unidad.lower() in ["unidad", "unidades", "pieza", "piezas"]:
+                                unidad_principal = "unidades"
+                        
+                        # Si no se pudo determinar, revisar la primera compra
+                        if not unidad_principal and compras:
+                            primera_unidad = compras[0][1] if compras[0][1] else "unidad"
+                            if primera_unidad.lower() in ["libra", "libras", "lb"]:
+                                unidad_principal = "libras"
+                            else:
+                                unidad_principal = "unidades"
+
                     # Total comprado en libras
                     total_comprado_lb = sum(
                         convertir_a_libras(c[0], c[1]) for c in compras
                     )
 
                     # Total comprado en unidades
-                    total_comprado_unidades = sum(c[0] for c in compras)
+                    total_comprado_unidades = sum(c[0] for c in compras if c[1] and c[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
                     # 🔹 Ventas
                     cursor.execute("""
@@ -189,7 +209,7 @@ def modulo_inventario():
                     )
 
                     # Total vendido en unidades
-                    total_vendido_unidades = sum(v[0] for v in ventas)
+                    total_vendido_unidades = sum(v[0] for v in ventas if v[1] and v[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
                     stock_libras = total_comprado_lb - total_vendido_lb
                     stock_unidades = total_comprado_unidades - total_vendido_unidades
@@ -205,14 +225,23 @@ def modulo_inventario():
                             "_Total_vendidos_libras": int(total_vendido_lb)
                         })
                     elif categoria == "Carnes y congelados":
-                        inventario_detalle.append({
-                            "Nombre": nombre,
-                            "Categoría": categoria,
-                            "Stock Libras": stock_libras,
-                            "Stock Unidades": stock_unidades,
-                            "_Total_vendidos_libras": int(total_vendido_lb),
-                            "_Total_vendidos_unidades": int(total_vendido_unidades)
-                        })
+                        # Determinar qué columna mostrar según la unidad principal
+                        if unidad_principal == "libras":
+                            inventario_detalle.append({
+                                "Nombre": nombre,
+                                "Categoría": categoria,
+                                "Stock Libras": stock_libras,
+                                "Stock Unidades": None,  # Mostrar como guión
+                                "_Total_vendidos_libras": int(total_vendido_lb)
+                            })
+                        else:
+                            inventario_detalle.append({
+                                "Nombre": nombre,
+                                "Categoría": categoria,
+                                "Stock Libras": None,  # Mostrar como guión
+                                "Stock Unidades": stock_unidades,
+                                "_Total_vendidos_unidades": int(total_vendido_unidades)
+                            })
                     else:
                         # Otras categorías solo usan unidades
                         inventario_detalle.append({
@@ -282,9 +311,9 @@ def modulo_inventario():
                         # Ordenar alfabéticamente por nombre
                         df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                         
-                        # Aplicar formato según las columnas (sin reemplazar con guiones)
+                        # Función para formatear valores
                         def format_value(val, col_name):
-                            if pd.isna(val):
+                            if pd.isna(val) or val is None:
                                 return "—"
                             if col_name in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
                                 if isinstance(val, (int, float)):
