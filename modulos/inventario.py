@@ -72,15 +72,6 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔹 BOTÓN DE VOLVER - COLOCADO AL INICIO (siempre visible)
-    st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("⬅ Volver al menú principal", use_container_width=True):
-            st.session_state.module = None
-            st.rerun()
-    st.markdown("---")
-
     # 🔹 Filtro por categoría
     filtro_categoria = st.selectbox(
         "🔍 Filtrar por categoría:",
@@ -276,3 +267,11 @@ def modulo_inventario():
             cursor.close()
         if conn:
             conn.close()
+    # 🔹 BOTÓN DE VOLVER - COLOCADO AL INICIO (siempre visible)
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("⬅ Volver al menú principal", use_container_width=True):
+            st.session_state.module = None
+            st.rerun()
+    st.markdown("---")
