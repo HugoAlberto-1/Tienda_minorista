@@ -214,7 +214,20 @@ def modulo_inventario():
                             "Stock Libras": "{:.2f}"
                         })
                         
-                        st.subheader(f"📋 Inventario de Granos y productos a granel - {filtro_categoria}")
+                        st.subheader(f"📋 Inventario de Granos y productos a granel")
+                        
+                    elif filtro_categoria == "Carnes y congelados":
+                        # Para carnes y congelados, mostrar Nombre, Stock Libras y Stock Unidades
+                        df_mostrar = df_agrupado[["Nombre", "Stock Libras", "Stock Unidades"]].copy()
+                        
+                        # Aplicar formato
+                        styled_df = df_mostrar.style.format({
+                            "Stock Libras": "{:.2f}",
+                            "Stock Unidades": "{:.0f}"
+                        })
+                        
+                        st.subheader(f"📋 Inventario de Carnes y congelados")
+                        
                     else:
                         # Para las demás categorías, mostrar solo Nombre y Stock Unidades
                         df_mostrar = df_agrupado[["Nombre", "Stock Unidades"]].copy()
@@ -236,7 +249,7 @@ def modulo_inventario():
                     
                     st.dataframe(styled_df, use_container_width=True)
 
-                    # 🔹 Productos próximos a vencer (solo para categorías que no son granos o si hay productos)
+                    # 🔹 Productos próximos a vencer (solo para categorías que no son granos)
                     if filtro_categoria != "Granos y productos a granel":
                         hoy = datetime.now().date()
                         prox_mes = (datetime.now() + timedelta(days=30)).date()
