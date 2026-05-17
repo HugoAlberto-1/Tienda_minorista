@@ -280,7 +280,12 @@ def modulo_inventario():
         if conn:
             conn.close()
 
+    # 🔹 BOTÓN PARA VOLVER AL MENÚ PRINCIPAL (AGREGADO AQUÍ)
     st.markdown("---")
-    if st.button("⬅ Volver al menú principal"):
-        st.session_state.module = None
-        st.rerun()
+    
+    # Usamos columnas para centrar el botón visualmente (opcional pero mejora la UI)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("⬅ Volver al menú principal", use_container_width=True, type="secondary"):
+            st.session_state.module = None
+            st.rerun()
