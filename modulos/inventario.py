@@ -49,7 +49,7 @@ def convertir_a_libras(cantidad, unidad):
         return cantidad
 
 
-# 🔹 Conversión a unidades para perecederos
+# 🔹 Conversión a unidades para granos
 def convertir_a_quintal(cantidad_libras):
     return cantidad_libras / 100
 
@@ -202,28 +202,42 @@ def modulo_inventario():
                     # Eliminar columnas auxiliares
                     df_agrupado = df_agrupado.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
 
-                    # 🔹 Aplicar formato sin resaltado de stock bajo
-                    styled_df = df_agrupado.style.format({
-                        "Stock Libras": "{:.2f}",
-                        "Stock Quintal": "{:.2f}",
-                        "Stock Arroba": "{:.2f}",
-                        "Stock Unidades": "{:.0f}"
-                    })
+                    # 🔹 Seleccionar columnas según la categoría
+                    if filtro_categoria == "Granos y productos a granel":
+                        # Para granos, mostrar solo columnas de peso
+                        df_mostrar = df_agrupado[["Nombre", "Stock Quintal", "Stock Arroba", "Stock Libras"]].copy()
+                        
+                        # Aplicar formato
+                        styled_df = df_mostrar.style.format({
+                            "Stock Quintal": "{:.2f}",
+                            "Stock Arroba": "{:.2f}",
+                            "Stock Libras": "{:.2f}"
+                        })
+                        
+                        st.subheader(f"📋 Inventario de Granos y productos a granel - {filtro_categoria}")
+                    else:
+                        # Para las demás categorías, mostrar solo Nombre y Stock Unidades
+                        df_mostrar = df_agrupado[["Nombre", "Stock Unidades"]].copy()
+                        
+                        # Aplicar formato
+                        styled_df = df_mostrar.style.format({
+                            "Stock Unidades": "{:.0f}"
+                        })
+                        
+                        st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
 
                     # 🔹 Mostrar información del filtro activo
                     if buscador:
-                        st.subheader(f"📋 Resultados de búsqueda: '{buscador}' en {filtro_categoria}")
+                        st.subheader(f"📋 Resultados de búsqueda: '{buscador}'")
                         if len(df_agrupado) == 1:
                             st.info(f"✅ Se encontró {len(df_agrupado)} producto")
                         else:
                             st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
-                    else:
-                        st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
                     
                     st.dataframe(styled_df, use_container_width=True)
 
-                    # 🔹 Productos próximos a vencer (solo si no hay búsqueda activa o si se encontraron productos)
-                    if not buscador or len(productos) > 0:
+                    # 🔹 Productos próximos a vencer (solo para categorías que no son granos o si hay productos)
+                    if filtro_categoria != "Granos y productos a granel":
                         hoy = datetime.now().date()
                         prox_mes = (datetime.now() + timedelta(days=30)).date()
 
