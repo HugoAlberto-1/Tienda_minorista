@@ -71,18 +71,18 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔹 Filtro por categoría
-    filtro_categoria = st.selectbox(
-        "🔍 Filtrar por categoría:",
-        CATEGORIAS,
-        index=0
-    )
-
-    # 🔹 Buscador de productos por nombre
+    # 🔹 Buscador de productos por nombre (PRIMERO)
     buscador = st.text_input(
         "🔎 Buscar producto por nombre:",
         placeholder="Escribe el nombre del producto...",
-        help="Puedes buscar cualquier producto por su nombre"
+        help="Puedes buscar cualquier producto por su nombre sin importar la categoría"
+    )
+
+    # 🔹 Filtro por categoría (DESPUÉS del buscador)
+    filtro_categoria = st.selectbox(
+        "🔍 Filtrar por categoría:",
+        ["Todas las categorías"] + CATEGORIAS,
+        index=0
     )
 
     conn = None
@@ -100,36 +100,63 @@ def modulo_inventario():
         else:
             cursor = conn.cursor()
 
-            # 🔹 Construir consulta SQL con búsqueda si es necesario
-            if buscador:
-                cursor.execute("""
-                    SELECT Cod_barra, Nombre
-                    FROM Producto
-                    WHERE id_tienda = %s 
-                      AND categoria = %s 
-                      AND LOWER(Nombre) LIKE LOWER(%s)
-                    ORDER BY Nombre ASC
-                """, (id_tienda, filtro_categoria, f"%{buscador}%"))
+            # 🔹 Construir consulta SQL según los filtros
+            if filtro_categoria == "Todas las categorías":
+                if buscador:
+                    # Buscar en todas las categorías
+                    cursor.execute("""
+                        SELECT Cod_barra, Nombre, categoria
+                        FROM Producto
+                        WHERE id_tienda = %s 
+                          AND LOWER(Nombre) LIKE LOWER(%s)
+                        ORDER BY Nombre ASC
+                    """, (id_tienda, f"%{buscador}%"))
+                else:
+                    # Mostrar todos los productos sin filtro de categoría
+                    cursor.execute("""
+                        SELECT Cod_barra, Nombre, categoria
+                        FROM Producto
+                        WHERE id_tienda = %s
+                        ORDER BY Nombre ASC
+                    """, (id_tienda,))
             else:
-                cursor.execute("""
-                    SELECT Cod_barra, Nombre
-                    FROM Producto
-                    WHERE id_tienda = %s AND categoria = %s
-                    ORDER BY Nombre ASC
-                """, (id_tienda, filtro_categoria))
+                if buscador:
+                    # Buscar en una categoría específica
+                    cursor.execute("""
+                        SELECT Cod_barra, Nombre, categoria
+                        FROM Producto
+                        WHERE id_tienda = %s 
+                          AND categoria = %s 
+                          AND LOWER(Nombre) LIKE LOWER(%s)
+                        ORDER BY Nombre ASC
+                    """, (id_tienda, filtro_categoria, f"%{buscador}%"))
+                else:
+                    # Mostrar todos los productos de una categoría específica
+                    cursor.execute("""
+                        SELECT Cod_barra, Nombre, categoria
+                        FROM Producto
+                        WHERE id_tienda = %s AND categoria = %s
+                        ORDER BY Nombre ASC
+                    """, (id_tienda, filtro_categoria))
             
             productos = cursor.fetchall()
 
             if not productos:
                 if buscador:
-                    mensaje_info = f"ℹ️ No se encontraron productos con '{buscador}' en la categoría '{filtro_categoria}'."
+                    if filtro_categoria == "Todas las categorías":
+                        mensaje_info = f"ℹ️ No se encontraron productos con '{buscador}' en ninguna categoría."
+                    else:
+                        mensaje_info = f"ℹ️ No se encontraron productos con '{buscador}' en la categoría '{filtro_categoria}'."
                 else:
-                    mensaje_info = f"ℹ️ No hay productos registrados en la categoría '{filtro_categoria}' para esta tienda."
+                    if filtro_categoria == "Todas las categorías":
+                        mensaje_info = f"ℹ️ No hay productos registrados en ninguna categoría."
+                    else:
+                        mensaje_info = f"ℹ️ No hay productos registrados en la categoría '{filtro_categoria}' para esta tienda."
                 mostrar_contenido = False
             else:
                 inventario_detalle = []
 
-                for cod_barra, nombre in productos:
+                for cod_barra, nombre, categoria in productos:
                     # 🔹 Compras
                     cursor.execute("""
                         SELECT cantidad_comprada, unidad
@@ -170,6 +197,7 @@ def modulo_inventario():
                     # Agregar ambos tipos de stock
                     inventario_detalle.append({
                         "Nombre": nombre,
+                        "Categoría": categoria,
                         "Stock Libras": stock_libras,
                         "Stock Quintal": convertir_a_quintal(stock_libras),
                         "Stock Arroba": convertir_a_arroba(stock_libras),
@@ -185,9 +213,10 @@ def modulo_inventario():
                     st.warning(f"⚠️ No hay productos para mostrar.")
                     mostrar_contenido = False
                 else:
-                    # 🔹 Agrupar por nombre
-                    df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
+                    # 🔹 Agrupar por nombre y categoría
+                    df_agrupado = df.groupby([df["Nombre"].str.lower(), "Categoría"], as_index=False).agg({
                         "Nombre": "first",
+                        "Categoría": "first",
                         "Stock Libras": "sum",
                         "Stock Quintal": "sum",
                         "Stock Arroba": "sum",
@@ -202,42 +231,65 @@ def modulo_inventario():
                     # Eliminar columnas auxiliares
                     df_agrupado = df_agrupado.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
 
-                    # 🔹 Seleccionar columnas según la categoría
-                    if filtro_categoria == "Granos y productos a granel":
-                        # Para granos, mostrar solo columnas de peso
-                        df_mostrar = df_agrupado[["Nombre", "Stock Quintal", "Stock Arroba", "Stock Libras"]].copy()
-                        
-                        # Aplicar formato
+                    # 🔹 Seleccionar columnas según la categoría (para cada producto individual)
+                    # Como pueden haber múltiples categorías, mostramos todas las columnas necesarias
+                    
+                    # Determinar qué columnas mostrar basado en las categorías presentes
+                    categorias_presentes = df_agrupado["Categoría"].unique()
+                    
+                    # Verificar si hay productos de granos
+                    tiene_granos = "Granos y productos a granel" in categorias_presentes
+                    # Verificar si hay productos de carnes
+                    tiene_carnes = "Carnes y congelados" in categorias_presentes
+                    
+                    if tiene_granos and not tiene_carnes and len(categorias_presentes) == 1:
+                        # Solo granos
+                        df_mostrar = df_agrupado[["Nombre", "Categoría", "Stock Quintal", "Stock Arroba", "Stock Libras"]].copy()
                         styled_df = df_mostrar.style.format({
                             "Stock Quintal": "{:.2f}",
                             "Stock Arroba": "{:.2f}",
                             "Stock Libras": "{:.2f}"
                         })
-                        
-                        st.subheader(f"📋 Inventario de Granos y productos a granel")
-                        
-                    elif filtro_categoria == "Carnes y congelados":
-                        # Para carnes y congelados, mostrar Nombre, Stock Libras y Stock Unidades
-                        df_mostrar = df_agrupado[["Nombre", "Stock Libras", "Stock Unidades"]].copy()
-                        
-                        # Aplicar formato
+                    elif tiene_carnes and not tiene_granos and len(categorias_presentes) == 1:
+                        # Solo carnes
+                        df_mostrar = df_agrupado[["Nombre", "Categoría", "Stock Libras", "Stock Unidades"]].copy()
                         styled_df = df_mostrar.style.format({
                             "Stock Libras": "{:.2f}",
                             "Stock Unidades": "{:.0f}"
                         })
-                        
-                        st.subheader(f"📋 Inventario de Carnes y congelados")
-                        
                     else:
-                        # Para las demás categorías, mostrar solo Nombre y Stock Unidades
-                        df_mostrar = df_agrupado[["Nombre", "Stock Unidades"]].copy()
+                        # Múltiples categorías o categorías normales
+                        # Para granos mostrar columnas de peso, para carnes mostrar ambas, para otros solo unidades
+                        # Creamos columnas condicionales
+                        df_mostrar = df_agrupado[["Nombre", "Categoría", "Stock Libras", "Stock Unidades"]].copy()
+                        
+                        # Agregar columnas de granos si existen productos de granos
+                        if tiene_granos:
+                            df_mostrar["Stock Quintal"] = df_agrupado["Stock Quintal"]
+                            df_mostrar["Stock Arroba"] = df_agrupado["Stock Arroba"]
+                        
+                        # Reordenar columnas
+                        columnas_base = ["Nombre", "Categoría"]
+                        if tiene_granos:
+                            columnas_base.extend(["Stock Quintal", "Stock Arroba"])
+                        columnas_base.append("Stock Libras")
+                        if tiene_carnes or not tiene_granos:
+                            columnas_base.append("Stock Unidades")
+                        
+                        df_mostrar = df_mostrar[columnas_base]
                         
                         # Aplicar formato
-                        styled_df = df_mostrar.style.format({
-                            "Stock Unidades": "{:.0f}"
-                        })
+                        format_dict = {}
+                        if "Stock Libras" in df_mostrar.columns:
+                            format_dict["Stock Libras"] = "{:.2f}"
+                        if "Stock Quintal" in df_mostrar.columns:
+                            format_dict["Stock Quintal"] = "{:.2f}"
+                        if "Stock Arroba" in df_mostrar.columns:
+                            format_dict["Stock Arroba"] = "{:.2f}"
+                        if "Stock Unidades" in df_mostrar.columns:
+                            format_dict["Stock Unidades"] = "{:.0f}"
                         
-                        st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
+                        styled_df = df_mostrar.style.format(format_dict)
 
                     # 🔹 Mostrar información del filtro activo
                     if buscador:
@@ -246,52 +298,98 @@ def modulo_inventario():
                             st.info(f"✅ Se encontró {len(df_agrupado)} producto")
                         else:
                             st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
+                        
+                        if filtro_categoria != "Todas las categorías":
+                            st.caption(f"Filtrando por categoría: {filtro_categoria}")
+                    else:
+                        if filtro_categoria == "Todas las categorías":
+                            st.subheader(f"📋 Inventario completo - Todas las categorías")
+                        else:
+                            st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
                     
                     st.dataframe(styled_df, use_container_width=True)
 
-                    # 🔹 Productos próximos a vencer (solo para categorías que no son granos)
-                    if filtro_categoria != "Granos y productos a granel":
+                    # 🔹 Productos próximos a vencer
+                    if filtro_categoria == "Todas las categorías":
+                        # Mostrar productos próximos a vencer de todas las categorías (excepto granos)
                         hoy = datetime.now().date()
                         prox_mes = (datetime.now() + timedelta(days=30)).date()
 
-                        # Si hay búsqueda, filtrar también por el nombre del producto
                         if buscador:
                             cursor.execute("""
-                                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento, p.categoria
                                 FROM ProductoxCompra pc
                                 JOIN Producto p ON pc.Cod_barra = p.Cod_barra
                                 WHERE pc.fecha_vencimiento BETWEEN %s AND %s
                                   AND pc.id_tienda = %s
                                   AND p.id_tienda = %s
-                                  AND p.categoria = %s
+                                  AND p.categoria != 'Granos y productos a granel'
                                   AND LOWER(p.Nombre) LIKE LOWER(%s)
                                 ORDER BY pc.fecha_vencimiento ASC
-                            """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria, f"%{buscador}%"))
+                            """, (hoy, prox_mes, id_tienda, id_tienda, f"%{buscador}%"))
                         else:
                             cursor.execute("""
-                                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento, p.categoria
                                 FROM ProductoxCompra pc
                                 JOIN Producto p ON pc.Cod_barra = p.Cod_barra
                                 WHERE pc.fecha_vencimiento BETWEEN %s AND %s
                                   AND pc.id_tienda = %s
                                   AND p.id_tienda = %s
-                                  AND p.categoria = %s
+                                  AND p.categoria != 'Granos y productos a granel'
                                 ORDER BY pc.fecha_vencimiento ASC
-                            """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria))
+                            """, (hoy, prox_mes, id_tienda, id_tienda))
+                    else:
+                        # Mostrar productos próximos a vencer de la categoría seleccionada (si no es granos)
+                        if filtro_categoria != "Granos y productos a granel":
+                            hoy = datetime.now().date()
+                            prox_mes = (datetime.now() + timedelta(days=30)).date()
 
-                        proximos = cursor.fetchall()
+                            if buscador:
+                                cursor.execute("""
+                                    SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                                    FROM ProductoxCompra pc
+                                    JOIN Producto p ON pc.Cod_barra = p.Cod_barra
+                                    WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                                      AND pc.id_tienda = %s
+                                      AND p.id_tienda = %s
+                                      AND p.categoria = %s
+                                      AND LOWER(p.Nombre) LIKE LOWER(%s)
+                                    ORDER BY pc.fecha_vencimiento ASC
+                                """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria, f"%{buscador}%"))
+                            else:
+                                cursor.execute("""
+                                    SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                                    FROM ProductoxCompra pc
+                                    JOIN Producto p ON pc.Cod_barra = p.Cod_barra
+                                    WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                                      AND pc.id_tienda = %s
+                                      AND p.id_tienda = %s
+                                      AND p.categoria = %s
+                                    ORDER BY pc.fecha_vencimiento ASC
+                                """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria))
+                        else:
+                            proximos = []  # No mostrar próximos a vencer para granos
 
+                    if filtro_categoria != "Granos y productos a granel":
+                        proximos = cursor.fetchall() if 'proximos' not in locals() else proximos
+                        
                         if proximos:
-                            df_v = pd.DataFrame(
-                                proximos,
-                                columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
-                            )
+                            if filtro_categoria == "Todas las categorías":
+                                df_v = pd.DataFrame(
+                                    proximos,
+                                    columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento", "Categoría"]
+                                )
+                            else:
+                                df_v = pd.DataFrame(
+                                    proximos,
+                                    columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
+                                )
                             df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
 
                             st.subheader("⏳ Productos próximos a vencer (30 días)")
                             st.dataframe(df_v, use_container_width=True)
                         else:
-                            if not buscador:
+                            if not buscador and filtro_categoria != "Granos y productos a granel":
                                 st.info("✅ No hay productos próximos a vencer en esta categoría.")
 
     except Exception as e:
