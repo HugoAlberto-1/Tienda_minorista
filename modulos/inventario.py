@@ -66,7 +66,7 @@ def modulo_inventario():
 
     id_tienda = st.session_state["id_tienda"]
 
-    # 🔹 Filtro por categoría (sin opción "Todos")
+    # 🔹 Filtro por categoría
     filtro_categoria = st.selectbox(
         "🔍 Filtrar por categoría:",
         CATEGORIAS,
@@ -94,9 +94,9 @@ def modulo_inventario():
 
         # 🔹 Obtener productos de la tienda filtrados por categoría
         cursor.execute("""
-            SELECT Cod_barra, Nombre, IFNULL(tipo,'N/A')
+            SELECT Cod_barra, Nombre
             FROM Producto
-            WHERE id_tienda = %s AND tipo = %s
+            WHERE id_tienda = %s AND categoria = %s
         """, (id_tienda, filtro_categoria))
         
         productos = cursor.fetchall()
@@ -107,7 +107,7 @@ def modulo_inventario():
 
         inventario_detalle = []
 
-        for cod_barra, nombre, categoria in productos:
+        for cod_barra, nombre in productos:
 
             # 🔹 Compras
             cursor.execute("""
@@ -149,7 +149,6 @@ def modulo_inventario():
             # Agregar ambos tipos de stock
             inventario_detalle.append({
                 "Nombre": nombre,
-                "Categoría": categoria,
                 "Stock Libras": stock_libras,
                 "Stock Quintal": convertir_a_quintal(stock_libras),
                 "Stock Arroba": convertir_a_arroba(stock_libras),
@@ -168,7 +167,6 @@ def modulo_inventario():
         # 🔹 Agrupar por nombre
         df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
             "Nombre": "first",
-            "Categoría": "first",
             "Stock Libras": "sum",
             "Stock Quintal": "sum",
             "Stock Arroba": "sum",
@@ -183,12 +181,10 @@ def modulo_inventario():
         elif opcion_orden == "Nombre (Z-A)":
             df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=False)
         elif opcion_orden == "Stock (Ascendente)":
-            # Por defecto ordenar por Stock Libras
             df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=True)
         elif opcion_orden == "Stock (Descendente)":
             df_agrupado = df_agrupado.sort_values("Stock Libras", ascending=False)
         elif opcion_orden == "Más vendidos":
-            # Ordenar por el total de ventas (usando libras como referencia principal)
             df_agrupado = df_agrupado.sort_values("_Total_vendidos_libras", ascending=False)
         else:  # "Menos vendidos"
             df_agrupado = df_agrupado.sort_values("_Total_vendidos_libras", ascending=True)
@@ -198,7 +194,6 @@ def modulo_inventario():
 
         # 🔹 Aplicar formato y estilo
         def resaltar_stock_bajo(row):
-            # Resaltar si stock en libras es menor a 10 O stock en unidades es menor a 10
             estilo = []
             for col in row.index:
                 if col == "Stock Libras" and row["Stock Libras"] < 10:
@@ -231,7 +226,7 @@ def modulo_inventario():
             WHERE pc.fecha_vencimiento BETWEEN %s AND %s
               AND pc.id_tienda = %s
               AND p.id_tienda = %s
-              AND p.tipo = %s
+              AND p.categoria = %s
             ORDER BY pc.fecha_vencimiento ASC
         """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria))
 
