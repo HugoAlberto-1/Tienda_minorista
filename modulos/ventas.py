@@ -8,20 +8,17 @@ CONVERSIONES_A_LIBRAS = {
     "quintal": 100,
 }
 
-# 📁 Categorías que se consideran "granos" (usarán libras, quintal, arroba)
 CATEGORIAS_GRANOS = [
     "Granos y productos a granel",
     "Abarrotes",
     "Sopas, pastas y consomés"
 ]
 
-# 📁 Categorías que son carnes (usarán libras y unidad)
 CATEGORIAS_CARNES = [
     "Carnes y congelados"
 ]
 
 def obtener_unidades_por_categoria(categoria):
-    """Retorna las unidades disponibles según la categoría del producto"""
     if categoria in CATEGORIAS_GRANOS:
         return ["libras", "quintal", "arroba"]
     elif categoria in CATEGORIAS_CARNES:
@@ -30,7 +27,6 @@ def obtener_unidades_por_categoria(categoria):
         return ["unidad"]
 
 def modulo_ventas():
-    # ✅ Validación multi-tienda
     if not st.session_state.get("logueado") or "id_empleado" not in st.session_state or "id_tienda" not in st.session_state:
         st.error("⚠️ Debes iniciar sesión para registrar ventas.")
         st.stop()
@@ -47,13 +43,11 @@ def modulo_ventas():
 
     cursor = conn.cursor()
 
-    # ---- Estado base ----
     if "productos_vendidos" not in st.session_state:
         st.session_state["productos_vendidos"] = []
     if "form_data_codigo_barras" not in st.session_state:
         st.session_state["form_data_codigo_barras"] = ""
 
-    # flag para reiniciar en el próximo ciclo
     if st.session_state.get("_reset_venta_next_run"):
         st.session_state["_reset_venta_next_run"] = False
         st.session_state["form_data_codigo_barras"] = ""
@@ -63,14 +57,12 @@ def modulo_ventas():
         st.session_state.pop("venta_cantidad", None)
         st.session_state.pop("unidad_select", None)
 
-    # --- Fecha de venta ---
     fecha_venta = st.date_input("📅 Fecha de la venta", datetime.now().date(), key="venta_fecha")
 
     st.info(f"🧑‍💼 Empleado: **{st.session_state.get('nombre_empleado', 'Usuario')}** | 🏪 Tienda ID: **{id_tienda}**")
 
     st.markdown("---")
 
-    # ---- Código de barras ----
     cod_barra = st.text_input(
         "🔍 Código de barras del producto",
         key="form_data_codigo_barras",
@@ -78,7 +70,6 @@ def modulo_ventas():
     )
 
     if cod_barra:
-        # 🔍 PRIMERO: Verificar que el producto EXISTE en la tabla Producto
         cursor.execute("""
             SELECT Cod_barra, Nombre, categoria 
             FROM Producto 
@@ -94,40 +85,49 @@ def modulo_ventas():
             st.success(f"✅ Producto encontrado: **{nombre_producto}**")
             st.info(f"📁 Categoría: **{categoria}**")
             
-            # 🔍 Obtener la unidad de la última compra (para mostrar la existencia)
+            # ✅ Obtener TODAS las compras para calcular existencia POR UNIDAD
             cursor.execute("""
-                SELECT unidad
+                SELECT unidad, SUM(cantidad_comprada) as total_comprado
                 FROM ProductoxCompra
                 WHERE Cod_barra = %s AND id_tienda = %s
-                ORDER BY Id_compra DESC
-                LIMIT 1
+                GROUP BY unidad
             """, (cod_barra_real, id_tienda))
             
-            unidad_compra_resultado = cursor.fetchone()
-            unidad_compra = unidad_compra_resultado[0] if unidad_compra_resultado else "unidad"
+            compras_por_unidad = cursor.fetchall()
             
-            # 🔍 Calcular existencia (compras - ventas) en la unidad de compra
+            # Calcular ventas por unidad
             cursor.execute("""
-                SELECT 
-                    COALESCE((SELECT SUM(pc.cantidad_comprada) 
-                              FROM ProductoxCompra pc 
-                              WHERE pc.Cod_barra = %s AND pc.id_tienda = %s), 0) -
-                    COALESCE((SELECT SUM(pv.Cantidad_vendida) 
-                              FROM ProductoxVenta pv 
-                              WHERE pv.Cod_barra = %s AND pv.id_tienda = %s), 0)
-                    AS existencia
-            """, (cod_barra_real, id_tienda, cod_barra_real, id_tienda))
+                SELECT unidad, SUM(Cantidad_vendida) as total_vendido
+                FROM ProductoxVenta
+                WHERE Cod_barra = %s AND id_tienda = %s
+                GROUP BY unidad
+            """, (cod_barra_real, id_tienda))
             
-            resultado_existencia = cursor.fetchone()
-            existencia = float(resultado_existencia[0]) if resultado_existencia else 0
+            ventas_por_unidad = cursor.fetchall()
             
-            # ✅ Mostrar existencia con la unidad de compra
-            st.info(f"📦 Existencia actual: **{existencia:.2f} {unidad_compra}**")
+            # Crear diccionarios de existencias por unidad
+            existencias = {}
+            for unidad, total_comprado in compras_por_unidad:
+                existencias[unidad] = total_comprado
             
-            if existencia <= 0:
+            for unidad, total_vendido in ventas_por_unidad:
+                existencias[unidad] = existencias.get(unidad, 0) - total_vendido
+            
+            # ✅ Mostrar existencia en CADA unidad que tiene stock
+            st.markdown("**📦 Existencia actual por unidad:**")
+            for unidad, cantidad in existencias.items():
+                if cantidad > 0:
+                    st.info(f"• **{cantidad:.2f} {unidad}**")
+            
+            # Calcular existencia total en libras para validación
+            existencia_total_libras = 0
+            for unidad, cantidad in existencias.items():
+                factor = CONVERSIONES_A_LIBRAS.get(unidad, 1)
+                existencia_total_libras += cantidad * factor
+            
+            if existencia_total_libras <= 0:
                 st.error("❌ Este producto no tiene stock disponible para la venta.")
             else:
-                # 🔍 Obtener los precios del producto (desde la última compra)
                 cursor.execute("""
                     SELECT Precio_minorista, Precio_mayorista1, Precio_mayorista2
                     FROM ProductoxCompra
@@ -148,7 +148,6 @@ def modulo_ventas():
                     precio_mayorista1 = 0
                     precio_mayorista2 = 0
                 
-                # Mostrar precios
                 if precio_minorista > 0 or precio_mayorista1 > 0 or precio_mayorista2 > 0:
                     st.markdown("**💰 Precios configurados:**")
                     col1, col2, col3 = st.columns(3)
@@ -159,17 +158,14 @@ def modulo_ventas():
                     with col3:
                         st.metric("Mayorista 2", f"${precio_mayorista2:.2f}" if precio_mayorista2 > 0 else "No configurado")
                 
-                # 🔥 Determinar unidades disponibles para VENDER (todas según categoría)
                 unidades_disponibles = obtener_unidades_por_categoria(categoria)
                 
-                # ---- Tipo de cliente ----
                 tipo_cliente = st.radio(
                     "🧾 Seleccione el tipo de cliente",
                     ["Minorista", "Mayorista 1", "Mayorista 2"],
                     key="venta_tipo_cliente"
                 )
                 
-                # Seleccionar precio según tipo de cliente
                 if tipo_cliente == "Minorista":
                     precio_base = precio_minorista
                 elif tipo_cliente == "Mayorista 1":
@@ -178,9 +174,8 @@ def modulo_ventas():
                     precio_base = precio_mayorista2
                 
                 if precio_base <= 0:
-                    st.error(f"❌ No hay precio configurado para {tipo_cliente}. Registre una compra primero.")
+                    st.error(f"❌ No hay precio configurado para {tipo_cliente}.")
                 else:
-                    # ---- Precio de venta (editable) ----
                     precio_venta = st.number_input(
                         "💲 Precio de venta",
                         min_value=0.01,
@@ -190,15 +185,13 @@ def modulo_ventas():
                         key="venta_precio_venta"
                     )
                     
-                    # ---- Unidad de venta (TODAS las disponibles según categoría) ----
-                    unidad = st.selectbox(
+                    unidad_venta = st.selectbox(
                         "📏 Unidad de venta",
                         unidades_disponibles,
                         key="unidad_select"
                     )
                     
-                    # ---- Cantidad vendida ----
-                    if unidad == "unidad":
+                    if unidad_venta == "unidad":
                         cantidad = st.number_input(
                             "📦 Cantidad vendida (unidades)",
                             min_value=1,
@@ -209,45 +202,31 @@ def modulo_ventas():
                         cantidad_guardar = float(cantidad)
                     else:
                         cantidad = st.number_input(
-                            f"📦 Cantidad vendida ({unidad})",
+                            f"📦 Cantidad vendida ({unidad_venta})",
                             min_value=0.01,
                             step=0.01,
                             format="%.2f",
                             key="venta_cantidad"
                         )
-                        # Conversión a libras
-                        factor_conversion = CONVERSIONES_A_LIBRAS.get(unidad, 1)
-                        cantidad_guardar = cantidad * factor_conversion
-                        st.markdown(f"**🔄 Equivalente en libras:** {cantidad_guardar:.2f} libras")
+                        cantidad_guardar = cantidad
                     
-                    # ---- Subtotal ----
-                    subtotal = round(precio_venta * cantidad_guardar, 2)
-                    st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                    # Verificar si hay suficiente stock en la unidad seleccionada
+                    stock_en_unidad = existencias.get(unidad_venta, 0)
                     
-                    # Validar que no exceda el stock (convertir a la unidad de compra)
-                    # Primero, convertir la cantidad a vender a la unidad de compra original
-                    if unidad != unidad_compra:
-                        # Convertir la cantidad a la unidad de compra
-                        factor_unidad_a_libras = CONVERSIONES_A_LIBRAS.get(unidad, 1)
-                        factor_compra_a_libras = CONVERSIONES_A_LIBRAS.get(unidad_compra, 1)
-                        
-                        cantidad_en_libras = cantidad * factor_unidad_a_libras
-                        cantidad_en_unidad_compra = cantidad_en_libras / factor_compra_a_libras if factor_compra_a_libras > 0 else cantidad
-                        
-                        st.caption(f"🔄 Equivalente en {unidad_compra}: {cantidad_en_unidad_compra:.4f} {unidad_compra}")
-                        
-                        if cantidad_en_unidad_compra > existencia:
-                            st.error(f"❌ No hay suficiente stock. Disponible: {existencia:.2f} {unidad_compra}")
+                    if unidad_venta in existencias:
+                        if cantidad_guardar > stock_en_unidad:
+                            st.error(f"❌ No hay suficiente stock en {unidad_venta}. Disponible: {stock_en_unidad:.2f} {unidad_venta}")
                         else:
+                            subtotal = round(precio_venta * cantidad_guardar, 2)
+                            st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                            
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
                                 producto_venta = {
                                     "cod_barra": cod_barra_real,
                                     "nombre": nombre_producto,
                                     "precio_venta": float(precio_venta),
-                                    "cantidad": cantidad_en_unidad_compra,  # Guardar en unidad de compra
-                                    "cantidad_original": cantidad,
-                                    "unidad": unidad,
-                                    "unidad_compra": unidad_compra,
+                                    "cantidad": cantidad_guardar,
+                                    "unidad": unidad_venta,
                                     "subtotal": float(subtotal),
                                     "tipo_cliente": tipo_cliente,
                                 }
@@ -256,29 +235,10 @@ def modulo_ventas():
                                 st.success("✅ Producto agregado a la venta.")
                                 st.rerun()
                     else:
-                        if cantidad > existencia:
-                            st.error(f"❌ No hay suficiente stock. Disponible: {existencia:.2f} {unidad_compra}")
-                        else:
-                            if st.button("🛒 Agregar producto a la venta", type="primary"):
-                                producto_venta = {
-                                    "cod_barra": cod_barra_real,
-                                    "nombre": nombre_producto,
-                                    "precio_venta": float(precio_venta),
-                                    "cantidad": cantidad,
-                                    "cantidad_original": cantidad,
-                                    "unidad": unidad,
-                                    "unidad_compra": unidad_compra,
-                                    "subtotal": float(subtotal),
-                                    "tipo_cliente": tipo_cliente,
-                                }
-                                st.session_state["productos_vendidos"].append(producto_venta)
-                                st.session_state["_reset_venta_next_run"] = True
-                                st.success("✅ Producto agregado a la venta.")
-                                st.rerun()
+                        st.warning(f"⚠️ No hay stock en {unidad_venta}. Las existencias disponibles son: {', '.join([f'{v:.2f} {u}' for u, v in existencias.items() if v > 0])}")
 
     st.markdown("---")
 
-    # ---- Listado de productos vendidos ----
     if st.session_state["productos_vendidos"]:
         st.subheader("🧾 Productos en esta venta")
         
@@ -286,11 +246,8 @@ def modulo_ventas():
         for i, prod in enumerate(st.session_state["productos_vendidos"]):
             total_venta += prod["subtotal"]
             
-            cantidad_mostrar = prod.get("cantidad_original", prod["cantidad"])
-            unidad_mostrar = prod.get("unidad", prod["unidad_compra"])
-            
             st.markdown(
-                f"**{prod['nombre']}** — {cantidad_mostrar:.2f} {unidad_mostrar} — "
+                f"**{prod['nombre']}** — {prod['cantidad']:.2f} {prod['unidad']} — "
                 f"Precio: ${prod['precio_venta']:.2f} — "
                 f"Subtotal: ${prod['subtotal']:.2f} — "
                 f"**Cliente:** {prod['tipo_cliente']}"
@@ -306,7 +263,6 @@ def modulo_ventas():
         st.markdown("---")
         st.markdown(f"### 💵 Total de la venta: **${total_venta:.2f}**")
         
-        # ---- Registrar venta ----
         if st.button("✅ Registrar venta", type="primary"):
             try:
                 cursor.execute("SELECT MAX(Id_venta) FROM Venta WHERE id_tienda = %s", (id_tienda,))
@@ -322,8 +278,8 @@ def modulo_ventas():
                     cursor.execute(
                         """
                         INSERT INTO ProductoxVenta
-                        (Id_venta, Cod_barra, Cantidad_vendida, Tipo_de_cliente, Precio_Venta, id_tienda)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        (Id_venta, Cod_barra, Cantidad_vendida, Tipo_de_cliente, Precio_Venta, id_tienda, unidad)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             nuevo_id,
@@ -332,6 +288,7 @@ def modulo_ventas():
                             prod["tipo_cliente"],
                             round(prod["precio_venta"], 2),
                             id_tienda,
+                            prod["unidad"],
                         ),
                     )
                 
