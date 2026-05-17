@@ -23,9 +23,9 @@ CATEGORIAS_CARNES = [
 def obtener_unidades_por_categoria(categoria):
     """Retorna las unidades disponibles según la categoría del producto"""
     if categoria in CATEGORIAS_GRANOS:
-        return ["libras", "quintal", "arroba"]
+        return ["Libras", "Quintal", "Arroba"]
     elif categoria in CATEGORIAS_CARNES:
-        return ["libras", "unidad"]
+        return ["Libras", "Unidad"]
     else:
         return ["unidad"]
 
