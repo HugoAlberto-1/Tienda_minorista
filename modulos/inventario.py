@@ -46,7 +46,7 @@ def convertir_a_libras(cantidad, unidad):
     elif unidad in ["libra", "libras", "lb"]:
         return cantidad
     else:
-        return cantidad
+        return 0  # Si no es ninguna de estas unidades, no contribuye a libras
 
 
 # 🔹 Conversión a unidades para granos
@@ -166,32 +166,24 @@ def modulo_inventario():
 
                     compras = cursor.fetchall()
 
-                    # Para carnes y congelados, determinar la unidad principal de compra
+                    # Determinar la unidad principal para carnes y congelados
                     unidad_principal = None
                     if categoria == "Carnes y congelados" and compras:
-                        # Obtener la unidad más usada en compras
-                        unidades_compra = {}
-                        for compra in compras:
-                            unidad = compra[1] if compra[1] else "unidad"
-                            if unidad.lower() in ["libra", "libras", "lb"]:
-                                unidad_principal = "libras"
-                            elif unidad.lower() in ["unidad", "unidades", "pieza", "piezas"]:
-                                unidad_principal = "unidades"
+                        # Verificar si hay compras en libras
+                        hay_compras_libras = any(c[1] and c[1].lower() in ["libra", "libras", "lb"] for c in compras)
+                        hay_compras_unidades = any(c[1] and c[1].lower() in ["unidad", "unidades", "pieza", "piezas"] for c in compras)
                         
-                        # Si no se pudo determinar, revisar la primera compra
-                        if not unidad_principal and compras:
-                            primera_unidad = compras[0][1] if compras[0][1] else "unidad"
-                            if primera_unidad.lower() in ["libra", "libras", "lb"]:
-                                unidad_principal = "libras"
-                            else:
-                                unidad_principal = "unidades"
+                        if hay_compras_libras:
+                            unidad_principal = "libras"
+                        elif hay_compras_unidades:
+                            unidad_principal = "unidades"
 
-                    # Total comprado en libras
+                    # Total comprado en libras (solo conversiones válidas)
                     total_comprado_lb = sum(
                         convertir_a_libras(c[0], c[1]) for c in compras
                     )
 
-                    # Total comprado en unidades
+                    # Total comprado en unidades (solo compras que no son en libras, quintales o arrobas)
                     total_comprado_unidades = sum(c[0] for c in compras if c[1] and c[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
                     # 🔹 Ventas
@@ -203,12 +195,12 @@ def modulo_inventario():
 
                     ventas = cursor.fetchall()
 
-                    # Total vendido en libras
+                    # Total vendido en libras (solo conversiones válidas)
                     total_vendido_lb = sum(
                         convertir_a_libras(v[0], v[1]) for v in ventas
                     )
 
-                    # Total vendido en unidades
+                    # Total vendido en unidades (solo ventas que no son en libras, quintales o arrobas)
                     total_vendido_unidades = sum(v[0] for v in ventas if v[1] and v[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
                     stock_libras = total_comprado_lb - total_vendido_lb
@@ -217,38 +209,38 @@ def modulo_inventario():
                     # Agregar según la categoría
                     if categoria == "Granos y productos a granel":
                         inventario_detalle.append({
+                            "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
                             "Stock Quintal": convertir_a_quintal(stock_libras),
                             "Stock Arroba": convertir_a_arroba(stock_libras),
-                            "Stock Libras": stock_libras,
-                            "_Total_vendidos_libras": int(total_vendido_lb)
+                            "Stock Libras": stock_libras
                         })
                     elif categoria == "Carnes y congelados":
                         # Determinar qué columna mostrar según la unidad principal
                         if unidad_principal == "libras":
                             inventario_detalle.append({
+                                "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
                                 "Stock Libras": stock_libras,
-                                "Stock Unidades": None,  # Mostrar como guión
-                                "_Total_vendidos_libras": int(total_vendido_lb)
+                                "Stock Unidades": None  # Mostrar como guión
                             })
                         else:
                             inventario_detalle.append({
+                                "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
                                 "Stock Libras": None,  # Mostrar como guión
-                                "Stock Unidades": stock_unidades,
-                                "_Total_vendidos_unidades": int(total_vendido_unidades)
+                                "Stock Unidades": stock_unidades
                             })
                     else:
                         # Otras categorías solo usan unidades
                         inventario_detalle.append({
+                            "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
-                            "Stock Unidades": stock_unidades,
-                            "_Total_vendidos_unidades": int(total_vendido_unidades)
+                            "Stock Unidades": stock_unidades
                         })
 
                 # 🔹 Crear DataFrame
@@ -258,7 +250,7 @@ def modulo_inventario():
                     st.warning(f"⚠️ No hay productos para mostrar.")
                     mostrar_contenido = False
                 else:
-                    # Agrupar por nombre y categoría
+                    # Agrupar por código, nombre y categoría
                     df_agrupado = None
                     
                     # Separar por tipo de categoría para agrupar correctamente
@@ -270,39 +262,40 @@ def modulo_inventario():
                     
                     # Procesar granos
                     if df_granos is not None:
-                        df_granos_agg = df_granos.groupby(df_granos["Nombre"].str.lower(), as_index=False).agg({
+                        df_granos_agg = df_granos.groupby(df_granos["Código"], as_index=False).agg({
+                            "Código": "first",
                             "Nombre": "first",
                             "Categoría": "first",
                             "Stock Quintal": "sum",
                             "Stock Arroba": "sum",
-                            "Stock Libras": "sum",
-                            "_Total_vendidos_libras": "sum"
+                            "Stock Libras": "sum"
                         })
-                        df_granos_agg = df_granos_agg.drop(columns=["_Total_vendidos_libras"])
                         frames.append(df_granos_agg)
                     
                     # Procesar carnes
                     if df_carnes is not None:
-                        df_carnes_agg = df_carnes.groupby(df_carnes["Nombre"].str.lower(), as_index=False).agg({
+                        # Verificar qué columnas existen en df_carnes
+                        agg_dict = {
+                            "Código": "first",
                             "Nombre": "first",
-                            "Categoría": "first",
-                            "Stock Libras": "sum",
-                            "Stock Unidades": "sum",
-                            "_Total_vendidos_libras": "sum",
-                            "_Total_vendidos_unidades": "sum"
-                        })
-                        df_carnes_agg = df_carnes_agg.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
+                            "Categoría": "first"
+                        }
+                        if "Stock Libras" in df_carnes.columns:
+                            agg_dict["Stock Libras"] = "sum"
+                        if "Stock Unidades" in df_carnes.columns:
+                            agg_dict["Stock Unidades"] = "sum"
+                        
+                        df_carnes_agg = df_carnes.groupby(df_carnes["Código"], as_index=False).agg(agg_dict)
                         frames.append(df_carnes_agg)
                     
                     # Procesar otros
                     if df_otros is not None:
-                        df_otros_agg = df_otros.groupby(df_otros["Nombre"].str.lower(), as_index=False).agg({
+                        df_otros_agg = df_otros.groupby(df_otros["Código"], as_index=False).agg({
+                            "Código": "first",
                             "Nombre": "first",
                             "Categoría": "first",
-                            "Stock Unidades": "sum",
-                            "_Total_vendidos_unidades": "sum"
+                            "Stock Unidades": "sum"
                         })
-                        df_otros_agg = df_otros_agg.drop(columns=["_Total_vendidos_unidades"])
                         frames.append(df_otros_agg)
                     
                     # Combinar todos los dataframes
@@ -310,6 +303,10 @@ def modulo_inventario():
                         df_agrupado = pd.concat(frames, ignore_index=True, sort=False)
                         # Ordenar alfabéticamente por nombre
                         df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
+                        
+                        # Reordenar columnas para que Código sea la primera
+                        columnas = ["Código"] + [col for col in df_agrupado.columns if col != "Código"]
+                        df_agrupado = df_agrupado[columnas]
                         
                         # Función para formatear valores
                         def format_value(val, col_name):
@@ -328,7 +325,7 @@ def modulo_inventario():
                         # Crear una copia del dataframe para mostrar
                         df_mostrar = df_agrupado.copy()
                         
-                        # Aplicar formato a cada columna
+                        # Aplicar formato a cada columna numérica
                         for col in df_mostrar.columns:
                             if col in ["Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades"]:
                                 df_mostrar[col] = df_mostrar[col].apply(lambda x: format_value(x, col))
