@@ -276,21 +276,18 @@ def modulo_ventas():
                                 st.rerun()
                     else:
                         # Para productos normales (no granos)
-                        # Mostrar stock disponible en la unidad original
-                        unidades_con_stock = [f"{u}" for u, c in existencias.items() if c > 0]
-                        st.caption(f"📦 Unidades con stock: {', '.join(unidades_con_stock)}")
-                        
                         if unidad_venta not in existencias or existencias[unidad_venta] <= 0:
                             st.error(f"❌ No hay stock disponible en {unidad_venta}")
                         else:
                             stock_disponible = existencias[unidad_venta]
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} {unidad_venta}")
+                            st.caption(f"📦 Stock disponible: {stock_disponible:.0f} {unidad_venta}")
                             
+                            # ✅ CORREGIDO: formato %d para enteros
                             cantidad = st.number_input(
                                 f"📦 Cantidad vendida ({unidad_venta})",
                                 min_value=1,
                                 step=1,
-                                format="%.0f",
+                                format="%d",
                                 key="venta_cantidad"
                             )
                             
