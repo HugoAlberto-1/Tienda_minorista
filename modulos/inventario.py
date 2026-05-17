@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # Lista de categorías
 CATEGORIAS = [
-    "Abarrotes",
+    "Aceites, grasas y mantecas",
     "Granos y productos a granel",
     "Sopas, pastas y consomés",
     "Condimentos y salsas",
@@ -191,25 +191,6 @@ def modulo_inventario():
 
         # Eliminar columnas auxiliares
         df_agrupado = df_agrupado.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
-
-        # 🔹 Aplicar formato y estilo
-        def resaltar_stock_bajo(row):
-            estilo = []
-            for col in row.index:
-                if col == "Stock Libras" and row["Stock Libras"] < 10:
-                    estilo.append('background-color: #ffcccc')
-                elif col == "Stock Unidades" and row["Stock Unidades"] < 10:
-                    estilo.append('background-color: #ffcccc')
-                else:
-                    estilo.append('')
-            return estilo
-
-        styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
-            "Stock Libras": "{:.2f}",
-            "Stock Quintal": "{:.2f}",
-            "Stock Arroba": "{:.2f}",
-            "Stock Unidades": "{:.0f}"
-        })
 
         # 🔹 Mostrar información del filtro activo
         st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
