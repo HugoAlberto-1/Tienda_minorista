@@ -62,8 +62,7 @@ def modulo_inventario():
 
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
-        
-        # 🔹 Botón de volver también aquí
+        # Botón de volver al final también en caso de error
         st.markdown("---")
         if st.button("⬅ Volver al menú principal"):
             st.session_state.module = None
@@ -88,176 +87,196 @@ def modulo_inventario():
 
     conn = None
     cursor = None
+    
+    # Variable para controlar si se debe mostrar el contenido
+    mostrar_contenido = True
+    mensaje_info = None
 
     try:
         conn = obtener_conexion()
         if not conn:
             st.error("❌ No se pudo conectar a la base de datos.")
-            return
-
-        cursor = conn.cursor()
-
-        # 🔹 Construir consulta SQL con búsqueda si es necesario
-        if buscador:
-            cursor.execute("""
-                SELECT Cod_barra, Nombre
-                FROM Producto
-                WHERE id_tienda = %s 
-                  AND categoria = %s 
-                  AND LOWER(Nombre) LIKE LOWER(%s)
-                ORDER BY Nombre ASC
-            """, (id_tienda, filtro_categoria, f"%{buscador}%"))
+            mostrar_contenido = False
         else:
-            cursor.execute("""
-                SELECT Cod_barra, Nombre
-                FROM Producto
-                WHERE id_tienda = %s AND categoria = %s
-                ORDER BY Nombre ASC
-            """, (id_tienda, filtro_categoria))
-        
-        productos = cursor.fetchall()
+            cursor = conn.cursor()
 
-        if not productos:
+            # 🔹 Construir consulta SQL con búsqueda si es necesario
             if buscador:
-                st.info(f"ℹ️ No se encontraron productos con '{buscador}' en la categoría '{filtro_categoria}'.")
+                cursor.execute("""
+                    SELECT Cod_barra, Nombre
+                    FROM Producto
+                    WHERE id_tienda = %s 
+                      AND categoria = %s 
+                      AND LOWER(Nombre) LIKE LOWER(%s)
+                    ORDER BY Nombre ASC
+                """, (id_tienda, filtro_categoria, f"%{buscador}%"))
             else:
-                st.info(f"ℹ️ No hay productos registrados en la categoría '{filtro_categoria}' para esta tienda.")
-            return
+                cursor.execute("""
+                    SELECT Cod_barra, Nombre
+                    FROM Producto
+                    WHERE id_tienda = %s AND categoria = %s
+                    ORDER BY Nombre ASC
+                """, (id_tienda, filtro_categoria))
+            
+            productos = cursor.fetchall()
 
-        inventario_detalle = []
-
-        for cod_barra, nombre in productos:
-            cursor.execute("""
-                SELECT cantidad_comprada, unidad
-                FROM ProductoxCompra
-                WHERE Cod_barra = %s AND id_tienda = %s
-            """, (cod_barra, id_tienda))
-
-            compras = cursor.fetchall()
-
-            total_comprado_lb = sum(
-                convertir_a_libras(c[0], c[1]) for c in compras
-            )
-
-            total_comprado_unidades = sum(c[0] for c in compras)
-
-            cursor.execute("""
-                SELECT Cantidad_vendida, unidad
-                FROM ProductoxVenta
-                WHERE Cod_barra = %s AND id_tienda = %s
-            """, (cod_barra, id_tienda))
-
-            ventas = cursor.fetchall()
-
-            total_vendido_lb = sum(
-                convertir_a_libras(v[0], v[1]) for v in ventas
-            )
-
-            total_vendido_unidades = sum(v[0] for v in ventas)
-
-            stock_libras = total_comprado_lb - total_vendido_lb
-            stock_unidades = total_comprado_unidades - total_vendido_unidades
-
-            inventario_detalle.append({
-                "Nombre": nombre,
-                "Stock Libras": stock_libras,
-                "Stock Quintal": convertir_a_quintal(stock_libras),
-                "Stock Arroba": convertir_a_arroba(stock_libras),
-                "Stock Unidades": stock_unidades,
-                "_Total_vendidos_libras": int(total_vendido_lb),
-                "_Total_vendidos_unidades": int(total_vendido_unidades)
-            })
-
-        df = pd.DataFrame(inventario_detalle)
-
-        if df.empty:
-            st.warning(f"⚠️ No hay productos para mostrar.")
-            return
-
-        df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
-            "Nombre": "first",
-            "Stock Libras": "sum",
-            "Stock Quintal": "sum",
-            "Stock Arroba": "sum",
-            "Stock Unidades": "sum",
-            "_Total_vendidos_libras": "sum",
-            "_Total_vendidos_unidades": "sum"
-        })
-
-        df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
-        df_agrupado = df_agrupado.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
-
-        def resaltar_stock_bajo(row):
-            estilo = []
-            for col in row.index:
-                if col == "Stock Libras" and row["Stock Libras"] < 10:
-                    estilo.append('background-color: #ffcccc')
-                elif col == "Stock Unidades" and row["Stock Unidades"] < 10:
-                    estilo.append('background-color: #ffcccc')
+            if not productos:
+                if buscador:
+                    mensaje_info = f"ℹ️ No se encontraron productos con '{buscador}' en la categoría '{filtro_categoria}'."
                 else:
-                    estilo.append('')
-            return estilo
-
-        styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
-            "Stock Libras": "{:.2f}",
-            "Stock Quintal": "{:.2f}",
-            "Stock Arroba": "{:.2f}",
-            "Stock Unidades": "{:.0f}"
-        })
-
-        if buscador:
-            st.subheader(f"📋 Resultados de búsqueda: '{buscador}' en {filtro_categoria}")
-            if len(df_agrupado) == 1:
-                st.info(f"✅ Se encontró {len(df_agrupado)} producto")
+                    mensaje_info = f"ℹ️ No hay productos registrados en la categoría '{filtro_categoria}' para esta tienda."
+                mostrar_contenido = False
             else:
-                st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
-        else:
-            st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
-        
-        st.dataframe(styled_df, use_container_width=True)
+                inventario_detalle = []
 
-        if not buscador or len(productos) > 0:
-            hoy = datetime.now().date()
-            prox_mes = (datetime.now() + timedelta(days=30)).date()
+                for cod_barra, nombre in productos:
+                    # 🔹 Compras
+                    cursor.execute("""
+                        SELECT cantidad_comprada, unidad
+                        FROM ProductoxCompra
+                        WHERE Cod_barra = %s AND id_tienda = %s
+                    """, (cod_barra, id_tienda))
 
-            if buscador:
-                cursor.execute("""
-                    SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
-                    FROM ProductoxCompra pc
-                    JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-                    WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
-                      AND p.id_tienda = %s
-                      AND p.categoria = %s
-                      AND LOWER(p.Nombre) LIKE LOWER(%s)
-                    ORDER BY pc.fecha_vencimiento ASC
-                """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria, f"%{buscador}%"))
-            else:
-                cursor.execute("""
-                    SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
-                    FROM ProductoxCompra pc
-                    JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-                    WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
-                      AND p.id_tienda = %s
-                      AND p.categoria = %s
-                    ORDER BY pc.fecha_vencimiento ASC
-                """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria))
+                    compras = cursor.fetchall()
 
-            proximos = cursor.fetchall()
+                    # Total comprado en libras
+                    total_comprado_lb = sum(
+                        convertir_a_libras(c[0], c[1]) for c in compras
+                    )
 
-            if proximos:
-                df_v = pd.DataFrame(
-                    proximos,
-                    columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
-                )
-                df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
+                    # Total comprado en unidades
+                    total_comprado_unidades = sum(c[0] for c in compras)
 
-                st.subheader("⏳ Productos próximos a vencer (30 días)")
-                st.dataframe(df_v, use_container_width=True)
-            else:
-                if not buscador:
-                    st.info("✅ No hay productos próximos a vencer en esta categoría.")
+                    # 🔹 Ventas
+                    cursor.execute("""
+                        SELECT Cantidad_vendida, unidad
+                        FROM ProductoxVenta
+                        WHERE Cod_barra = %s AND id_tienda = %s
+                    """, (cod_barra, id_tienda))
+
+                    ventas = cursor.fetchall()
+
+                    # Total vendido en libras
+                    total_vendido_lb = sum(
+                        convertir_a_libras(v[0], v[1]) for v in ventas
+                    )
+
+                    # Total vendido en unidades
+                    total_vendido_unidades = sum(v[0] for v in ventas)
+
+                    stock_libras = total_comprado_lb - total_vendido_lb
+                    stock_unidades = total_comprado_unidades - total_vendido_unidades
+
+                    # Agregar ambos tipos de stock
+                    inventario_detalle.append({
+                        "Nombre": nombre,
+                        "Stock Libras": stock_libras,
+                        "Stock Quintal": convertir_a_quintal(stock_libras),
+                        "Stock Arroba": convertir_a_arroba(stock_libras),
+                        "Stock Unidades": stock_unidades,
+                        "_Total_vendidos_libras": int(total_vendido_lb),
+                        "_Total_vendidos_unidades": int(total_vendido_unidades)
+                    })
+
+                # 🔹 Crear DataFrame
+                df = pd.DataFrame(inventario_detalle)
+
+                if df.empty:
+                    st.warning(f"⚠️ No hay productos para mostrar.")
+                    mostrar_contenido = False
+                else:
+                    # 🔹 Agrupar por nombre
+                    df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
+                        "Nombre": "first",
+                        "Stock Libras": "sum",
+                        "Stock Quintal": "sum",
+                        "Stock Arroba": "sum",
+                        "Stock Unidades": "sum",
+                        "_Total_vendidos_libras": "sum",
+                        "_Total_vendidos_unidades": "sum"
+                    })
+
+                    # Ordenar alfabéticamente por nombre
+                    df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
+
+                    # Eliminar columnas auxiliares
+                    df_agrupado = df_agrupado.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
+
+                    # 🔹 Aplicar formato y estilo
+                    def resaltar_stock_bajo(row):
+                        estilo = []
+                        for col in row.index:
+                            if col == "Stock Libras" and row["Stock Libras"] < 10:
+                                estilo.append('background-color: #ffcccc')
+                            elif col == "Stock Unidades" and row["Stock Unidades"] < 10:
+                                estilo.append('background-color: #ffcccc')
+                            else:
+                                estilo.append('')
+                        return estilo
+
+                    styled_df = df_agrupado.style.apply(resaltar_stock_bajo, axis=1).format({
+                        "Stock Libras": "{:.2f}",
+                        "Stock Quintal": "{:.2f}",
+                        "Stock Arroba": "{:.2f}",
+                        "Stock Unidades": "{:.0f}"
+                    })
+
+                    # 🔹 Mostrar información del filtro activo
+                    if buscador:
+                        st.subheader(f"📋 Resultados de búsqueda: '{buscador}' en {filtro_categoria}")
+                        if len(df_agrupado) == 1:
+                            st.info(f"✅ Se encontró {len(df_agrupado)} producto")
+                        else:
+                            st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
+                    else:
+                        st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
+                    
+                    st.dataframe(styled_df, use_container_width=True)
+
+                    # 🔹 Productos próximos a vencer (solo si no hay búsqueda activa o si se encontraron productos)
+                    if not buscador or len(productos) > 0:
+                        hoy = datetime.now().date()
+                        prox_mes = (datetime.now() + timedelta(days=30)).date()
+
+                        # Si hay búsqueda, filtrar también por el nombre del producto
+                        if buscador:
+                            cursor.execute("""
+                                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                                FROM ProductoxCompra pc
+                                JOIN Producto p ON pc.Cod_barra = p.Cod_barra
+                                WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                                  AND pc.id_tienda = %s
+                                  AND p.id_tienda = %s
+                                  AND p.categoria = %s
+                                  AND LOWER(p.Nombre) LIKE LOWER(%s)
+                                ORDER BY pc.fecha_vencimiento ASC
+                            """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria, f"%{buscador}%"))
+                        else:
+                            cursor.execute("""
+                                SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
+                                FROM ProductoxCompra pc
+                                JOIN Producto p ON pc.Cod_barra = p.Cod_barra
+                                WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                                  AND pc.id_tienda = %s
+                                  AND p.id_tienda = %s
+                                  AND p.categoria = %s
+                                ORDER BY pc.fecha_vencimiento ASC
+                            """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria))
+
+                        proximos = cursor.fetchall()
+
+                        if proximos:
+                            df_v = pd.DataFrame(
+                                proximos,
+                                columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
+                            )
+                            df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
+
+                            st.subheader("⏳ Productos próximos a vencer (30 días)")
+                            st.dataframe(df_v, use_container_width=True)
+                        else:
+                            if not buscador:
+                                st.info("✅ No hay productos próximos a vencer en esta categoría.")
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
@@ -267,11 +286,17 @@ def modulo_inventario():
             cursor.close()
         if conn:
             conn.close()
-    # 🔹 BOTÓN DE VOLVER - COLOCADO AL INICIO (siempre visible)
+    
+    # 🔹 MOSTRAR MENSAJE INFORMATIVO SI NO HAY PRODUCTOS
+    if mensaje_info:
+        st.info(mensaje_info)
+    
+    # 🔹 BOTÓN PARA VOLVER AL MENÚ PRINCIPAL - AL FINAL DE TODO
     st.markdown("---")
+    
+    # Usamos columnas para centrar el botón visualmente
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("⬅ Volver al menú principal", use_container_width=True):
+        if st.button("⬅ Volver al menú principal", use_container_width=True, type="secondary"):
             st.session_state.module = None
             st.rerun()
-    st.markdown("---")
