@@ -25,9 +25,9 @@ def modulo_compras():
 
     cursor = conn.cursor()
 
-    # ✅ CORREGIDO: Ahora incluye la columna 'categoria'
+    # ✅ CORREGIDO: Solo columnas que existen
     cursor.execute(
-        "SELECT Cod_barra, Nombre, Tipo_producto, categoria FROM Producto WHERE id_tienda = %s",
+        "SELECT Cod_barra, Nombre, categoria FROM Producto WHERE id_tienda = %s",
         (id_tienda,)
     )
     productos = cursor.fetchall()
@@ -83,13 +83,13 @@ def modulo_compras():
     codigo_barras_disabled = st.session_state["editar_indice"] is not None
 
     # ---- Tipo de producto / unidad ----
-    categoria = st.radio(
+    tipo_categoria = st.radio(
         "Seleccione el tipo de producto",
         ["Granos básicos", "Otros"],
         key="categoria_selector",
     )
 
-    if categoria == "Granos básicos":
+    if tipo_categoria == "Granos básicos":
         unidades_disponibles = ["libras", "quintal", "arroba"]
         if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
             st.session_state["form_data"]["unidad"] = "libras"
@@ -109,7 +109,7 @@ def modulo_compras():
         disabled=codigo_barras_disabled,
     )
 
-    # ---- Producto encontrado (justo debajo del código) ----
+    # ---- Producto encontrado ----
     producto_encontrado = None
     if st.session_state["form_data_codigo_barras"] and not codigo_barras_disabled:
         producto_encontrado = next(
@@ -117,16 +117,14 @@ def modulo_compras():
             None,
         )
         if producto_encontrado:
-            st.write(f"Producto encontrado: **{producto_encontrado[1]}**")
-            st.write(f"📁 Categoría: **{producto_encontrado[3]}**")  # Mostrar categoría
-            tipo_producto = producto_encontrado[2]
-            if isinstance(tipo_producto, str) and tipo_producto.lower() == "perecedero":
-                st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
-                    "📅 Fecha de vencimiento",
-                    key="form_data_fecha_vencimiento",
-                )
-            else:
-                st.session_state["form_data"]["fecha_vencimiento"] = None
+            st.write(f"✅ Producto encontrado: **{producto_encontrado[1]}**")
+            st.write(f"📁 Categoría: **{producto_encontrado[2]}**")
+            # Como no tenemos Tipo_producto, asumimos que es perecedero si tiene fecha
+            st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
+                "📅 Fecha de vencimiento (opcional)",
+                key="form_data_fecha_vencimiento",
+                value=None
+            )
         else:
             st.warning("⚠️ Producto no encontrado. Verifique el código de barras.")
 
@@ -186,7 +184,7 @@ def modulo_compras():
     )
 
     # ---- Conversión (solo granos básicos) ----
-    if categoria == "Granos básicos":
+    if tipo_categoria == "Granos básicos":
         factor_conversion = CONVERSIONES_A_LIBRAS.get(unidad, 1)
         cantidad_convertida = cantidad * factor_conversion
         st.markdown(f"**Valor convertido en libras:** {cantidad_convertida:.2f} libras")
@@ -213,10 +211,9 @@ def modulo_compras():
                 st.session_state["editar_indice"] = None
                 st.session_state.pop("edit_loaded", None)
             else:
-                prod_ref = {"nombre": producto_encontrado[1]}
                 producto = {
                     "cod_barra": st.session_state["form_data_codigo_barras"],
-                    "nombre": prod_ref["nombre"],
+                    "nombre": producto_encontrado[1],
                     "cantidad": cantidad,
                     "precio_compra": precio_compra,
                     "precio_venta2": precio_venta2,
@@ -264,7 +261,6 @@ def modulo_compras():
             st.error("❌ No hay productos agregados.")
         else:
             try:
-                # Obtener último ID de compra para esta tienda
                 cursor.execute("SELECT MAX(Id_compra) FROM Compra WHERE id_tienda = %s", (id_tienda,))
                 ultimo_id = cursor.fetchone()[0]
                 nuevo_id = 1 if ultimo_id is None else int(ultimo_id) + 1
@@ -272,7 +268,6 @@ def modulo_compras():
                 fecha = datetime.now().strftime("%Y-%m-%d")
                 id_empleado = st.session_state["id_empleado"]
 
-                # Guardar compra
                 cursor.execute(
                     "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda) VALUES (%s, %s, %s, %s)",
                     (nuevo_id, fecha, id_empleado, id_tienda),
@@ -285,7 +280,6 @@ def modulo_compras():
                         prod["cantidad"] * factor if unidad_original in CONVERSIONES_A_LIBRAS else prod["cantidad"]
                     )
 
-                    # Guardar detalle
                     cursor.execute(
                         """
                         INSERT INTO ProductoxCompra
@@ -324,6 +318,5 @@ def modulo_compras():
         st.session_state["_reset_form_next_run"] = True
         st.rerun()
 
-    # Cierre limpio
     cursor.close()
     conn.close()
