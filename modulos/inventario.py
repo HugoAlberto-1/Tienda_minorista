@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # Lista de categorías
 CATEGORIAS = [
-    "Abarrotes",
+    "Aceites, grasas y mantecas",
     "Granos y productos a granel",
     "Sopas, pastas y consomés",
     "Condimentos y salsas",
