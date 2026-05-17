@@ -9,7 +9,7 @@ CONVERSIONES_A_LIBRAS = {
 }
 
 def modulo_compras():
-    # ✅ Validación multi-tienda (siempre al inicio del módulo)
+    # ✅ Validación multi-tienda
     if not st.session_state.get("logueado") or "id_empleado" not in st.session_state or "id_tienda" not in st.session_state:
         st.error("⚠️ Debes iniciar sesión para registrar compras.")
         st.stop()
@@ -25,9 +25,9 @@ def modulo_compras():
 
     cursor = conn.cursor()
 
-    # ✅ Solo productos de la tienda del usuario
+    # ✅ CORREGIDO: Ahora incluye la columna 'categoria'
     cursor.execute(
-        "SELECT Cod_barra, Nombre, Tipo_producto FROM Producto WHERE id_tienda = %s",
+        "SELECT Cod_barra, Nombre, Tipo_producto, categoria FROM Producto WHERE id_tienda = %s",
         (id_tienda,)
     )
     productos = cursor.fetchall()
@@ -118,6 +118,7 @@ def modulo_compras():
         )
         if producto_encontrado:
             st.write(f"Producto encontrado: **{producto_encontrado[1]}**")
+            st.write(f"📁 Categoría: **{producto_encontrado[3]}**")  # Mostrar categoría
             tipo_producto = producto_encontrado[2]
             if isinstance(tipo_producto, str) and tipo_producto.lower() == "perecedero":
                 st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
@@ -263,7 +264,7 @@ def modulo_compras():
             st.error("❌ No hay productos agregados.")
         else:
             try:
-                # ✅ Si NO es autoincrement, al menos separar por tienda
+                # Obtener último ID de compra para esta tienda
                 cursor.execute("SELECT MAX(Id_compra) FROM Compra WHERE id_tienda = %s", (id_tienda,))
                 ultimo_id = cursor.fetchone()[0]
                 nuevo_id = 1 if ultimo_id is None else int(ultimo_id) + 1
@@ -271,7 +272,7 @@ def modulo_compras():
                 fecha = datetime.now().strftime("%Y-%m-%d")
                 id_empleado = st.session_state["id_empleado"]
 
-                # ✅ Guardar compra con id_tienda
+                # Guardar compra
                 cursor.execute(
                     "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda) VALUES (%s, %s, %s, %s)",
                     (nuevo_id, fecha, id_empleado, id_tienda),
@@ -284,7 +285,7 @@ def modulo_compras():
                         prod["cantidad"] * factor if unidad_original in CONVERSIONES_A_LIBRAS else prod["cantidad"]
                     )
 
-                    # ✅ Detalle con id_tienda
+                    # Guardar detalle
                     cursor.execute(
                         """
                         INSERT INTO ProductoxCompra
