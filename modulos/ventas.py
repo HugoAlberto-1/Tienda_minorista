@@ -90,7 +90,7 @@ def modulo_ventas():
             st.success(f"✅ Producto encontrado: **{nombre_producto}**")
             st.info(f"📁 Categoría: **{categoria}**")
             
-            # 🔍 Obtener TODAS las compras (sin agrupar por unidad para preservar cada registro)
+            # 🔍 Obtener TODAS las compras
             cursor.execute("""
                 SELECT unidad, cantidad_comprada
                 FROM ProductoxCompra
@@ -218,6 +218,10 @@ def modulo_ventas():
                             key="unidad_select"
                         )
                         
+                        # Mostrar información de conversiones
+                        st.info("💡 **Factores de conversión:** 1 quintal = 100 libras | 1 arroba = 25 libras")
+                        
+                        # Calcular stock disponible en la unidad seleccionada
                         if unidad_venta == "libras":
                             stock_disponible = existencia_libras
                             st.caption(f"📦 Stock disponible: {stock_disponible:.2f} libras")
@@ -229,7 +233,8 @@ def modulo_ventas():
                                 format="%.2f",
                                 key="venta_cantidad"
                             )
-                            cantidad_base = cantidad
+                            cantidad_en_libras = cantidad
+                            cantidad_original = cantidad
                             
                         elif unidad_venta == "quintal":
                             stock_disponible = existencia_libras / 100
@@ -242,7 +247,11 @@ def modulo_ventas():
                                 format="%.4f",
                                 key="venta_cantidad"
                             )
-                            cantidad_base = cantidad * 100
+                            cantidad_en_libras = cantidad * 100  # 1 quintal = 100 libras
+                            cantidad_original = cantidad
+                            
+                            # Mostrar conversión
+                            st.caption(f"🔄 {cantidad:.4f} quintal(es) = {cantidad_en_libras:.2f} libras")
                             
                         else:  # arroba
                             stock_disponible = existencia_libras / 25
@@ -255,12 +264,29 @@ def modulo_ventas():
                                 format="%.4f",
                                 key="venta_cantidad"
                             )
-                            cantidad_base = cantidad * 25
+                            cantidad_en_libras = cantidad * 25  # 1 arroba = 25 libras
+                            cantidad_original = cantidad
+                            
+                            # Mostrar conversión
+                            st.caption(f"🔄 {cantidad:.4f} arroba(s) = {cantidad_en_libras:.2f} libras")
                         
-                        if cantidad_base > existencia_libras:
+                        # Validar stock
+                        if cantidad_en_libras > existencia_libras:
                             st.error(f"❌ No hay suficiente stock. Stock disponible: {stock_disponible:.4f} {unidad_venta}")
                         else:
-                            subtotal = round(precio_venta * cantidad_base, 2)
+                            # El precio_venta es por LIBRA (precio por libra)
+                            subtotal = round(precio_venta * cantidad_en_libras, 2)
+                            
+                            # Mostrar resumen de precios
+                            if unidad_venta == "libras":
+                                st.markdown(f"**💰 Precio por libra:** ${precio_venta:.2f}")
+                            elif unidad_venta == "quintal":
+                                precio_por_quintal = precio_venta * 100
+                                st.markdown(f"**💰 Precio por quintal:** ${precio_por_quintal:.2f} (equiv. a ${precio_venta:.2f}/libra)")
+                            else:  # arroba
+                                precio_por_arroba = precio_venta * 25
+                                st.markdown(f"**💰 Precio por arroba:** ${precio_por_arroba:.2f} (equiv. a ${precio_venta:.2f}/libra)")
+                            
                             st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
                             
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
@@ -268,8 +294,8 @@ def modulo_ventas():
                                     "cod_barra": cod_barra_real,
                                     "nombre": nombre_producto,
                                     "precio_venta": float(precio_venta),
-                                    "cantidad": cantidad,
-                                    "cantidad_base": cantidad_base,
+                                    "cantidad": cantidad_original,
+                                    "cantidad_base": cantidad_en_libras,
                                     "unidad": unidad_venta,
                                     "subtotal": float(subtotal),
                                     "tipo_cliente": tipo_cliente,
@@ -427,12 +453,30 @@ def modulo_ventas():
         for i, prod in enumerate(st.session_state["productos_vendidos"]):
             total_venta += prod["subtotal"]
             
-            st.markdown(
-                f"**{prod['nombre']}** — {prod['cantidad']:.4f} {prod['unidad']} — "
-                f"Precio: ${prod['precio_venta']:.2f} — "
-                f"Subtotal: ${prod['subtotal']:.2f} — "
-                f"**Cliente:** {prod['tipo_cliente']}"
-            )
+            # Mostrar información con la unidad original
+            if prod["unidad"] == "libras":
+                st.markdown(
+                    f"**{prod['nombre']}** — {prod['cantidad']:.2f} {prod['unidad']} — "
+                    f"Precio: ${prod['precio_venta']:.2f}/libra — "
+                    f"Subtotal: ${prod['subtotal']:.2f} — "
+                    f"**Cliente:** {prod['tipo_cliente']}"
+                )
+            elif prod["unidad"] == "quintal":
+                precio_por_quintal = prod['precio_venta'] * 100
+                st.markdown(
+                    f"**{prod['nombre']}** — {prod['cantidad']:.4f} {prod['unidad']} — "
+                    f"Precio: ${precio_por_quintal:.2f}/{prod['unidad']} — "
+                    f"Subtotal: ${prod['subtotal']:.2f} — "
+                    f"**Cliente:** {prod['tipo_cliente']}"
+                )
+            else:  # arroba
+                precio_por_arroba = prod['precio_venta'] * 25
+                st.markdown(
+                    f"**{prod['nombre']}** — {prod['cantidad']:.4f} {prod['unidad']} — "
+                    f"Precio: ${precio_por_arroba:.2f}/{prod['unidad']} — "
+                    f"Subtotal: ${prod['subtotal']:.2f} — "
+                    f"**Cliente:** {prod['tipo_cliente']}"
+                )
             
             col1, col2 = st.columns([1, 5])
             with col1:
