@@ -8,6 +8,27 @@ CONVERSIONES_A_LIBRAS = {
     "quintal": 100,
 }
 
+# 📁 Categorías que se consideran "granos" (usarán libras, quintal, arroba)
+CATEGORIAS_GRANOS = [
+    "Granos y productos a granel",
+    "Abarrotes",
+    "Sopas, pastas y consomés"
+]
+
+# 📁 Categorías que son carnes (usarán libras y unidad)
+CATEGORIAS_CARNES = [
+    "Carnes y congelados"
+]
+
+def obtener_unidades_por_categoria(categoria):
+    """Retorna las unidades disponibles según la categoría del producto"""
+    if categoria in CATEGORIAS_GRANOS:
+        return ["libras", "quintal", "arroba"]
+    elif categoria in CATEGORIAS_CARNES:
+        return ["libras", "unidad"]
+    else:
+        return ["unidad"]
+
 def modulo_compras():
     # ✅ Validación multi-tienda
     if not st.session_state.get("logueado") or "id_empleado" not in st.session_state or "id_tienda" not in st.session_state:
@@ -47,11 +68,13 @@ def modulo_compras():
         st.session_state["form_data"] = {
             "precio_compra": 0.01,
             "cantidad": 1,
-            "unidad": "libras",
+            "unidad": "unidad",
             "fecha_vencimiento": None,
         }
     if "form_data_codigo_barras" not in st.session_state:
         st.session_state["form_data_codigo_barras"] = ""
+    if "categoria_actual" not in st.session_state:
+        st.session_state["categoria_actual"] = None
 
     # flag para reiniciar en el próximo ciclo
     if st.session_state.get("_reset_form_next_run"):
@@ -59,10 +82,11 @@ def modulo_compras():
         st.session_state["form_data"] = {
             "precio_compra": 0.01,
             "cantidad": 1,
-            "unidad": "libras",
+            "unidad": "unidad",
             "fecha_vencimiento": None,
         }
         st.session_state["form_data_codigo_barras"] = ""
+        st.session_state["categoria_actual"] = None
         st.session_state.pop("form_data_fecha_vencimiento", None)
 
     # ---- Carga de edición ----
@@ -79,36 +103,39 @@ def modulo_compras():
 
     codigo_barras_disabled = st.session_state["editar_indice"] is not None
 
-    # ---- Unidades disponibles (siempre todas) ----
-    unidades_disponibles = ["libras", "quintal", "arroba", "unidad"]
-    if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
-        st.session_state["form_data"]["unidad"] = "libras"
-
-    st.session_state["form_data"]["unidad"] = st.selectbox(
-        "📏 Unidad de compra",
-        unidades_disponibles,
-        index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]),
-    )
-
     # ---- Código de barras ----
-    st.text_input(
+    codigo_buscado = st.text_input(
         "🔍 Código de barras del producto",
         key="form_data_codigo_barras",
         disabled=codigo_barras_disabled,
         placeholder="Ej: 123456789"
     )
 
-    # ---- Producto encontrado ----
+    # ---- Producto encontrado y determinación de unidades ----
     producto_encontrado = None
-    if st.session_state["form_data_codigo_barras"] and not codigo_barras_disabled:
+    categoria_producto = None
+    unidades_disponibles = ["unidad"]  # valor por defecto
+    
+    if codigo_buscado and not codigo_barras_disabled:
         producto_encontrado = next(
-            (p for p in productos if p[0] == st.session_state["form_data_codigo_barras"]),
+            (p for p in productos if p[0] == codigo_buscado),
             None,
         )
         if producto_encontrado:
-            st.success(f"✅ Producto encontrado: **{producto_encontrado[1]}**")
-            st.info(f"📁 Categoría: **{producto_encontrado[2]}**")
+            codigo, nombre, categoria_producto = producto_encontrado
+            st.success(f"✅ Producto encontrado: **{nombre}**")
+            st.info(f"📁 Categoría: **{categoria_producto}**")
             
+            # 🔥 Determinar unidades según la categoría
+            unidades_disponibles = obtener_unidades_por_categoria(categoria_producto)
+            
+            # Si la unidad actual no está disponible, resetear a la primera disponible
+            if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
+                st.session_state["form_data"]["unidad"] = unidades_disponibles[0]
+            
+            st.session_state["categoria_actual"] = categoria_producto
+            
+            # Fecha de vencimiento (opcional para todos)
             st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
                 "📅 Fecha de vencimiento (opcional)",
                 key="form_data_fecha_vencimiento",
@@ -116,6 +143,24 @@ def modulo_compras():
             )
         else:
             st.warning("⚠️ Producto no encontrado. Verifique el código de barras.")
+            st.session_state["categoria_actual"] = None
+
+    # ---- Selector de unidad (dinámico según categoría) ----
+    if producto_encontrado:
+        st.session_state["form_data"]["unidad"] = st.selectbox(
+            "📏 Unidad de compra",
+            unidades_disponibles,
+            index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]),
+            key="unidad_select"
+        )
+    else:
+        # Si no hay producto seleccionado, mostrar un selectbox deshabilitado
+        st.selectbox(
+            "📏 Unidad de compra",
+            ["Seleccione un producto primero"],
+            disabled=True,
+            key="unidad_select_disabled"
+        )
 
     unidad = st.session_state["form_data"]["unidad"]
 
@@ -172,7 +217,7 @@ def modulo_compras():
         format="%.2f",
     )
 
-    # ---- Conversión a libras (solo para granos) ----
+    # ---- Conversión a libras (solo para unidades que no sean "unidad") ----
     if unidad in ["libras", "quintal", "arroba"]:
         factor_conversion = CONVERSIONES_A_LIBRAS.get(unidad, 1)
         cantidad_convertida = cantidad * factor_conversion
@@ -185,7 +230,7 @@ def modulo_compras():
             if st.session_state["editar_indice"] is not None:
                 prod_ref = st.session_state["productos_seleccionados"][st.session_state["editar_indice"]]
                 producto = {
-                    "cod_barra": st.session_state["form_data_codigo_barras"],
+                    "cod_barra": codigo_buscado,
                     "nombre": prod_ref["nombre"],
                     "cantidad": cantidad,
                     "precio_compra": precio_compra,
@@ -201,7 +246,7 @@ def modulo_compras():
                 st.session_state.pop("edit_loaded", None)
             else:
                 producto = {
-                    "cod_barra": st.session_state["form_data_codigo_barras"],
+                    "cod_barra": codigo_buscado,
                     "nombre": producto_encontrado[1],
                     "cantidad": cantidad,
                     "precio_compra": precio_compra,
