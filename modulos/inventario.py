@@ -282,18 +282,27 @@ def modulo_inventario():
                         # Ordenar alfabéticamente por nombre
                         df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                         
-                        # Reemplazar NaN con guiones para mejor visualización
-                        df_agrupado = df_agrupado.fillna("—")
+                        # Aplicar formato según las columnas (sin reemplazar con guiones)
+                        def format_value(val, col_name):
+                            if pd.isna(val):
+                                return "—"
+                            if col_name in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
+                                if isinstance(val, (int, float)):
+                                    return f"{val:.2f}"
+                                return str(val)
+                            elif col_name == "Stock Unidades":
+                                if isinstance(val, (int, float)):
+                                    return f"{int(val)}"
+                                return str(val)
+                            return str(val)
                         
-                        # Aplicar formato según las columnas
-                        format_dict = {}
-                        for col in df_agrupado.columns:
-                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
-                                format_dict[col] = "{:.2f}"
-                            elif col == "Stock Unidades" and df_agrupado[col].dtype in ['int64', 'float64']:
-                                format_dict[col] = "{:.0f}"
+                        # Crear una copia del dataframe para mostrar
+                        df_mostrar = df_agrupado.copy()
                         
-                        styled_df = df_agrupado.style.format(format_dict)
+                        # Aplicar formato a cada columna
+                        for col in df_mostrar.columns:
+                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades"]:
+                                df_mostrar[col] = df_mostrar[col].apply(lambda x: format_value(x, col))
                         
                         # 🔹 Mostrar información del filtro activo
                         if buscador:
@@ -311,7 +320,7 @@ def modulo_inventario():
                             else:
                                 st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
                         
-                        st.dataframe(styled_df, use_container_width=True)
+                        st.dataframe(df_mostrar, use_container_width=True)
                     else:
                         st.warning("⚠️ No hay datos para mostrar.")
 
