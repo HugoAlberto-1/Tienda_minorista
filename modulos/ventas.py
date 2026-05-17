@@ -94,7 +94,19 @@ def modulo_ventas():
             st.success(f"✅ Producto encontrado: **{nombre_producto}**")
             st.info(f"📁 Categoría: **{categoria}**")
             
-            # 🔍 SEGUNDO: Obtener existencia (compras - ventas)
+            # 🔍 SEGUNDO: Obtener la unidad de la última compra
+            cursor.execute("""
+                SELECT unidad
+                FROM ProductoxCompra
+                WHERE Cod_barra = %s AND id_tienda = %s
+                ORDER BY Id_compra DESC
+                LIMIT 1
+            """, (cod_barra_real, id_tienda))
+            
+            unidad_compra_resultado = cursor.fetchone()
+            unidad_compra = unidad_compra_resultado[0] if unidad_compra_resultado else "unidad"
+            
+            # 🔍 TERCERO: Obtener existencia (compras - ventas)
             cursor.execute("""
                 SELECT 
                     COALESCE((SELECT SUM(pc.cantidad_comprada) 
@@ -109,12 +121,13 @@ def modulo_ventas():
             resultado_existencia = cursor.fetchone()
             existencia = float(resultado_existencia[0]) if resultado_existencia else 0
             
-            st.info(f"📦 Existencia actual: **{existencia:.2f}**")
+            # Mostrar existencia con su unidad de medida
+            st.info(f"📦 Existencia actual: **{existencia:.2f} {unidad_compra}**")
             
             if existencia <= 0:
                 st.error("❌ Este producto no tiene stock disponible para la venta.")
             else:
-                # 🔍 TERCERO: Obtener los precios del producto (desde la última compra)
+                # 🔍 CUARTO: Obtener los precios del producto (desde la última compra)
                 cursor.execute("""
                     SELECT Precio_minorista, Precio_mayorista1, Precio_mayorista2
                     FROM ProductoxCompra
@@ -212,10 +225,14 @@ def modulo_ventas():
                     subtotal = round(precio_venta * cantidad_guardar, 2)
                     st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
                     
+                    # ---- Advertencia si la unidad es diferente a la de compra ----
+                    if unidad != unidad_compra:
+                        st.warning(f"⚠️ Estás vendiendo en **{unidad}** pero el producto fue comprado en **{unidad_compra}**. Verifica la conversión.")
+                    
                     # ---- Agregar a la venta ----
                     if st.button("🛒 Agregar producto a la venta", type="primary"):
                         if cantidad_guardar > existencia:
-                            st.error(f"❌ No hay suficiente stock. Disponible: {existencia:.2f}")
+                            st.error(f"❌ No hay suficiente stock. Disponible: {existencia:.2f} {unidad_compra}")
                         else:
                             producto_venta = {
                                 "cod_barra": cod_barra_real,
@@ -224,6 +241,7 @@ def modulo_ventas():
                                 "cantidad": cantidad_guardar,
                                 "cantidad_original": cantidad,
                                 "unidad": unidad,
+                                "unidad_compra": unidad_compra,
                                 "subtotal": float(subtotal),
                                 "tipo_cliente": tipo_cliente,
                             }
@@ -245,6 +263,7 @@ def modulo_ventas():
             # Mostrar información del producto
             unidad_mostrar = prod.get("unidad", "unidad")
             cantidad_mostrar = prod.get("cantidad_original", prod["cantidad"])
+            unidad_compra_mostrar = prod.get("unidad_compra", "")
             
             st.markdown(
                 f"**{prod['nombre']}** — {cantidad_mostrar:.2f} {unidad_mostrar} — "
@@ -252,6 +271,8 @@ def modulo_ventas():
                 f"Subtotal: ${prod['subtotal']:.2f} — "
                 f"**Cliente:** {prod['tipo_cliente']}"
             )
+            if unidad_compra_mostrar and unidad_compra_mostrar != unidad_mostrar:
+                st.caption(f"📌 Unidad de compra original: {unidad_compra_mostrar}")
             
             col1, col2 = st.columns([1, 5])
             with col1:
