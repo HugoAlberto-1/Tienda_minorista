@@ -16,8 +16,12 @@ CATEGORIAS_GRANOS = [
 ]
 
 def obtener_unidades_por_categoria(categoria):
+    """Devuelve las unidades disponibles según la categoría del producto"""
     if categoria in CATEGORIAS_GRANOS:
         return ["libras", "quintal", "arroba"]
+    elif categoria == "Carnes y congelados":
+        # Carnes puede ser comprado en libras o en unidades
+        return ["libras", "unidad"]
     else:
         return ["unidad"]
 
@@ -110,14 +114,17 @@ def modulo_compras():
             
             unidades_disponibles = obtener_unidades_por_categoria(categoria_producto)
             
+            # Si la unidad actual no está disponible, seleccionar la primera
             if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
                 st.session_state["form_data"]["unidad"] = unidades_disponibles[0]
             
-            st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
-                "📅 Fecha de vencimiento (opcional)",
-                key="form_data_fecha_vencimiento",
-                value=None
-            )
+            # Solo mostrar fecha de vencimiento para productos perecederos
+            if categoria_producto != "Granos y productos a granel":
+                st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
+                    "📅 Fecha de vencimiento (opcional)",
+                    key="form_data_fecha_vencimiento",
+                    value=None
+                )
         else:
             st.warning("⚠️ Producto no encontrado.")
 
@@ -125,7 +132,7 @@ def modulo_compras():
         st.session_state["form_data"]["unidad"] = st.selectbox(
             "📏 Unidad de compra",
             unidades_disponibles,
-            index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]),
+            index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]) if st.session_state["form_data"]["unidad"] in unidades_disponibles else 0,
             key="unidad_select"
         )
     else:
@@ -232,8 +239,15 @@ def modulo_compras():
         for i, prod in enumerate(st.session_state["productos_seleccionados"]):
             subtotal = round(prod["precio_compra"] * prod["cantidad"], 2)
             total_compra += subtotal
+            # Mostrar la unidad utilizada
+            unidad_texto = prod["unidad"]
+            if prod["unidad"] == "libras":
+                unidad_texto = "lb"
+            elif prod["unidad"] == "quintal":
+                unidad_texto = "qq"
+            
             st.markdown(
-                f"**{prod['nombre']}** — {prod['cantidad']} {prod['unidad']} — "
+                f"**{prod['nombre']}** — {prod['cantidad']} {unidad_texto} — "
                 f"Precio: ${prod['precio_compra']:.2f} — "
                 f"**Subtotal:** ${subtotal:.2f}"
             )
