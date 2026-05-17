@@ -62,9 +62,24 @@ def modulo_inventario():
 
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
-        st.stop()
+        
+        # 🔹 Botón de volver también aquí
+        st.markdown("---")
+        if st.button("⬅ Volver al menú principal"):
+            st.session_state.module = None
+            st.rerun()
+        return
 
     id_tienda = st.session_state["id_tienda"]
+
+    # 🔹 BOTÓN DE VOLVER - COLOCADO AL INICIO (siempre visible)
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("⬅ Volver al menú principal", use_container_width=True):
+            st.session_state.module = None
+            st.rerun()
+    st.markdown("---")
 
     # 🔹 Filtro por categoría
     filtro_categoria = st.selectbox(
@@ -87,13 +102,12 @@ def modulo_inventario():
         conn = obtener_conexion()
         if not conn:
             st.error("❌ No se pudo conectar a la base de datos.")
-            st.stop()
+            return
 
         cursor = conn.cursor()
 
         # 🔹 Construir consulta SQL con búsqueda si es necesario
         if buscador:
-            # Si hay texto en el buscador, filtrar por nombre
             cursor.execute("""
                 SELECT Cod_barra, Nombre
                 FROM Producto
@@ -103,7 +117,6 @@ def modulo_inventario():
                 ORDER BY Nombre ASC
             """, (id_tienda, filtro_categoria, f"%{buscador}%"))
         else:
-            # Si no hay búsqueda, mostrar todos los productos de la categoría
             cursor.execute("""
                 SELECT Cod_barra, Nombre
                 FROM Producto
@@ -123,7 +136,6 @@ def modulo_inventario():
         inventario_detalle = []
 
         for cod_barra, nombre in productos:
-            # 🔹 Compras
             cursor.execute("""
                 SELECT cantidad_comprada, unidad
                 FROM ProductoxCompra
@@ -132,15 +144,12 @@ def modulo_inventario():
 
             compras = cursor.fetchall()
 
-            # Total comprado en libras
             total_comprado_lb = sum(
                 convertir_a_libras(c[0], c[1]) for c in compras
             )
 
-            # Total comprado en unidades
             total_comprado_unidades = sum(c[0] for c in compras)
 
-            # 🔹 Ventas
             cursor.execute("""
                 SELECT Cantidad_vendida, unidad
                 FROM ProductoxVenta
@@ -149,18 +158,15 @@ def modulo_inventario():
 
             ventas = cursor.fetchall()
 
-            # Total vendido en libras
             total_vendido_lb = sum(
                 convertir_a_libras(v[0], v[1]) for v in ventas
             )
 
-            # Total vendido en unidades
             total_vendido_unidades = sum(v[0] for v in ventas)
 
             stock_libras = total_comprado_lb - total_vendido_lb
             stock_unidades = total_comprado_unidades - total_vendido_unidades
 
-            # Agregar ambos tipos de stock
             inventario_detalle.append({
                 "Nombre": nombre,
                 "Stock Libras": stock_libras,
@@ -171,14 +177,12 @@ def modulo_inventario():
                 "_Total_vendidos_unidades": int(total_vendido_unidades)
             })
 
-        # 🔹 Crear DataFrame
         df = pd.DataFrame(inventario_detalle)
 
         if df.empty:
             st.warning(f"⚠️ No hay productos para mostrar.")
             return
 
-        # 🔹 Agrupar por nombre
         df_agrupado = df.groupby(df["Nombre"].str.lower(), as_index=False).agg({
             "Nombre": "first",
             "Stock Libras": "sum",
@@ -189,13 +193,9 @@ def modulo_inventario():
             "_Total_vendidos_unidades": "sum"
         })
 
-        # Ordenar alfabéticamente por nombre
         df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
-
-        # Eliminar columnas auxiliares
         df_agrupado = df_agrupado.drop(columns=["_Total_vendidos_libras", "_Total_vendidos_unidades"])
 
-        # 🔹 Aplicar formato y estilo
         def resaltar_stock_bajo(row):
             estilo = []
             for col in row.index:
@@ -214,7 +214,6 @@ def modulo_inventario():
             "Stock Unidades": "{:.0f}"
         })
 
-        # 🔹 Mostrar información del filtro activo
         if buscador:
             st.subheader(f"📋 Resultados de búsqueda: '{buscador}' en {filtro_categoria}")
             if len(df_agrupado) == 1:
@@ -226,12 +225,10 @@ def modulo_inventario():
         
         st.dataframe(styled_df, use_container_width=True)
 
-        # 🔹 Productos próximos a vencer (solo si no hay búsqueda activa o si se encontraron productos)
         if not buscador or len(productos) > 0:
             hoy = datetime.now().date()
             prox_mes = (datetime.now() + timedelta(days=30)).date()
 
-            # Si hay búsqueda, filtrar también por el nombre del producto
             if buscador:
                 cursor.execute("""
                     SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
@@ -279,13 +276,3 @@ def modulo_inventario():
             cursor.close()
         if conn:
             conn.close()
-
-    # 🔹 BOTÓN PARA VOLVER AL MENÚ PRINCIPAL (AGREGADO AQUÍ)
-    st.markdown("---")
-    
-    # Usamos columnas para centrar el botón visualmente (opcional pero mejora la UI)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("⬅ Volver al menú principal", use_container_width=True, type="secondary"):
-            st.session_state.module = None
-            st.rerun()
