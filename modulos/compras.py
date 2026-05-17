@@ -25,7 +25,7 @@ def modulo_compras():
 
     cursor = conn.cursor()
 
-    # ✅ CORREGIDO: Solo columnas que existen
+    # ✅ Obtener productos
     cursor.execute(
         "SELECT Cod_barra, Nombre, categoria FROM Producto WHERE id_tienda = %s",
         (id_tienda,)
@@ -50,8 +50,6 @@ def modulo_compras():
             "unidad": "libras",
             "fecha_vencimiento": None,
         }
-    if "categoria_selector" not in st.session_state:
-        st.session_state["categoria_selector"] = "Granos básicos"
     if "form_data_codigo_barras" not in st.session_state:
         st.session_state["form_data_codigo_barras"] = ""
 
@@ -64,7 +62,6 @@ def modulo_compras():
             "unidad": "libras",
             "fecha_vencimiento": None,
         }
-        st.session_state["categoria_selector"] = "Granos básicos"
         st.session_state["form_data_codigo_barras"] = ""
         st.session_state.pop("form_data_fecha_vencimiento", None)
 
@@ -82,31 +79,23 @@ def modulo_compras():
 
     codigo_barras_disabled = st.session_state["editar_indice"] is not None
 
-    # ---- Tipo de producto / unidad ----
-    tipo_categoria = st.radio(
-        "Seleccione el tipo de producto",
-        ["Granos básicos", "Otros"],
-        key="categoria_selector",
+    # ---- Unidades disponibles (siempre todas) ----
+    unidades_disponibles = ["libras", "quintal", "arroba", "unidad"]
+    if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
+        st.session_state["form_data"]["unidad"] = "libras"
+
+    st.session_state["form_data"]["unidad"] = st.selectbox(
+        "📏 Unidad de compra",
+        unidades_disponibles,
+        index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]),
     )
-
-    if tipo_categoria == "Granos básicos":
-        unidades_disponibles = ["libras", "quintal", "arroba"]
-        if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
-            st.session_state["form_data"]["unidad"] = "libras"
-
-        st.session_state["form_data"]["unidad"] = st.selectbox(
-            "Unidad de compra",
-            unidades_disponibles,
-            index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]),
-        )
-    else:
-        st.session_state["form_data"]["unidad"] = "unidad"
 
     # ---- Código de barras ----
     st.text_input(
-        "Código de barras del producto",
+        "🔍 Código de barras del producto",
         key="form_data_codigo_barras",
         disabled=codigo_barras_disabled,
+        placeholder="Ej: 123456789"
     )
 
     # ---- Producto encontrado ----
@@ -117,9 +106,9 @@ def modulo_compras():
             None,
         )
         if producto_encontrado:
-            st.write(f"✅ Producto encontrado: **{producto_encontrado[1]}**")
-            st.write(f"📁 Categoría: **{producto_encontrado[2]}**")
-            # Como no tenemos Tipo_producto, asumimos que es perecedero si tiene fecha
+            st.success(f"✅ Producto encontrado: **{producto_encontrado[1]}**")
+            st.info(f"📁 Categoría: **{producto_encontrado[2]}**")
+            
             st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
                 "📅 Fecha de vencimiento (opcional)",
                 key="form_data_fecha_vencimiento",
@@ -132,7 +121,7 @@ def modulo_compras():
 
     # ---- Precio de compra ----
     precio_compra = st.number_input(
-        "Precio de compra",
+        "💰 Precio de compra",
         min_value=0.01,
         step=0.01,
         key="form_data_precio_compra",
@@ -142,7 +131,7 @@ def modulo_compras():
 
     # ---- Cantidad comprada ----
     st.session_state["form_data"]["cantidad"] = st.number_input(
-        "Cantidad comprada",
+        "📦 Cantidad comprada",
         min_value=1,
         max_value=10000,
         step=1,
@@ -183,15 +172,15 @@ def modulo_compras():
         format="%.2f",
     )
 
-    # ---- Conversión (solo granos básicos) ----
-    if tipo_categoria == "Granos básicos":
+    # ---- Conversión a libras (solo para granos) ----
+    if unidad in ["libras", "quintal", "arroba"]:
         factor_conversion = CONVERSIONES_A_LIBRAS.get(unidad, 1)
         cantidad_convertida = cantidad * factor_conversion
-        st.markdown(f"**Valor convertido en libras:** {cantidad_convertida:.2f} libras")
+        st.markdown(f"**🔄 Valor convertido en libras:** {cantidad_convertida:.2f} libras")
 
     # ---- Agregar / Actualizar producto ----
     boton_texto = "💾 Actualizar producto" if st.session_state["editar_indice"] is not None else "💾 Agregar producto"
-    if st.button(boton_texto):
+    if st.button(boton_texto, type="primary"):
         if producto_encontrado or codigo_barras_disabled:
             if st.session_state["editar_indice"] is not None:
                 prod_ref = st.session_state["productos_seleccionados"][st.session_state["editar_indice"]]
@@ -231,6 +220,7 @@ def modulo_compras():
 
     # ---- Listado + Totales ----
     if st.session_state["productos_seleccionados"]:
+        st.markdown("---")
         st.subheader("📦 Productos en la compra actual")
         total_compra = 0.0
         for i, prod in enumerate(st.session_state["productos_seleccionados"]):
@@ -238,7 +228,7 @@ def modulo_compras():
             total_compra += subtotal
             st.markdown(
                 f"**{prod['nombre']}** — {prod['cantidad']} {prod['unidad']} — "
-                f"Precio de Compra: ${prod['precio_compra']:.2f} — "
+                f"Precio: ${prod['precio_compra']:.2f} — "
                 f"**Subtotal:** ${subtotal:.2f}"
             )
             col1, col2 = st.columns([1, 1])
@@ -256,7 +246,7 @@ def modulo_compras():
         st.markdown(f"### 🧮 Total de la compra: **${total_compra:.2f}**")
 
     # ---- Registrar compra ----
-    if st.button("✅ Registrar compra"):
+    if st.button("✅ Registrar compra", type="primary"):
         if not st.session_state["productos_seleccionados"]:
             st.error("❌ No hay productos agregados.")
         else:
