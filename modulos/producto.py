@@ -1,34 +1,26 @@
 import streamlit as st
 from config.conexion import obtener_conexion
 
-# 📁 LISTA DE CATEGORÍAS
-CATEGORIAS = [
-    "Aceites, grasas y mantecas",
-    "Granos y productos a granel",
-    "Sopas, pastas y consomés",
-    "Condimentos y salsas",
-    "Bebidas",
-    "Lácteos y derivados",
-    "Snacks y boquitas",
-    "Dulces y chocolates",
-    "Panadería y repostería",
-    "Ingredientes para hornear",
-    "Carnes y congelados",
-    "Enlatados y conservas",
-    "Desechables y empaques",
-    "Limpieza del hogar",
-    "Higiene personal",
-    "Cuidado del bebé",
-    "Medicamentos y botiquín",
-    "Papelería y útiles escolares",
-    "Juguetes y regalos",
-    "Accesorios personales y belleza",
-    "Hogar y utensilios",
-    "Ferretería básica y eléctricos",
-    "Mascotas",
-    "Productos naturales y especias",
-    "Productos de temporada y fiesta"
-]
+# ✅ Función para obtener categorías desde la base de datos
+def obtener_categorias_db(id_tienda):
+    """Obtiene las categorías activas desde la base de datos"""
+    conn = obtener_conexion()
+    if not conn:
+        return []
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT nombre FROM Categoria WHERE id_tienda = %s AND activo = 1 ORDER BY nombre",
+            (id_tienda,)
+        )
+        resultados = cursor.fetchall()
+        return [row[0] for row in resultados]
+    except Exception as e:
+        st.error(f"Error al cargar categorías: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
 
 def modulo_producto():
     st.title("📦 Registro de productos")
@@ -38,6 +30,13 @@ def modulo_producto():
         st.stop()
 
     id_tienda = st.session_state["id_tienda"]
+
+    # ✅ Cargar categorías desde la base de datos
+    categorias = obtener_categorias_db(id_tienda)
+    
+    if not categorias:
+        st.warning("⚠️ No hay categorías disponibles. Ve a 'Gestión de Categorías' y crea una primero.")
+        st.stop()
 
     # Reset seguro del formulario
     if st.session_state.get("reiniciar_formulario"):
@@ -56,19 +55,21 @@ def modulo_producto():
     Cod_barra = st.text_input(
         "📦 Código de barras",
         value=st.session_state.get("cod_barra_input", ""),
-        key="cod_barra_input"
+        key="cod_barra_input",
+        placeholder="Ej: 123456789"
     )
 
     Nombre = st.text_input(
         "🏷️ Nombre del producto",
         value=st.session_state.get("nombre_producto_input", ""),
-        key="nombre_producto_input"
+        key="nombre_producto_input",
+        placeholder="Ej: Arroz blanco"
     )
 
-    # 🔽 SELECTOR DE CATEGORÍA
+    # 🔽 SELECTOR DE CATEGORÍA (cargado desde la BD)
     categoria = st.selectbox(
         "📁 Categoría del producto:",
-        CATEGORIAS,
+        categorias,
         index=0,
         key="categoria_input",
         help="Selecciona la categoría a la que pertenece este producto"
@@ -85,6 +86,7 @@ def modulo_producto():
 
             cursor = conn.cursor()
             try:
+                # Verificar duplicado por tienda
                 cursor.execute(
                     "SELECT COUNT(*) FROM Producto WHERE Cod_barra = %s AND id_tienda = %s",
                     (Cod_barra.strip(), id_tienda)
@@ -94,6 +96,7 @@ def modulo_producto():
                 if existe:
                     st.error("❌ Ya existe un producto con ese código de barras en esta tienda.")
                 else:
+                    # Insertar producto con la categoría seleccionada
                     cursor.execute(
                         """
                         INSERT INTO Producto (Cod_barra, Nombre, categoria, id_tienda)
@@ -105,6 +108,7 @@ def modulo_producto():
 
                     st.session_state["producto_guardado"] = True
                     st.session_state["reiniciar_formulario"] = True
+                    st.success(f"✅ Producto '{Nombre}' guardado correctamente en categoría '{categoria}'")
                     st.rerun()
 
             except Exception as e:
@@ -119,5 +123,5 @@ def modulo_producto():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("⬅ Volver al menú principal", use_container_width=True):
-            st.session_state.module = None
+            st.session_state["module"] = None
             st.rerun()
