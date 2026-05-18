@@ -23,7 +23,7 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # Consulta de ventas: NO TRAE TOTAL DE BD
+        # Consulta de ventas
         query = """
             SELECT
                 p.Nombre,
@@ -41,6 +41,13 @@ def reporte_ventas():
 
         if not rows:
             st.info("No se encontraron ventas en el rango seleccionado.")
+            # Botón para volver
+            st.markdown("---")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("🔙 Volver al Menú Principal", use_container_width=True):
+                    st.session_state["module"] = None
+                    st.rerun()
             return
 
         # ---- DataFrame ----
@@ -59,25 +66,27 @@ def reporte_ventas():
         # Mostrar tabla
         st.markdown("---")
         st.markdown("### 🗂 Detalles de Ventas")
-        st.dataframe(df)
+        
+        # Formatear para mostrar
+        df_mostrar = df.copy()
+        df_mostrar["Precio Venta"] = df_mostrar["Precio Venta"].apply(lambda x: f"${x:.2f}")
+        df_mostrar["Total"] = df_mostrar["Total"].apply(lambda x: f"${x:.2f}")
+        df_mostrar["Fecha Venta"] = df_mostrar["Fecha Venta"].dt.strftime("%Y-%m-%d")
+        
+        st.dataframe(df_mostrar, use_container_width=True)
 
         # ➤ Mostrar GRAN TOTAL debajo
+        st.markdown("---")
         st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
         st.markdown(f"""
-        <div style='font-size:30px; font-weight:bold; color:green;'>
-            ${gran_total}
+        <div style='font-size:30px; font-weight:bold; color:green; text-align:center;'>
+            ${gran_total:,.2f}
         </div>
         """, unsafe_allow_html=True)
 
         st.markdown("---")
 
-        # Botón volver
-        if st.button("🔙 Volver al Menú Principal"):
-            st.session_state["page"] = "menu_principal"
-            st.session_state["module"] = None
-
         # ➤ Exportar a Excel
-        st.markdown("---")
         st.markdown("### 📁 Exportar ventas filtradas")
 
         col1, col2 = st.columns(2)
@@ -90,61 +99,78 @@ def reporte_ventas():
             st.download_button(
                 label="⬇️ Descargar Excel",
                 data=excel_buffer.getvalue(),
-                file_name="reporte_ventas.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
             )
 
         # ➤ Exportar PDF
         with col2:
-            pdf = FPDF()
-            pdf.add_page()
+            try:
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_auto_page_break(auto=True, margin=15)
 
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(190, 10, txt="Reporte de Ventas", ln=True, align="C")
-            pdf.ln(5)
+                pdf.set_font("Arial", "B", 16)
+                pdf.cell(190, 10, txt="Reporte de Ventas", ln=True, align="C")
+                pdf.ln(5)
+                
+                pdf.set_font("Arial", "I", 10)
+                pdf.cell(190, 8, txt=f"Periodo: {fecha_inicio} al {fecha_fin}", ln=True, align="C")
+                pdf.ln(5)
 
-            headers = ["Producto", "Cantidad", "Precio", "Total", "Fecha"]
-            widths = [70, 25, 25, 25, 40]
+                headers = ["Producto", "Cantidad", "Precio", "Total", "Fecha"]
+                widths = [70, 25, 25, 25, 40]
 
-            pdf.set_font("Arial", "B", 11)
-            for w, h in zip(widths, headers):
-                pdf.cell(w, 8, h, 1, 0, "C")
-            pdf.ln(8)
-
-            pdf.set_font("Arial", size=10)
-            for _, row in df.iterrows():
-                pdf.cell(widths[0], 8, str(row["Nombre"])[:30], 1)
-                pdf.cell(widths[1], 8, str(row["Cantidad Vendida"]), 1, 0, "R")
-                pdf.cell(widths[2], 8, f"{row['Precio Venta']:.2f}", 1, 0, "R")
-                pdf.cell(widths[3], 8, f"{row['Total']:.2f}", 1, 0, "R")
-                pdf.cell(widths[4], 8, row["Fecha Venta"].strftime("%Y-%m-%d"), 1, 0, "C")
+                pdf.set_font("Arial", "B", 10)
+                for w, h in zip(widths, headers):
+                    pdf.cell(w, 8, h, 1, 0, "C")
                 pdf.ln(8)
 
-            # ➤ Agregar total general al PDF
-            pdf.set_font("Arial", "B", 12)
-            pdf.ln(5)
-            pdf.cell(190, 10, f"TOTAL GENERAL: ${gran_total}", 0, 1, "R")
+                pdf.set_font("Arial", size=9)
+                for _, row in df.iterrows():
+                    pdf.cell(widths[0], 8, str(row["Nombre"])[:35], 1)
+                    pdf.cell(widths[1], 8, f"{row['Cantidad Vendida']:.2f}", 1, 0, "R")
+                    pdf.cell(widths[2], 8, f"${row['Precio Venta']:.2f}", 1, 0, "R")
+                    pdf.cell(widths[3], 8, f"${row['Total']:.2f}", 1, 0, "R")
+                    pdf.cell(widths[4], 8, row["Fecha Venta"].strftime("%Y-%m-%d"), 1, 0, "C")
+                    pdf.ln(8)
 
-            pdf_bytes = pdf.output(dest="S").encode("latin-1")
+                # ➤ Agregar total general al PDF
+                pdf.set_font("Arial", "B", 12)
+                pdf.ln(5)
+                pdf.cell(190, 10, f"TOTAL GENERAL: ${gran_total:,.2f}", 0, 1, "R")
 
-            st.download_button(
-                label="⬇️ Descargar PDF",
-                data=pdf_bytes,
-                file_name="reporte_ventas.pdf",
-                mime="application/pdf"
-            )
+                pdf_bytes = pdf.output(dest="S").encode("latin-1")
+
+                st.download_button(
+                    label="⬇️ Descargar PDF",
+                    data=pdf_bytes,
+                    file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"Error al generar PDF: {e}")
+
+        # Botón para volver
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🔙 Volver al Menú Principal", use_container_width=True, type="secondary"):
+                st.session_state["module"] = None
+                st.rerun()
 
     except Exception as e:
         st.error(f"❌ Error al generar el reporte: {e}")
 
     finally:
-        if "cursor" in locals(): cursor.close()
-        if "con" in locals(): con.close()
+        if "cursor" in locals():
+            cursor.close()
+        if "con" in locals():
+            con.close()
 
 
-# Router
-if "page" not in st.session_state:
-    st.session_state["page"] = "reporte_ventas"
-
-if st.session_state["page"] == "reporte_ventas":
+# ✅ Esta es la función principal que se llama desde app.py
+def modulo_reporte_ventas():
     reporte_ventas()
