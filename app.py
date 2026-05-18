@@ -25,130 +25,181 @@ def configurar_pagina():
         initial_sidebar_state="collapsed"
     )
     
-    # CSS personalizado para mejor apariencia
-    st.markdown("""
+    # Paleta de colores corporativos (azul corporativo)
+    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
+    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
+    COLOR_ACCENT = "#3a7ca5"       # Azul claro
+    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
+    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
+    COLOR_TEXT = "#333333"          # Texto oscuro
+    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
+    COLOR_HOVER = "#e8f0fe"         # Hover suave
+    
+    # CSS personalizado
+    st.markdown(f"""
         <style>
         /* Fondo general */
-        .stApp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        /* Tarjetas de los botones */
-        .card-button {
-            background: white;
-            border-radius: 15px;
-            padding: 25px 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin: 10px 0;
-        }
-        
-        .card-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
-        }
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
         
         /* Títulos */
-        .main-title {
+        .main-title {{
             text-align: center;
-            color: white;
-            font-size: 3em;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }}
+        
+        .subtitle {{
+            text-align: center;
+            color: {COLOR_SECONDARY};
+            font-size: 1.1em;
             margin-bottom: 30px;
-        }
+        }}
         
-        .subtitle {
+        .welcome-text {{
             text-align: center;
-            color: rgba(255,255,255,0.95);
+            color: {COLOR_PRIMARY};
             font-size: 1.2em;
-            margin-bottom: 40px;
-        }
-        
-        .welcome-text {
-            text-align: center;
-            color: white;
-            font-size: 1.4em;
             margin: 20px 0;
-            padding: 15px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
+            padding: 12px;
+            background: {COLOR_HOVER};
+            border-radius: 8px;
+            border-left: 4px solid {COLOR_PRIMARY};
+        }}
         
-        /* Botones personalizados */
-        .stButton > button {
-            border-radius: 10px;
-            font-weight: bold;
+        /* Tarjetas */
+        .card {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 20px 15px;
+            text-align: center;
             transition: all 0.3s ease;
-        }
-        
-        .stButton > button:hover {
-            transform: scale(1.02);
-        }
-        
-        /* Sección de macro módulos */
-        .macro-section {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 30px;
-            margin: 20px 0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .macro-title {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        /* Indicador de módulo activo */
-        .active-module {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-
-def mostrar_tarjeta(icono, titulo, descripcion, key):
-    """Función para crear tarjetas modernas"""
-    return st.markdown(f"""
-        <div style="
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
             height: 100%;
-        ">
-            <div style="font-size: 3em; margin-bottom: 10px;">{icono}</div>
-            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">{titulo}</div>
-            <div style="color: #666; font-size: 0.9em;">{descripcion}</div>
-        </div>
+        }}
+        
+        .card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: {COLOR_ACCENT};
+        }}
+        
+        .card-icon {{
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }}
+        
+        .card-title {{
+            font-size: 1.1em;
+            font-weight: 600;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 8px;
+        }}
+        
+        .card-desc {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.8em;
+            line-height: 1.3;
+        }}
+        
+        /* Tarjetas grandes para macro-módulos */
+        .macro-card {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+        }}
+        
+        .macro-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: {COLOR_PRIMARY};
+        }}
+        
+        .macro-icon {{
+            font-size: 2.5em;
+            margin-bottom: 12px;
+        }}
+        
+        .macro-title {{
+            font-size: 1.2em;
+            font-weight: 600;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 8px;
+        }}
+        
+        .macro-desc {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.85em;
+        }}
+        
+        /* Sección de submenú */
+        .macro-section {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }}
+        
+        .section-title {{
+            font-size: 1.3em;
+            font-weight: 600;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid {COLOR_ACCENT};
+            padding-bottom: 10px;
+            display: inline-block;
+            width: auto;
+        }}
+        
+        /* Botones */
+        .stButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
+        }}
+        
+        /* Títulos de sección */
+        .section-header {{
+            text-align: center;
+            margin-bottom: 25px;
+        }}
+        </style>
     """, unsafe_allow_html=True)
 
 
 def menu_principal():
     configurar_pagina()
     
-    # Contenedor principal con fondo degradado
+    # Paleta de colores
+    COLOR_PRIMARY = "#1e3a5f"
+    
     with st.container():
         # Título principal
         st.markdown('<div class="main-title">📦 Sistema de Inventario</div>', unsafe_allow_html=True)
         
-        # Mensaje de bienvenida personalizado
+        # Mensaje de bienvenida
         nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
-        st.markdown(f'<div class="welcome-text">✨ ¡Bienvenida, {nombre_empleado}! ✨</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtitle">Gestiona tu negocio de manera eficiente</div>', unsafe_allow_html=True)
 
         if "macro_modulo" not in st.session_state:
@@ -156,143 +207,134 @@ def menu_principal():
 
         # Mostrar solo los macro módulos
         if st.session_state["macro_modulo"] is None:
-            st.markdown("### 🎯 ¿Qué deseas hacer?")
-            
-            # Tarjetas principales con 2 columnas y luego 2 filas
             col1, col2 = st.columns(2, gap="large")
             
             with col1:
                 # Tarjeta de Registro
-                with st.container():
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                    border-radius: 20px; padding: 30px; text-align: center; cursor: pointer;">
-                            <div style="font-size: 4em;">✏️</div>
-                            <div style="font-size: 1.5em; font-weight: bold; color: white; margin: 15px 0;">
-                                Ingresa nueva información
-                            </div>
-                            <div style="color: rgba(255,255,255,0.9);">
-                                Registra productos, empleados y categorías
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("📝 Ingresa nueva información", key="btn_registro", use_container_width=True):
-                        st.session_state["macro_modulo"] = "registro"
-                        st.rerun()
+                st.markdown(f"""
+                    <div class="macro-card">
+                        <div class="macro-icon">✏️</div>
+                        <div class="macro-title">Ingresa nueva información</div>
+                        <div class="macro-desc">Registra productos, empleados y categorías</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button("📝 Ingresar información", key="btn_registro", use_container_width=True):
+                    st.session_state["macro_modulo"] = "registro"
+                    st.rerun()
             
             with col2:
                 # Tarjeta de Transacciones
-                with st.container():
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                                    border-radius: 20px; padding: 30px; text-align: center;">
-                            <div style="font-size: 4em;">💸</div>
-                            <div style="font-size: 1.5em; font-weight: bold; color: white; margin: 15px 0;">
-                                Compra y vende productos
-                            </div>
-                            <div style="color: rgba(255,255,255,0.9);">
-                                Registra tus compras y ventas diarias
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("🛒 Compra y vende productos", key="btn_transacciones", use_container_width=True):
-                        st.session_state["macro_modulo"] = "transacciones"
-                        st.rerun()
+                st.markdown(f"""
+                    <div class="macro-card">
+                        <div class="macro-icon">💸</div>
+                        <div class="macro-title">Compra y vende productos</div>
+                        <div class="macro-desc">Registra tus compras y ventas diarias</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button("🛒 Comprar/Vender", key="btn_transacciones", use_container_width=True):
+                    st.session_state["macro_modulo"] = "transacciones"
+                    st.rerun()
             
             # Segunda fila
             col3, col4 = st.columns(2, gap="large")
             
             with col3:
                 # Tarjeta de Inventario
-                with st.container():
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
-                                    border-radius: 20px; padding: 30px; text-align: center;">
-                            <div style="font-size: 4em;">📋</div>
-                            <div style="font-size: 1.5em; font-weight: bold; color: white; margin: 15px 0;">
-                                Consulta tu inventario
-                            </div>
-                            <div style="color: rgba(255,255,255,0.9);">
-                                Visualiza el stock actual de productos
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("📊 Ver inventario", key="btn_inventario", use_container_width=True):
-                        st.session_state.module = "Inventario"
-                        st.rerun()
+                st.markdown(f"""
+                    <div class="macro-card">
+                        <div class="macro-icon">📋</div>
+                        <div class="macro-title">Consulta tu inventario</div>
+                        <div class="macro-desc">Visualiza el stock actual de productos</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button("📊 Ver inventario", key="btn_inventario", use_container_width=True):
+                    st.session_state.module = "Inventario"
+                    st.rerun()
             
             with col4:
                 # Tarjeta de Reportes
-                with st.container():
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
-                                    border-radius: 20px; padding: 30px; text-align: center;">
-                            <div style="font-size: 4em;">📊</div>
-                            <div style="font-size: 1.5em; font-weight: bold; color: white; margin: 15px 0;">
-                                Consulta tus reportes
-                            </div>
-                            <div style="color: rgba(255,255,255,0.9);">
-                                Analiza ventas y productos más vendidos
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("📈 Ver reportes", key="btn_reportes", use_container_width=True):
-                        st.session_state["macro_modulo"] = "reportes"
-                        st.rerun()
+                st.markdown(f"""
+                    <div class="macro-card">
+                        <div class="macro-icon">📊</div>
+                        <div class="macro-title">Consulta tus reportes</div>
+                        <div class="macro-desc">Analiza ventas y productos más vendidos</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button("📈 Ver reportes", key="btn_reportes", use_container_width=True):
+                    st.session_state["macro_modulo"] = "reportes"
+                    st.rerun()
 
         # Submenús según macro módulo
         elif st.session_state["macro_modulo"] == "registro":
             with st.container():
-                st.markdown('<div class="macro-section">', unsafe_allow_html=True)
-                st.markdown('<div class="macro-title">✏️ Registra información</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="macro-section">', unsafe_allow_html=True)
+                st.markdown(f'<div style="text-align: center;"><span class="section-title">✏️ Registra información</span></div>', unsafe_allow_html=True)
                 
                 col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
-                    if st.button("📦 Nuevo Producto", use_container_width=True):
+                    st.markdown(f"""
+                        <div class="card">
+                            <div class="card-icon">📦</div>
+                            <div class="card-title">Nuevo Producto</div>
+                            <div class="card-desc">Registra productos en el sistema</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("Agregar", key="btn_producto", use_container_width=True):
                         st.session_state.module = "Producto"
                         st.rerun()
-                    st.caption("Registra productos en el sistema")
                 
                 with col2:
-                    if st.button("✏️ Editar Producto", use_container_width=True):
+                    st.markdown(f"""
+                        <div class="card">
+                            <div class="card-icon">✏️</div>
+                            <div class="card-title">Editar Producto</div>
+                            <div class="card-desc">Modifica información de productos</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("Editar", key="btn_editar", use_container_width=True):
                         st.session_state.module = "Editar"
                         st.rerun()
-                    st.caption("Modifica información de productos")
                 
                 with col3:
-                    if st.button("👩‍💼 Nueva Empleada", use_container_width=True):
+                    st.markdown(f"""
+                        <div class="card">
+                            <div class="card-icon">👩‍💼</div>
+                            <div class="card-title">Nueva Empleada</div>
+                            <div class="card-desc">Registra nuevas empleadas</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("Registrar", key="btn_empleado", use_container_width=True):
                         st.session_state.module = "Empleado"
                         st.rerun()
-                    st.caption("Registra nuevas empleadas")
                 
                 with col4:
-                    if st.button("📁 Gestionar Categorías", use_container_width=True):
+                    st.markdown(f"""
+                        <div class="card">
+                            <div class="card-icon">📁</div>
+                            <div class="card-title">Gestionar Categorías</div>
+                            <div class="card-desc">Administra categorías de productos</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("Gestionar", key="btn_categoria", use_container_width=True):
                         st.session_state.module = "Categoria"
                         st.rerun()
-                    st.caption("Administra categorías de productos")
                 
                 st.markdown('</div>', unsafe_allow_html=True)
 
         elif st.session_state["macro_modulo"] == "transacciones":
             with st.container():
-                st.markdown('<div class="macro-section">', unsafe_allow_html=True)
-                st.markdown('<div class="macro-title">💸 Haz una compra o una venta</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="macro-section">', unsafe_allow_html=True)
+                st.markdown(f'<div style="text-align: center;"><span class="section-title">💸 Haz una compra o una venta</span></div>', unsafe_allow_html=True)
                 
                 col1, col2 = st.columns(2, gap="large")
                 
                 with col1:
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                                    border-radius: 15px; padding: 30px; text-align: center;">
-                            <div style="font-size: 3em;">🛒</div>
-                            <div style="font-size: 1.3em; font-weight: bold; color: white; margin: 10px 0;">
-                                Realizar Venta
-                            </div>
+                    st.markdown(f"""
+                        <div class="card" style="padding: 30px;">
+                            <div class="card-icon">🛒</div>
+                            <div class="card-title">Realizar Venta</div>
+                            <div class="card-desc">Registra una nueva venta de productos</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Iniciar Venta", key="venta_btn", use_container_width=True):
@@ -300,13 +342,11 @@ def menu_principal():
                         st.rerun()
                 
                 with col2:
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
-                                    border-radius: 15px; padding: 30px; text-align: center;">
-                            <div style="font-size: 3em;">📥</div>
-                            <div style="font-size: 1.3em; font-weight: bold; color: white; margin: 10px 0;">
-                                Realizar Compra
-                            </div>
+                    st.markdown(f"""
+                        <div class="card" style="padding: 30px;">
+                            <div class="card-icon">📥</div>
+                            <div class="card-title">Realizar Compra</div>
+                            <div class="card-desc">Registra una nueva compra de productos</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Iniciar Compra", key="compra_btn", use_container_width=True):
@@ -317,20 +357,17 @@ def menu_principal():
 
         elif st.session_state["macro_modulo"] == "reportes":
             with st.container():
-                st.markdown('<div class="macro-section">', unsafe_allow_html=True)
-                st.markdown('<div class="macro-title">📊 Consulta tus reportes</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="macro-section">', unsafe_allow_html=True)
+                st.markdown(f'<div style="text-align: center;"><span class="section-title">📊 Consulta tus reportes</span></div>', unsafe_allow_html=True)
                 
                 col1, col2 = st.columns(2, gap="large")
                 
                 with col1:
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
-                                    border-radius: 15px; padding: 30px; text-align: center;">
-                            <div style="font-size: 3em;">📈</div>
-                            <div style="font-size: 1.3em; font-weight: bold; color: white; margin: 10px 0;">
-                                Reporte de Ventas
-                            </div>
-                            <div style="color: white;">Análisis detallado de ventas</div>
+                    st.markdown(f"""
+                        <div class="card" style="padding: 30px;">
+                            <div class="card-icon">📈</div>
+                            <div class="card-title">Reporte de Ventas</div>
+                            <div class="card-desc">Análisis detallado de ventas</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Ver Reporte", key="reporte_ventas_btn", use_container_width=True):
@@ -338,14 +375,11 @@ def menu_principal():
                         st.rerun()
                 
                 with col2:
-                    st.markdown("""
-                        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); 
-                                    border-radius: 15px; padding: 30px; text-align: center;">
-                            <div style="font-size: 3em;">🏆</div>
-                            <div style="font-size: 1.3em; font-weight: bold; color: white; margin: 10px 0;">
-                                Top 30 más vendidos
-                            </div>
-                            <div style="color: white;">Productos más populares</div>
+                    st.markdown(f"""
+                        <div class="card" style="padding: 30px;">
+                            <div class="card-icon">🏆</div>
+                            <div class="card-title">Top 30 más vendidos</div>
+                            <div class="card-desc">Productos más populares</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Ver Ranking", key="top_30_btn", use_container_width=True):
@@ -361,7 +395,7 @@ def menu_principal():
                 st.session_state["macro_modulo"] = None
                 st.rerun()
 
-        # Botón cerrar sesión (al final, más discreto)
+        # Botón cerrar sesión
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
