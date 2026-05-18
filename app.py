@@ -12,7 +12,8 @@ from modulos.editar_producto import modulo_editar_producto
 from modulos.dashboard import dashboard
 from modulos.empleado import modulo_empleado
 from modulos.inventario import modulo_inventario
-from modulos.reporte_ventas import reporte_ventas  # Asegúrate que este archivo exista
+from modulos.reporte_ventas import reporte_ventas
+from modulos.categoria import modulo_categoria  # ✅ NUEVO MÓDULO
 
 
 def menu_principal():
@@ -27,7 +28,7 @@ def menu_principal():
     # Mostrar solo los macro módulos
     if st.session_state["macro_modulo"] is None:
         st.markdown("##### Elija una actividad:")
-        col1, col2 , col3, col4 = st.columns(4)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             if st.button("✏️ Ingresa nueva información"):
@@ -52,7 +53,7 @@ def menu_principal():
     # Submenús según macro módulo
     elif st.session_state["macro_modulo"] == "registro":
         st.markdown("#### ✏️ Registra información")
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)  # ✅ Cambiado a 4 columnas
 
         with col1:
             if st.button("📦 Registra un nuevo producto"):
@@ -67,6 +68,11 @@ def menu_principal():
         with col3:
             if st.button("👩‍💼 Registra una nueva asociada"):
                 st.session_state.module = "Empleado"
+                st.rerun()
+
+        with col4:
+            if st.button("📁 Gestiona categorías"):  # ✅ NUEVO BOTÓN
+                st.session_state.module = "Categoria"
                 st.rerun()
 
     elif st.session_state["macro_modulo"] == "transacciones":
@@ -89,7 +95,7 @@ def menu_principal():
 
         with col1:
             if st.button("📊 Reporte de ventas"):
-                st.session_state.module = "Reportes_Ventas"  # CORREGIDO
+                st.session_state.module = "Reportes_Ventas"
                 st.rerun()
 
         with col2:
@@ -115,7 +121,7 @@ def menu_principal():
 
 
 # ─────────────────────────────────────────────
-# 🔄 ROUTER DE MÓDULOS (CORREGIDO)
+# 🔄 ROUTER DE MÓDULOS
 # ─────────────────────────────────────────────
 def cargar_modulo():
     if "module" in st.session_state:
@@ -141,8 +147,11 @@ def cargar_modulo():
         elif st.session_state.module == "Inventario":
             modulo_inventario()
 
-        elif st.session_state.module == "Reportes_Ventas":  # NOMBRE CORREGIDO
+        elif st.session_state.module == "Reportes_Ventas":
             reporte_ventas()
+
+        elif st.session_state.module == "Categoria":  # ✅ NUEVO MÓDULO
+            modulo_categoria()
 
         else:
             menu_principal()
