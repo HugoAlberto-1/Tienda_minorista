@@ -11,7 +11,6 @@ CONVERSIONES_A_LIBRAS = {
 # 📁 Categorías que se consideran "granos"
 CATEGORIAS_GRANOS = [
     "Granos y productos a granel",
-    "Abarrotes",
     "Sopas, pastas y consomés"
 ]
 
