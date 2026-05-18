@@ -30,16 +30,16 @@ def obtener_unidades_por_categoria(categoria, unidad_compra=None):
         return ["unidad"]
 
 def modulo_ventas():
-    # CSS para centrar métricas sin ocultar valores
+    # CSS para centrar métricas sin recuadros
     st.markdown("""
         <style>
-        /* Centrar métricas */
+        /* Centrar métricas sin recuadros */
         div[data-testid="stMetric"] {
             text-align: center;
-            background-color: #f0f2f6;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: transparent;
+            padding: 5px;
+            border: none;
+            box-shadow: none;
         }
         
         div[data-testid="stMetric"] > div {
@@ -56,7 +56,7 @@ def modulo_ventas():
         
         div[data-testid="stMetricValue"] {
             text-align: center;
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: bold;
             color: #1e3a5f;
         }
@@ -64,14 +64,11 @@ def modulo_ventas():
         /* Centrar el título de las secciones */
         .metric-section-title {
             text-align: center;
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: 600;
             color: #1e3a5f;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             margin-top: 10px;
-            padding: 8px;
-            background-color: #e8f0fe;
-            border-radius: 8px;
         }
         
         /* Asegurar que las columnas tengan el mismo ancho */
