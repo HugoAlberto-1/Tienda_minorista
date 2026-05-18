@@ -159,7 +159,7 @@ def modulo_inventario():
                 for cod_barra, nombre, categoria in productos:
                     # 🔹 Compras
                     cursor.execute("""
-                        SELECT cantidad_comprada, unidad
+                        SELECT cantidad_comprada, unidad, fecha_vencimiento
                         FROM ProductoxCompra
                         WHERE Cod_barra = %s AND id_tienda = %s
                     """, (cod_barra, id_tienda))
@@ -177,6 +177,13 @@ def modulo_inventario():
                             unidad_principal = "libras"
                         elif hay_compras_unidades:
                             unidad_principal = "unidades"
+
+                    # Obtener la fecha de vencimiento más reciente (la que expira primero)
+                    fecha_vencimiento = None
+                    for compra in compras:
+                        if compra[2]:  # Si tiene fecha de vencimiento
+                            if fecha_vencimiento is None or compra[2] < fecha_vencimiento:
+                                fecha_vencimiento = compra[2]
 
                     # Total comprado en libras (solo conversiones válidas)
                     total_comprado_lb = sum(
@@ -214,7 +221,8 @@ def modulo_inventario():
                             "Categoría": categoria,
                             "Stock Quintal": convertir_a_quintal(stock_libras),
                             "Stock Arroba": convertir_a_arroba(stock_libras),
-                            "Stock Libras": stock_libras
+                            "Stock Libras": stock_libras,
+                            "Fecha Vencimiento": fecha_vencimiento
                         })
                     elif categoria == "Carnes y congelados":
                         # Determinar qué columna mostrar según la unidad principal
@@ -224,7 +232,8 @@ def modulo_inventario():
                                 "Nombre": nombre,
                                 "Categoría": categoria,
                                 "Stock Libras": stock_libras,
-                                "Stock Unidades": None  # Mostrar como guión
+                                "Stock Unidades": None,  # Mostrar como guión
+                                "Fecha Vencimiento": fecha_vencimiento
                             })
                         else:
                             inventario_detalle.append({
@@ -232,7 +241,8 @@ def modulo_inventario():
                                 "Nombre": nombre,
                                 "Categoría": categoria,
                                 "Stock Libras": None,  # Mostrar como guión
-                                "Stock Unidades": stock_unidades
+                                "Stock Unidades": stock_unidades,
+                                "Fecha Vencimiento": fecha_vencimiento
                             })
                     else:
                         # Otras categorías solo usan unidades
@@ -240,7 +250,8 @@ def modulo_inventario():
                             "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
-                            "Stock Unidades": stock_unidades
+                            "Stock Unidades": stock_unidades,
+                            "Fecha Vencimiento": fecha_vencimiento
                         })
 
                 # 🔹 Crear DataFrame
@@ -262,13 +273,15 @@ def modulo_inventario():
                     
                     # Procesar granos
                     if df_granos is not None:
+                        # Para granos, obtener la fecha de vencimiento más próxima
                         df_granos_agg = df_granos.groupby(df_granos["Código"], as_index=False).agg({
                             "Código": "first",
                             "Nombre": "first",
                             "Categoría": "first",
                             "Stock Quintal": "sum",
                             "Stock Arroba": "sum",
-                            "Stock Libras": "sum"
+                            "Stock Libras": "sum",
+                            "Fecha Vencimiento": lambda x: min(x.dropna()) if not x.dropna().empty else None
                         })
                         frames.append(df_granos_agg)
                     
@@ -278,7 +291,8 @@ def modulo_inventario():
                         agg_dict = {
                             "Código": "first",
                             "Nombre": "first",
-                            "Categoría": "first"
+                            "Categoría": "first",
+                            "Fecha Vencimiento": lambda x: min(x.dropna()) if not x.dropna().empty else None
                         }
                         if "Stock Libras" in df_carnes.columns:
                             agg_dict["Stock Libras"] = "sum"
@@ -294,7 +308,8 @@ def modulo_inventario():
                             "Código": "first",
                             "Nombre": "first",
                             "Categoría": "first",
-                            "Stock Unidades": "sum"
+                            "Stock Unidades": "sum",
+                            "Fecha Vencimiento": lambda x: min(x.dropna()) if not x.dropna().empty else None
                         })
                         frames.append(df_otros_agg)
                     
@@ -304,8 +319,8 @@ def modulo_inventario():
                         # Ordenar alfabéticamente por nombre
                         df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                         
-                        # Reordenar columnas para que Código sea la primera
-                        columnas = ["Código"] + [col for col in df_agrupado.columns if col != "Código"]
+                        # Reordenar columnas para que Código sea la primera y Fecha Vencimiento la última
+                        columnas = ["Código"] + [col for col in df_agrupado.columns if col not in ["Código", "Fecha Vencimiento"]] + ["Fecha Vencimiento"]
                         df_agrupado = df_agrupado[columnas]
                         
                         # Función para formatear valores
@@ -320,6 +335,10 @@ def modulo_inventario():
                                 if isinstance(val, (int, float)):
                                     return f"{int(val)}"
                                 return str(val)
+                            elif col_name == "Fecha Vencimiento":
+                                if isinstance(val, (datetime, pd.Timestamp)):
+                                    return val.strftime("%Y-%m-%d")
+                                return str(val)
                             return str(val)
                         
                         # Crear una copia del dataframe para mostrar
@@ -327,7 +346,7 @@ def modulo_inventario():
                         
                         # Aplicar formato a cada columna numérica
                         for col in df_mostrar.columns:
-                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades"]:
+                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades", "Fecha Vencimiento"]:
                                 df_mostrar[col] = df_mostrar[col].apply(lambda x: format_value(x, col))
                         
                         # 🔹 Mostrar información del filtro activo
