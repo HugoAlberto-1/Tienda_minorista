@@ -30,13 +30,13 @@ def obtener_unidades_por_categoria(categoria, unidad_compra=None):
         return ["unidad"]
 
 def modulo_ventas():
-    # CSS para centrar métricas y mejorar apariencia
+    # CSS para centrar métricas sin ocultar valores
     st.markdown("""
         <style>
         /* Centrar métricas */
         div[data-testid="stMetric"] {
             text-align: center;
-            background-color: #f8f9fa;
+            background-color: #f0f2f6;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -44,47 +44,40 @@ def modulo_ventas():
         
         div[data-testid="stMetric"] > div {
             text-align: center;
-            justify-content: center;
+            width: 100%;
         }
         
         div[data-testid="stMetricLabel"] {
             text-align: center;
             font-weight: 600;
             color: #1e3a5f;
+            font-size: 1em;
         }
         
         div[data-testid="stMetricValue"] {
             text-align: center;
             font-size: 1.5em;
             font-weight: bold;
+            color: #1e3a5f;
         }
         
         /* Centrar el título de las secciones */
         .metric-section-title {
             text-align: center;
-            font-size: 1.1em;
+            font-size: 1.2em;
             font-weight: 600;
             color: #1e3a5f;
             margin-bottom: 15px;
             margin-top: 10px;
+            padding: 8px;
+            background-color: #e8f0fe;
+            border-radius: 8px;
         }
         
-        /* Contenedor para centrar el contenido */
-        .centered-container {
+        /* Asegurar que las columnas tengan el mismo ancho */
+        .stColumn {
             display: flex;
             justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        
-        /* Estilo para las tarjetas de información */
-        .info-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-            text-align: center;
-            margin: 10px 0;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -189,11 +182,11 @@ def modulo_ventas():
                 st.markdown('<div class="metric-section-title">📦 Existencia actual</div>', unsafe_allow_html=True)
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("📦 Libras", f"{existencia_libras:.2f}")
+                    st.metric("Libras", f"{existencia_libras:.2f}")
                 with col2:
-                    st.metric("📦 Quintales", f"{existencia_libras / 100:.2f}")
+                    st.metric("Quintales", f"{existencia_libras / 100:.2f}")
                 with col3:
-                    st.metric("📦 Arrobas", f"{existencia_libras / 25:.2f}")
+                    st.metric("Arrobas", f"{existencia_libras / 25:.2f}")
                 
                 if existencia_libras <= 0:
                     st.error("❌ Producto sin stock.")
@@ -340,7 +333,7 @@ def modulo_ventas():
                     cols = st.columns(len(unidades_existentes))
                     for idx, (unidad, cantidad) in enumerate(unidades_existentes):
                         with cols[idx]:
-                            st.metric(f"📦 {unidad.capitalize()}", f"{cantidad:.2f}")
+                            st.metric(f"{unidad.capitalize()}", f"{cantidad:.2f}")
                 else:
                     st.info("No hay stock disponible")
                 
