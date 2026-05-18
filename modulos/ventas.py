@@ -30,6 +30,65 @@ def obtener_unidades_por_categoria(categoria, unidad_compra=None):
         return ["unidad"]
 
 def modulo_ventas():
+    # CSS para centrar métricas y mejorar apariencia
+    st.markdown("""
+        <style>
+        /* Centrar métricas */
+        div[data-testid="stMetric"] {
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        div[data-testid="stMetric"] > div {
+            text-align: center;
+            justify-content: center;
+        }
+        
+        div[data-testid="stMetricLabel"] {
+            text-align: center;
+            font-weight: 600;
+            color: #1e3a5f;
+        }
+        
+        div[data-testid="stMetricValue"] {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        /* Centrar el título de las secciones */
+        .metric-section-title {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+        
+        /* Contenedor para centrar el contenido */
+        .centered-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        /* Estilo para las tarjetas de información */
+        .info-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            margin: 10px 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     if not st.session_state.get("logueado") or "id_empleado" not in st.session_state or "id_tienda" not in st.session_state:
         st.error("⚠️ Debes iniciar sesión para registrar ventas.")
         st.stop()
@@ -126,8 +185,8 @@ def modulo_ventas():
                 
                 existencia_libras = total_comprado_libras - total_vendido_libras
                 
-                # Mostrar existencia con 2 decimales
-                st.markdown("**📦 Existencia actual:**")
+                # Mostrar existencia con título centrado
+                st.markdown('<div class="metric-section-title">📦 Existencia actual</div>', unsafe_allow_html=True)
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("📦 Libras", f"{existencia_libras:.2f}")
@@ -160,8 +219,8 @@ def modulo_ventas():
                         precio_por_libra_mayorista1 = 0
                         precio_por_libra_mayorista2 = 0
                     
-                    # Mostrar precios
-                    st.markdown("**💰 Precios configurados:**")
+                    # Mostrar precios con título centrado
+                    st.markdown('<div class="metric-section-title">💰 Precios configurados</div>', unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.metric("Minorista", f"${precio_por_libra_minorista:.2f}")
@@ -255,8 +314,8 @@ def modulo_ventas():
                                     "cod_barra": cod_barra_real,
                                     "nombre": nombre_producto,
                                     "precio_venta": precio_por_libra,
-                                    "cantidad": cantidad_original,  # La cantidad en la unidad de venta (ej: 1 quintal)
-                                    "unidad": unidad_venta,  # La unidad real de venta (ej: "quintal")
+                                    "cantidad": cantidad_original,
+                                    "unidad": unidad_venta,
                                     "subtotal": subtotal,
                                     "tipo_cliente": tipo_cliente,
                                 }
@@ -273,10 +332,17 @@ def modulo_ventas():
                 for unidad, cantidad in ventas:
                     existencias[unidad] = existencias.get(unidad, 0) - cantidad
                 
-                st.markdown("**📦 Existencia actual:**")
-                for unidad, cantidad in existencias.items():
-                    if cantidad > 0:
-                        st.info(f"• **{cantidad:.2f} {unidad}**")
+                st.markdown('<div class="metric-section-title">📦 Existencia actual</div>', unsafe_allow_html=True)
+                
+                # Mostrar existencias en columnas centradas
+                unidades_existentes = [(u, c) for u, c in existencias.items() if c > 0]
+                if unidades_existentes:
+                    cols = st.columns(len(unidades_existentes))
+                    for idx, (unidad, cantidad) in enumerate(unidades_existentes):
+                        with cols[idx]:
+                            st.metric(f"📦 {unidad.capitalize()}", f"{cantidad:.2f}")
+                else:
+                    st.info("No hay stock disponible")
                 
                 tiene_stock = any(c > 0 for c in existencias.values())
                 if not tiene_stock:
@@ -299,7 +365,7 @@ def modulo_ventas():
                         precio_minorista = precio_mayorista1 = precio_mayorista2 = 0
                     
                     if precio_minorista > 0:
-                        st.markdown("**💰 Precios configurados:**")
+                        st.markdown('<div class="metric-section-title">💰 Precios configurados</div>', unsafe_allow_html=True)
                         col1, col2, col3 = st.columns(3)
                         with col1:
                             st.metric("Minorista", f"${precio_minorista:.2f}")
@@ -411,11 +477,11 @@ def modulo_ventas():
                         (
                             nuevo_id,
                             prod["cod_barra"],
-                            prod["cantidad"],  # Ahora guardamos la cantidad en la unidad real (ej: 1 quintal)
+                            prod["cantidad"],
                             prod["tipo_cliente"],
                             round(prod["precio_venta"], 2),
                             id_tienda,
-                            prod["unidad"],  # La unidad real (ej: "quintal")
+                            prod["unidad"],
                         ),
                     )
                 conn.commit()
