@@ -199,7 +199,7 @@ def menu_principal():
         
         # Mensaje de bienvenida
         nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
-        st.markdown(f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="welcome-text">✨ Bienvenido, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtitle">Gestiona tu negocio de manera eficiente</div>', unsafe_allow_html=True)
 
         if "macro_modulo" not in st.session_state:
