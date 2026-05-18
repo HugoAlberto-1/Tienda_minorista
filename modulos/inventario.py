@@ -3,34 +3,26 @@ import pandas as pd
 from config.conexion import obtener_conexion
 from datetime import datetime, timedelta
 
-# Lista de categorías
-CATEGORIAS = [
-    "Aceites, grasas y mantecas",
-    "Granos y productos a granel",
-    "Sopas, pastas y consomés",
-    "Condimentos y salsas",
-    "Bebidas",
-    "Lácteos y derivados",
-    "Snacks y boquitas",
-    "Dulces y chocolates",
-    "Panadería y repostería",
-    "Ingredientes para hornear",
-    "Carnes y congelados",
-    "Enlatados y conservas",
-    "Desechables y empaques",
-    "Limpieza del hogar",
-    "Higiene personal",
-    "Cuidado del bebé",
-    "Medicamentos y botiquín",
-    "Papelería y útiles escolares",
-    "Juguetes y regalos",
-    "Accesorios personales y belleza",
-    "Hogar y utensilios",
-    "Ferretería básica y eléctricos",
-    "Mascotas",
-    "Productos naturales y especias",
-    "Productos de temporada y fiesta"
-]
+# ✅ Función para obtener categorías desde la base de datos
+def obtener_categorias_db(id_tienda):
+    """Obtiene las categorías activas desde la base de datos"""
+    conn = obtener_conexion()
+    if not conn:
+        return []
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT nombre FROM Categoria WHERE id_tienda = %s AND activo = 1 ORDER BY nombre",
+            (id_tienda,)
+        )
+        resultados = cursor.fetchall()
+        return [row[0] for row in resultados]
+    except Exception as e:
+        st.error(f"Error al cargar categorías: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
 
 # 🔹 Conversión a unidad base (LIBRAS)
 def convertir_a_libras(cantidad, unidad):
@@ -62,14 +54,16 @@ def modulo_inventario():
 
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
-        # Botón de volver al final también en caso de error
         st.markdown("---")
         if st.button("⬅ Volver al menú principal"):
-            st.session_state.module = None
+            st.session_state["module"] = None
             st.rerun()
         return
 
     id_tienda = st.session_state["id_tienda"]
+    
+    # ✅ Cargar categorías desde la base de datos
+    categorias_db = obtener_categorias_db(id_tienda)
 
     # 🔹 Buscador de productos por nombre (PRIMERO)
     buscador = st.text_input(
@@ -79,11 +73,15 @@ def modulo_inventario():
     )
 
     # 🔹 Filtro por categoría (DESPUÉS del buscador)
-    filtro_categoria = st.selectbox(
-        "🔍 Filtrar por categoría:",
-        ["Todas las categorías"] + CATEGORIAS,
-        index=0
-    )
+    if categorias_db:
+        filtro_categoria = st.selectbox(
+            "🔍 Filtrar por categoría:",
+            ["Todas las categorías"] + categorias_db,
+            index=0
+        )
+    else:
+        st.warning("⚠️ No hay categorías disponibles. Ve a 'Gestión de Categorías' y crea una primero.")
+        filtro_categoria = "Todas las categorías"
 
     conn = None
     cursor = None
@@ -465,5 +463,5 @@ def modulo_inventario():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("⬅ Volver al menú principal", use_container_width=True, type="secondary"):
-            st.session_state.module = None
+            st.session_state["module"] = None
             st.rerun()
