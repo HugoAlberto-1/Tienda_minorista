@@ -4,7 +4,7 @@ from config.conexion import obtener_conexion
 
 # Lista de categorías (debe coincidir con la de producto.py)
 CATEGORIAS = [
-    "Abarrotes",
+    "Aceites, grasas y mantecas",
     "Granos y productos a granel",
     "Sopas, pastas y consomés",
     "Condimentos y salsas",
