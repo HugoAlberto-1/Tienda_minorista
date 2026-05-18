@@ -19,7 +19,7 @@ from modulos.categoria import modulo_categoria
 def configurar_pagina():
     """Configuración de la página con CSS personalizado"""
     st.set_page_config(
-        page_title="Sistema de Inventario",
+        page_title="Tienda Cerro de Dios",
         page_icon="📦",
         layout="wide",
         initial_sidebar_state="collapsed"
