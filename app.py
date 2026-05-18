@@ -178,36 +178,6 @@ def configurar_pagina():
             transform: translateY(-1px);
         }}
         
-        /* Spinner de carga personalizado */
-        .loading-spinner {{
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-            flex-direction: column;
-        }}
-        
-        .spinner {{
-            border: 4px solid {COLOR_HOVER};
-            border-top: 4px solid {COLOR_PRIMARY};
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }}
-        
-        @keyframes spin {{
-            0% {{ transform: rotate(0deg); }}
-            100% {{ transform: rotate(360deg); }}
-        }}
-        
-        .loading-text {{
-            color: {COLOR_PRIMARY};
-            font-size: 1.1em;
-            font-weight: 500;
-        }}
-        
         /* Títulos de sección */
         .section-header {{
             text-align: center;
@@ -217,22 +187,8 @@ def configurar_pagina():
     """, unsafe_allow_html=True)
 
 
-def mostrar_loading():
-    """Muestra un indicador de carga elegante"""
-    with st.container():
-        st.markdown("""
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <div class="loading-text">⏳ Cargando módulo, espere un momento...</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-
 def menu_principal():
     configurar_pagina()
-    
-    # Paleta de colores
-    COLOR_PRIMARY = "#1e3a5f"
     
     with st.container():
         # Título principal
@@ -260,9 +216,8 @@ def menu_principal():
                     </div>
                 """, unsafe_allow_html=True)
                 if st.button("📝 Ingresar información", key="btn_registro", use_container_width=True):
-                    with st.spinner("Cargando..."):
-                        st.session_state["macro_modulo"] = "registro"
-                        st.rerun()
+                    st.session_state["macro_modulo"] = "registro"
+                    st.rerun()
             
             with col2:
                 # Tarjeta de Transacciones
@@ -274,9 +229,8 @@ def menu_principal():
                     </div>
                 """, unsafe_allow_html=True)
                 if st.button("🛒 Comprar/Vender", key="btn_transacciones", use_container_width=True):
-                    with st.spinner("Cargando..."):
-                        st.session_state["macro_modulo"] = "transacciones"
-                        st.rerun()
+                    st.session_state["macro_modulo"] = "transacciones"
+                    st.rerun()
             
             # Segunda fila
             col3, col4 = st.columns(2, gap="large")
@@ -291,9 +245,8 @@ def menu_principal():
                     </div>
                 """, unsafe_allow_html=True)
                 if st.button("📊 Ver inventario", key="btn_inventario", use_container_width=True):
-                    with st.spinner("Cargando inventario..."):
-                        st.session_state.module = "Inventario"
-                        st.rerun()
+                    st.session_state.module = "Inventario"
+                    st.rerun()
             
             with col4:
                 # Tarjeta de Reportes
@@ -305,9 +258,8 @@ def menu_principal():
                     </div>
                 """, unsafe_allow_html=True)
                 if st.button("📈 Ver reportes", key="btn_reportes", use_container_width=True):
-                    with st.spinner("Cargando reportes..."):
-                        st.session_state["macro_modulo"] = "reportes"
-                        st.rerun()
+                    st.session_state["macro_modulo"] = "reportes"
+                    st.rerun()
 
         # Submenús según macro módulo
         elif st.session_state["macro_modulo"] == "registro":
@@ -326,9 +278,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Agregar", key="btn_producto", use_container_width=True):
-                        with st.spinner("Cargando formulario de producto..."):
-                            st.session_state.module = "Producto"
-                            st.rerun()
+                        st.session_state.module = "Producto"
+                        st.rerun()
                 
                 with col2:
                     st.markdown(f"""
@@ -339,9 +290,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Editar", key="btn_editar", use_container_width=True):
-                        with st.spinner("Cargando editor de productos..."):
-                            st.session_state.module = "Editar"
-                            st.rerun()
+                        st.session_state.module = "Editar"
+                        st.rerun()
                 
                 with col3:
                     st.markdown(f"""
@@ -352,9 +302,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Registrar", key="btn_empleado", use_container_width=True):
-                        with st.spinner("Cargando registro de empleadas..."):
-                            st.session_state.module = "Empleado"
-                            st.rerun()
+                        st.session_state.module = "Empleado"
+                        st.rerun()
                 
                 with col4:
                     st.markdown(f"""
@@ -365,9 +314,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Gestionar", key="btn_categoria", use_container_width=True):
-                        with st.spinner("Cargando gestor de categorías..."):
-                            st.session_state.module = "Categoria"
-                            st.rerun()
+                        st.session_state.module = "Categoria"
+                        st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -387,9 +335,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Iniciar Venta", key="venta_btn", use_container_width=True):
-                        with st.spinner("Cargando módulo de ventas..."):
-                            st.session_state.module = "Ventas"
-                            st.rerun()
+                        st.session_state.module = "Ventas"
+                        st.rerun()
                 
                 with col2:
                     st.markdown(f"""
@@ -400,9 +347,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Iniciar Compra", key="compra_btn", use_container_width=True):
-                        with st.spinner("Cargando módulo de compras..."):
-                            st.session_state.module = "Compras"
-                            st.rerun()
+                        st.session_state.module = "Compras"
+                        st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -422,9 +368,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Ver Reporte", key="reporte_ventas_btn", use_container_width=True):
-                        with st.spinner("Cargando reporte de ventas..."):
-                            st.session_state.module = "Reportes_Ventas"
-                            st.rerun()
+                        st.session_state.module = "Reportes_Ventas"
+                        st.rerun()
                 
                 with col2:
                     st.markdown(f"""
@@ -435,9 +380,8 @@ def menu_principal():
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Ver Ranking", key="top_30_btn", use_container_width=True):
-                        with st.spinner("Cargando ranking de productos..."):
-                            st.session_state.module = "productomasvendido"
-                            st.rerun()
+                        st.session_state.module = "productomasvendido"
+                        st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -445,21 +389,19 @@ def menu_principal():
         if st.session_state["macro_modulo"]:
             st.markdown("---")
             if st.button("🔙 Volver al menú principal", use_container_width=True):
-                with st.spinner("Volviendo al menú principal..."):
-                    st.session_state["macro_modulo"] = None
-                    st.rerun()
+                st.session_state["macro_modulo"] = None
+                st.rerun()
 
         # Botón cerrar sesión
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("🚪 Cerrar sesión", use_container_width=True):
-                with st.spinner("Cerrando sesión..."):
-                    for key in ['logueado', 'usuario', 'module', 'nombre_empleado', 'macro_modulo']: 
-                        if key in st.session_state:
-                            del st.session_state[key]
-                    st.success("✅ Sesión cerrada correctamente.")
-                    st.rerun()
+                for key in ['logueado', 'usuario', 'module', 'nombre_empleado', 'macro_modulo']: 
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.success("✅ Sesión cerrada correctamente.")
+                st.rerun()
 
 
 # ─────────────────────────────────────────────
@@ -467,11 +409,7 @@ def menu_principal():
 # ─────────────────────────────────────────────
 def cargar_modulo():
     if "module" in st.session_state:
-        # Limpiar cualquier contenido previo mostrando el spinner
-        if st.session_state.get("mostrar_spinner", True):
-            mostrar_loading()
-        
-        # Cargar el módulo correspondiente
+        # Cargar el módulo correspondiente sin spinner adicional
         if st.session_state.module == "Ventas":
             modulo_ventas()
         elif st.session_state.module == "Compras":
