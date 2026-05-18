@@ -211,7 +211,7 @@ def configurar_pagina():
         
         /* Labels */
         label {{
-            color: {COLOR_TEXT_SECONDARY}} !important;
+            color: {COLOR_TEXT_SECONDARY};
         }}
         
         /* DataFrames */
