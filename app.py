@@ -17,7 +17,7 @@ from modulos.categoria import modulo_categoria
 
 
 def configurar_pagina():
-    """Configuración de la página con CSS personalizado - Modo Oscuro Corporativo"""
+    """Configuración de la página con CSS personalizado"""
     st.set_page_config(
         page_title="Sistema de Inventario",
         page_icon="📦",
@@ -25,45 +25,28 @@ def configurar_pagina():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores modo oscuro corporativo (azul noche)
-    COLOR_BG_PRIMARY = "#0a0e27"      # Fondo principal azul muy oscuro
-    COLOR_BG_SECONDARY = "#111827"     # Fondo secundario
-    COLOR_BG_CARD = "#1f2937"          # Fondo de tarjetas
-    COLOR_BG_HOVER = "#374151"         # Fondo hover
+    # Paleta de colores corporativos (azul corporativo)
+    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
+    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
+    COLOR_ACCENT = "#3a7ca5"       # Azul claro
+    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
+    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
+    COLOR_TEXT = "#333333"          # Texto oscuro
+    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
+    COLOR_HOVER = "#e8f0fe"         # Hover suave
     
-    COLOR_PRIMARY = "#3b82f6"          # Azul brillante principal
-    COLOR_SECONDARY = "#60a5fa"        # Azul claro secundario
-    COLOR_ACCENT = "#818cf8"           # Azul índigo acento
-    
-    COLOR_TEXT_PRIMARY = "#f3f4f6"     # Texto blanco/gris claro
-    COLOR_TEXT_SECONDARY = "#9ca3af"   # Texto gris medio
-    COLOR_TEXT_MUTED = "#6b7280"       # Texto gris oscuro
-    
-    COLOR_BORDER = "#374151"            # Color de bordes
-    COLOR_SUCCESS = "#10b981"           # Verde éxito
-    COLOR_WARNING = "#f59e0b"           # Naranja advertencia
-    COLOR_DANGER = "#ef4444"            # Rojo peligro
-    
-    # CSS personalizado para modo oscuro
+    # CSS personalizado
     st.markdown(f"""
         <style>
         /* Fondo general */
         .stApp {{
-            background: {COLOR_BG_PRIMARY};
-        }}
-        
-        /* Override de Streamlit para modo oscuro */
-        .stApp header {{
-            background: {COLOR_BG_SECONDARY};
+            background-color: {COLOR_BG};
         }}
         
         /* Títulos */
         .main-title {{
             text-align: center;
-            background: linear-gradient(135deg, {COLOR_PRIMARY}, {COLOR_ACCENT});
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
+            color: {COLOR_PRIMARY};
             font-size: 2.2em;
             font-weight: bold;
             margin-bottom: 20px;
@@ -71,39 +54,38 @@ def configurar_pagina():
         
         .subtitle {{
             text-align: center;
-            color: {COLOR_TEXT_SECONDARY};
+            color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 30px;
         }}
         
         .welcome-text {{
             text-align: center;
-            color: {COLOR_TEXT_PRIMARY};
+            color: {COLOR_PRIMARY};
             font-size: 1.2em;
             margin: 20px 0;
             padding: 12px;
-            background: {COLOR_BG_CARD};
+            background: {COLOR_HOVER};
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
         }}
         
         /* Tarjetas */
         .card {{
-            background: {COLOR_BG_CARD};
+            background: {COLOR_CARD};
             border-radius: 12px;
             padding: 20px 15px;
             text-align: center;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid {COLOR_BORDER};
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
             height: 100%;
         }}
         
         .card:hover {{
             transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-            border-color: {COLOR_PRIMARY};
-            background: {COLOR_BG_HOVER};
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: {COLOR_ACCENT};
         }}
         
         .card-icon {{
@@ -114,31 +96,31 @@ def configurar_pagina():
         .card-title {{
             font-size: 1.1em;
             font-weight: 600;
-            color: {COLOR_TEXT_PRIMARY};
+            color: {COLOR_PRIMARY};
             margin-bottom: 8px;
         }}
         
         .card-desc {{
-            color: {COLOR_TEXT_SECONDARY};
+            color: {COLOR_TEXT_LIGHT};
             font-size: 0.8em;
             line-height: 1.3;
         }}
         
         /* Tarjetas grandes para macro-módulos */
         .macro-card {{
-            background: linear-gradient(135deg, {COLOR_BG_CARD}, {COLOR_BG_SECONDARY});
+            background: {COLOR_CARD};
             border-radius: 12px;
             padding: 25px 20px;
             text-align: center;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid {COLOR_BORDER};
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
             cursor: pointer;
         }}
         
         .macro-card:hover {{
             transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
             border-color: {COLOR_PRIMARY};
         }}
         
@@ -150,35 +132,32 @@ def configurar_pagina():
         .macro-title {{
             font-size: 1.2em;
             font-weight: 600;
-            color: {COLOR_TEXT_PRIMARY};
+            color: {COLOR_PRIMARY};
             margin-bottom: 8px;
         }}
         
         .macro-desc {{
-            color: {COLOR_TEXT_SECONDARY};
+            color: {COLOR_TEXT_LIGHT};
             font-size: 0.85em;
         }}
         
         /* Sección de submenú */
         .macro-section {{
-            background: {COLOR_BG_SECONDARY};
+            background: {COLOR_CARD};
             border-radius: 12px;
             padding: 25px;
             margin: 20px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            border: 1px solid {COLOR_BORDER};
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
         }}
         
         .section-title {{
             font-size: 1.3em;
             font-weight: 600;
-            background: linear-gradient(135deg, {COLOR_PRIMARY}, {COLOR_ACCENT});
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
+            color: {COLOR_PRIMARY};
             margin-bottom: 20px;
             text-align: center;
-            border-bottom: 2px solid {COLOR_PRIMARY};
+            border-bottom: 2px solid {COLOR_ACCENT};
             padding-bottom: 10px;
             display: inline-block;
             width: auto;
@@ -197,58 +176,12 @@ def configurar_pagina():
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(59,130,246,0.3);
         }}
         
-        /* Inputs y elementos de formulario */
-        .stTextInput > div > div > input,
-        .stSelectbox > div > div > select,
-        .stNumberInput > div > div > input {{
-            background-color: {COLOR_BG_CARD};
-            color: {COLOR_TEXT_PRIMARY};
-            border-color: {COLOR_BORDER};
-        }}
-        
-        /* Labels */
-        label {{
-            color: {COLOR_TEXT_SECONDARY}} !important;
-        }}
-        
-        /* DataFrames */
-        .dataframe {{
-            background: {COLOR_BG_CARD};
-            color: {COLOR_TEXT_PRIMARY};
-        }}
-        
-        /* Mensajes */
-        .stAlert {{
-            background-color: {COLOR_BG_CARD};
-            border-left-color: {COLOR_PRIMARY};
-        }}
-        
-        /* Dividers */
-        hr {{
-            border-color: {COLOR_BORDER};
-        }}
-        
-        /* Título de sección */
+        /* Títulos de sección */
         .section-header {{
             text-align: center;
             margin-bottom: 25px;
-        }}
-        
-        /* Métricas */
-        .stMetric {{
-            background: {COLOR_BG_CARD};
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
-        /* Expander */
-        .streamlit-expanderHeader {{
-            background-color: {COLOR_BG_CARD};
-            color: {COLOR_TEXT_PRIMARY};
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -257,14 +190,17 @@ def configurar_pagina():
 def menu_principal():
     configurar_pagina()
     
+    # Paleta de colores
+    COLOR_PRIMARY = "#1e3a5f"
+    
     with st.container():
-        # Título principal con efecto gradiente
-        st.markdown('<div class="main-title">🌙📦 Sistema de Inventario</div>', unsafe_allow_html=True)
+        # Título principal
+        st.markdown('<div class="main-title">📦 Sistema de Inventario</div>', unsafe_allow_html=True)
         
         # Mensaje de bienvenida
         nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
         st.markdown(f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
-        st.markdown('<div class="subtitle">Gestiona tu negocio de manera eficiente | Modo Oscuro</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subtitle">Gestiona tu negocio de manera eficiente</div>', unsafe_allow_html=True)
 
         if "macro_modulo" not in st.session_state:
             st.session_state["macro_modulo"] = None
@@ -274,6 +210,7 @@ def menu_principal():
             col1, col2 = st.columns(2, gap="large")
             
             with col1:
+                # Tarjeta de Registro
                 st.markdown(f"""
                     <div class="macro-card">
                         <div class="macro-icon">✏️</div>
@@ -286,6 +223,7 @@ def menu_principal():
                     st.rerun()
             
             with col2:
+                # Tarjeta de Transacciones
                 st.markdown(f"""
                     <div class="macro-card">
                         <div class="macro-icon">💸</div>
@@ -301,6 +239,7 @@ def menu_principal():
             col3, col4 = st.columns(2, gap="large")
             
             with col3:
+                # Tarjeta de Inventario
                 st.markdown(f"""
                     <div class="macro-card">
                         <div class="macro-icon">📋</div>
@@ -313,6 +252,7 @@ def menu_principal():
                     st.rerun()
             
             with col4:
+                # Tarjeta de Reportes
                 st.markdown(f"""
                     <div class="macro-card">
                         <div class="macro-icon">📊</div>
