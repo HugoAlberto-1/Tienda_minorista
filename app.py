@@ -320,7 +320,6 @@ def menu_principal():
 
         elif st.session_state["macro_modulo"] == "transacciones":
             with st.container():
-                st.markdown(f'<div class="macro-section">', unsafe_allow_html=True)
                 st.markdown(f'<div style="text-align: center;"><span class="section-title">💸 Haz una compra o una venta</span></div>', unsafe_allow_html=True)
                 
                 col1, col2 = st.columns(2, gap="large")
@@ -353,7 +352,6 @@ def menu_principal():
 
         elif st.session_state["macro_modulo"] == "reportes":
             with st.container():
-                st.markdown(f'<div class="macro-section">', unsafe_allow_html=True)
                 st.markdown(f'<div style="text-align: center;"><span class="section-title">📊 Consulta tus reportes</span></div>', unsafe_allow_html=True)
                 
                 col1, col2 = st.columns(2, gap="large")
