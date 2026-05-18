@@ -129,18 +129,59 @@ def modulo_editar_producto():
                     conn_check.close()
                     
                     if compras_count > 0 or ventas_count > 0:
-                        st.warning(f"⚠️ **No se puede eliminar este producto** porque tiene registros asociados:")
+                        st.warning(f"⚠️ **Este producto tiene registros asociados:**")
                         if compras_count > 0:
                             st.warning(f"   • {compras_count} compra(s) registrada(s)")
                         if ventas_count > 0:
                             st.warning(f"   • {ventas_count} venta(s) registrada(s)")
-                        st.info("💡 **Sugerencia:** En lugar de eliminar el producto, puedes:")
-                        st.info("   • Editar su nombre o categoría")
-                        st.info("   • O mantenerlo como histórico de transacciones")
+                        st.error("⚠️ **Si lo eliminas, se eliminarán TODAS sus compras y ventas asociadas.**")
                         
-                        # Mostrar botón de eliminación deshabilitado
-                        st.button("🗑️ Eliminar producto", disabled=True, help="No se puede eliminar porque tiene transacciones asociadas")
+                        confirm = st.checkbox("✅ Confirmo que quiero eliminar el producto y TODAS sus transacciones")
+                        if st.button("🗑️ Eliminar producto y todas sus transacciones", type="primary"):
+                            if not confirm:
+                                st.warning("☝️ Marca la casilla para confirmar la eliminación.")
+                            else:
+                                try:
+                                    conn = obtener_conexion()
+                                    cursor = conn.cursor()
+                                    
+                                    # Iniciar transacción
+                                    conn.autocommit = False
+                                    
+                                    # 1. Eliminar compras asociadas
+                                    cursor.execute(
+                                        "DELETE FROM ProductoxCompra WHERE Cod_barra = %s AND id_tienda = %s",
+                                        (cod_barra, id_tienda)
+                                    )
+                                    st.info(f"✅ Eliminadas {compras_count} compras asociadas")
+                                    
+                                    # 2. Eliminar ventas asociadas
+                                    cursor.execute(
+                                        "DELETE FROM ProductoxVenta WHERE Cod_barra = %s AND id_tienda = %s",
+                                        (cod_barra, id_tienda)
+                                    )
+                                    st.info(f"✅ Eliminadas {ventas_count} ventas asociadas")
+                                    
+                                    # 3. Finalmente eliminar el producto
+                                    cursor.execute(
+                                        "DELETE FROM Producto WHERE Cod_barra = %s AND id_tienda = %s",
+                                        (cod_barra, id_tienda)
+                                    )
+                                    
+                                    # Confirmar todas las operaciones
+                                    conn.commit()
+                                    st.success("🗑️ Producto y todas sus transacciones eliminados correctamente.")
+                                    st.rerun()
+                                    
+                                except Exception as e:
+                                    conn.rollback()
+                                    st.error(f"❌ Error al eliminar: {e}")
+                                finally:
+                                    conn.autocommit = True
+                                    cursor.close()
+                                    conn.close()
                     else:
+                        # Producto sin transacciones, eliminación simple
                         confirm = st.checkbox("¿Estás seguro que deseas eliminar este producto?")
                         if st.button("🗑️ Eliminar producto"):
                             if not confirm:
@@ -158,10 +199,7 @@ def modulo_editar_producto():
                                     st.rerun()
                                 except Exception as e:
                                     conn.rollback()
-                                    if "foreign key constraint fails" in str(e):
-                                        st.error("❌ No se puede eliminar el producto porque tiene compras o ventas asociadas.")
-                                    else:
-                                        st.error(f"❌ Error al eliminar: {e}")
+                                    st.error(f"❌ Error al eliminar: {e}")
                                 finally:
                                     cursor.close()
                                     conn.close()
