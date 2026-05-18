@@ -88,44 +88,59 @@ def modulo_ventas():
             st.success(f"✅ Producto encontrado: **{nombre_producto}**")
             st.info(f"📁 Categoría: **{categoria}**")
             
-            # Obtener todas las compras (ya están en libras en la BD)
+            # Obtener compras por unidad
             cursor.execute("""
-                SELECT SUM(cantidad_comprada) as total_comprado
+                SELECT unidad, SUM(cantidad_comprada) as total_comprado
                 FROM ProductoxCompra
                 WHERE Cod_barra = %s AND id_tienda = %s
+                GROUP BY unidad
             """, (cod_barra_real, id_tienda))
-            total_comprado = cursor.fetchone()[0] or 0
+            compras = cursor.fetchall()
             
-            # Obtener todas las ventas (ya están en libras en la BD)
+            # Obtener ventas por unidad
             cursor.execute("""
-                SELECT SUM(Cantidad_vendida) as total_vendido
+                SELECT unidad, SUM(Cantidad_vendida) as total_vendido
                 FROM ProductoxVenta
                 WHERE Cod_barra = %s AND id_tienda = %s
+                GROUP BY unidad
             """, (cod_barra_real, id_tienda))
-            total_vendido = cursor.fetchone()[0] or 0
+            ventas = cursor.fetchall()
             
-            # Calcular existencia en libras
-            existencia_libras = total_comprado - total_vendido
+            # Calcular existencias por unidad
+            existencias = {}
+            for unidad, cantidad in compras:
+                existencias[unidad] = cantidad
+            
+            for unidad, cantidad in ventas:
+                existencias[unidad] = existencias.get(unidad, 0) - cantidad
+            
+            # Calcular total en libras solo para mostrar
+            total_libras = 0
+            for unidad, cantidad in existencias.items():
+                if unidad == "libras":
+                    total_libras += cantidad
+                elif unidad == "quintal":
+                    total_libras += cantidad * 100
+                elif unidad == "arroba":
+                    total_libras += cantidad * 25
+                else:
+                    total_libras += cantidad
             
             if categoria in CATEGORIAS_GRANOS:
-                # Mostrar existencia convertida a las 3 unidades
+                # Mostrar existencia en las 3 unidades
                 st.markdown("**📦 Existencia actual:**")
-                
-                libras = existencia_libras
-                quintales = existencia_libras / 100
-                arrobas = existencia_libras / 25
-                
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("📦 Libras", f"{libras:.2f}")
+                    st.metric("📦 Libras", f"{existencias.get('libras', 0):.2f}")
                 with col2:
-                    st.metric("📦 Quintales", f"{quintales:.2f}")
+                    st.metric("📦 Quintales", f"{existencias.get('quintal', 0):.2f}")
                 with col3:
-                    st.metric("📦 Arrobas", f"{arrobas:.2f}")
+                    st.metric("📦 Arrobas", f"{existencias.get('arroba', 0):.2f}")
                 
-                st.caption(f"💡 **Total en libras:** {existencia_libras:.2f} libras")
+                # Verificar si hay stock en alguna unidad
+                tiene_stock = any(cantidad > 0 for cantidad in existencias.values())
                 
-                if existencia_libras <= 0:
+                if not tiene_stock:
                     st.error("❌ Producto sin stock.")
                 else:
                     # Obtener precios
@@ -145,25 +160,16 @@ def modulo_ventas():
                         precio_por_libra_mayorista2 = float(precios[2]) if precios[2] else 0
                     else:
                         st.warning("⚠️ No hay precios configurados.")
-                        precio_por_libra_minorista = 0
-                        precio_por_libra_mayorista1 = 0
-                        precio_por_libra_mayorista2 = 0
+                        precio_por_libra_minorista = precio_por_libra_mayorista1 = precio_por_libra_mayorista2 = 0
                     
-                    # Mostrar precios
                     st.markdown("**💰 Precios configurados (por libra):**")
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.metric("Minorista", f"${precio_por_libra_minorista:.2f}")
-                        if precio_por_libra_minorista > 0:
-                            st.caption(f"${precio_por_libra_minorista * 100:.2f}/qq | ${precio_por_libra_minorista * 25:.2f}/arr")
                     with col2:
                         st.metric("Mayorista 1", f"${precio_por_libra_mayorista1:.2f}")
-                        if precio_por_libra_mayorista1 > 0:
-                            st.caption(f"${precio_por_libra_mayorista1 * 100:.2f}/qq | ${precio_por_libra_mayorista1 * 25:.2f}/arr")
                     with col3:
                         st.metric("Mayorista 2", f"${precio_por_libra_mayorista2:.2f}")
-                        if precio_por_libra_mayorista2 > 0:
-                            st.caption(f"${precio_por_libra_mayorista2 * 100:.2f}/qq | ${precio_por_libra_mayorista2 * 25:.2f}/arr")
                     
                     unidades_disponibles = ["libras", "quintal", "arroba"]
                     
@@ -183,7 +189,7 @@ def modulo_ventas():
                     if precio_por_libra <= 0:
                         st.error(f"❌ No hay precio para {tipo_cliente}.")
                     else:
-                        st.markdown(f"**💰 Precio de venta por libra:** ${precio_por_libra:.2f}")
+                        st.markdown(f"**💰 Precio de venta (por libra):** ${precio_por_libra:.2f}")
                         
                         unidad_venta = st.selectbox(
                             "📏 Unidad de venta",
@@ -193,10 +199,11 @@ def modulo_ventas():
                         
                         st.info("💡 **Factores de conversión:** 1 quintal = 100 libras | 1 arroba = 25 libras")
                         
-                        # Calcular stock disponible en la unidad seleccionada
+                        # Stock disponible en la unidad seleccionada
+                        stock_en_unidad = existencias.get(unidad_venta, 0)
+                        
                         if unidad_venta == "libras":
-                            stock_disponible = existencia_libras
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} libras")
+                            st.caption(f"📦 Stock disponible: {stock_en_unidad:.2f} libras")
                             
                             cantidad = st.number_input(
                                 "📦 Cantidad vendida (libras)",
@@ -205,12 +212,34 @@ def modulo_ventas():
                                 format="%.2f",
                                 key="venta_cantidad"
                             )
-                            cantidad_en_libras = cantidad
-                            cantidad_original = cantidad
                             
+                            # Calcular libras totales para el subtotal
+                            cantidad_en_libras = cantidad
+                            
+                            # Verificar stock
+                            if cantidad > stock_en_unidad:
+                                st.error(f"❌ No hay suficiente stock. Disponible: {stock_en_unidad:.2f} libras")
+                            else:
+                                subtotal = round(precio_por_libra * cantidad_en_libras, 2)
+                                st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                                
+                                if st.button("🛒 Agregar producto a la venta", type="primary"):
+                                    producto_venta = {
+                                        "cod_barra": cod_barra_real,
+                                        "nombre": nombre_producto,
+                                        "precio_venta": precio_por_libra,
+                                        "cantidad": cantidad,
+                                        "unidad": unidad_venta,
+                                        "subtotal": subtotal,
+                                        "tipo_cliente": tipo_cliente,
+                                    }
+                                    st.session_state["productos_vendidos"].append(producto_venta)
+                                    st.session_state["_reset_venta_next_run"] = True
+                                    st.success("✅ Producto agregado a la venta.")
+                                    st.rerun()
+                        
                         elif unidad_venta == "quintal":
-                            stock_disponible = existencia_libras / 100
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} quintales")
+                            st.caption(f"📦 Stock disponible: {stock_en_unidad:.2f} quintales")
                             
                             cantidad = st.number_input(
                                 "📦 Cantidad vendida (quintales)",
@@ -219,14 +248,35 @@ def modulo_ventas():
                                 format="%.2f",
                                 key="venta_cantidad"
                             )
+                            
+                            # Convertir a libras para el subtotal
                             cantidad_en_libras = cantidad * 100
-                            cantidad_original = cantidad
                             
-                            st.caption(f"🔄 {cantidad:.2f} quintal(es) = {cantidad_en_libras:.2f} libras")
-                            
+                            # Verificar stock en quintales
+                            if cantidad > stock_en_unidad:
+                                st.error(f"❌ No hay suficiente stock. Disponible: {stock_en_unidad:.2f} quintales")
+                            else:
+                                st.caption(f"🔄 {cantidad:.2f} quintal(es) = {cantidad_en_libras:.2f} libras")
+                                subtotal = round(precio_por_libra * cantidad_en_libras, 2)
+                                st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                                
+                                if st.button("🛒 Agregar producto a la venta", type="primary"):
+                                    producto_venta = {
+                                        "cod_barra": cod_barra_real,
+                                        "nombre": nombre_producto,
+                                        "precio_venta": precio_por_libra,
+                                        "cantidad": cantidad,
+                                        "unidad": unidad_venta,
+                                        "subtotal": subtotal,
+                                        "tipo_cliente": tipo_cliente,
+                                    }
+                                    st.session_state["productos_vendidos"].append(producto_venta)
+                                    st.session_state["_reset_venta_next_run"] = True
+                                    st.success("✅ Producto agregado a la venta.")
+                                    st.rerun()
+                        
                         else:  # arroba
-                            stock_disponible = existencia_libras / 25
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} arrobas")
+                            st.caption(f"📦 Stock disponible: {stock_en_unidad:.2f} arrobas")
                             
                             cantidad = st.number_input(
                                 "📦 Cantidad vendida (arrobas)",
@@ -235,41 +285,42 @@ def modulo_ventas():
                                 format="%.2f",
                                 key="venta_cantidad"
                             )
+                            
+                            # Convertir a libras para el subtotal
                             cantidad_en_libras = cantidad * 25
-                            cantidad_original = cantidad
                             
-                            st.caption(f"🔄 {cantidad:.2f} arroba(s) = {cantidad_en_libras:.2f} libras")
-                        
-                        # Validar stock
-                        if cantidad_en_libras > existencia_libras:
-                            st.error(f"❌ No hay suficiente stock. Stock disponible: {stock_disponible:.2f} {unidad_venta}")
-                        else:
-                            subtotal = round(precio_por_libra * cantidad_en_libras, 2)
-                            st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
-                            
-                            if st.button("🛒 Agregar producto a la venta", type="primary"):
-                                producto_venta = {
-                                    "cod_barra": cod_barra_real,
-                                    "nombre": nombre_producto,
-                                    "precio_venta": precio_por_libra,
-                                    "cantidad": cantidad_en_libras,  # Se guarda en libras
-                                    "unidad": "libras",  # Siempre se guarda en libras
-                                    "unidad_mostrar": unidad_venta,
-                                    "cantidad_mostrar": cantidad_original,
-                                    "subtotal": subtotal,
-                                    "tipo_cliente": tipo_cliente,
-                                }
-                                st.session_state["productos_vendidos"].append(producto_venta)
-                                st.session_state["_reset_venta_next_run"] = True
-                                st.success("✅ Producto agregado a la venta.")
-                                st.rerun()
+                            # Verificar stock en arrobas
+                            if cantidad > stock_en_unidad:
+                                st.error(f"❌ No hay suficiente stock. Disponible: {stock_en_unidad:.2f} arrobas")
+                            else:
+                                st.caption(f"🔄 {cantidad:.2f} arroba(s) = {cantidad_en_libras:.2f} libras")
+                                subtotal = round(precio_por_libra * cantidad_en_libras, 2)
+                                st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                                
+                                if st.button("🛒 Agregar producto a la venta", type="primary"):
+                                    producto_venta = {
+                                        "cod_barra": cod_barra_real,
+                                        "nombre": nombre_producto,
+                                        "precio_venta": precio_por_libra,
+                                        "cantidad": cantidad,
+                                        "unidad": unidad_venta,
+                                        "subtotal": subtotal,
+                                        "tipo_cliente": tipo_cliente,
+                                    }
+                                    st.session_state["productos_vendidos"].append(producto_venta)
+                                    st.session_state["_reset_venta_next_run"] = True
+                                    st.success("✅ Producto agregado a la venta.")
+                                    st.rerun()
             
             else:
                 # Productos no granos
                 st.markdown("**📦 Existencia actual:**")
-                st.info(f"• **{existencia_libras:.2f} libras**")
+                for unidad, cantidad in existencias.items():
+                    if cantidad > 0:
+                        st.info(f"• **{cantidad:.2f} {unidad}**")
                 
-                if existencia_libras <= 0:
+                tiene_stock = any(c > 0 for c in existencias.values())
+                if not tiene_stock:
                     st.error("❌ Producto sin stock.")
                 else:
                     cursor.execute("""
@@ -298,6 +349,12 @@ def modulo_ventas():
                         with col3:
                             st.metric("Mayorista 2", f"${precio_mayorista2:.2f}")
                     
+                    if categoria in CATEGORIAS_CARNES:
+                        unidades_con_stock = [u for u, c in existencias.items() if c > 0]
+                        unidades_disponibles = [unidades_con_stock[0]] if unidades_con_stock else ["unidad"]
+                    else:
+                        unidades_disponibles = ["unidad"]
+                    
                     tipo_cliente = st.radio(
                         "🧾 Seleccione el tipo de cliente",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
@@ -305,40 +362,50 @@ def modulo_ventas():
                     )
                     
                     if tipo_cliente == "Minorista":
-                        precio_venta = precio_minorista
+                        precio_base = precio_minorista
                     elif tipo_cliente == "Mayorista 1":
-                        precio_venta = precio_mayorista1
+                        precio_base = precio_mayorista1
                     else:
-                        precio_venta = precio_mayorista2
+                        precio_base = precio_mayorista2
                     
-                    if precio_venta <= 0:
+                    if precio_base <= 0:
                         st.error(f"❌ No hay precio para {tipo_cliente}.")
                     else:
-                        st.markdown(f"**💰 Precio de venta:** ${precio_venta:.2f}")
+                        st.markdown(f"**💰 Precio de venta:** ${precio_base:.2f}")
+                        unidad_venta = st.selectbox("📏 Unidad de venta", unidades_disponibles, key="unidad_select")
+                        stock_disponible = existencias.get(unidad_venta, 0)
+                        st.caption(f"📦 Stock disponible: {stock_disponible:.2f} {unidad_venta}")
                         
-                        cantidad = st.number_input(
-                            "📦 Cantidad vendida (libras)",
-                            min_value=0.01,
-                            step=0.01,
-                            format="%.2f",
-                            key="venta_cantidad"
-                        )
-                        
-                        if cantidad > existencia_libras:
-                            st.error(f"❌ Stock insuficiente. Disponible: {existencia_libras:.2f} libras")
+                        if unidad_venta == "unidad":
+                            cantidad = st.number_input(
+                                f"📦 Cantidad vendida ({unidad_venta})",
+                                min_value=1,
+                                step=1,
+                                format="%d",
+                                key="venta_cantidad"
+                            )
                         else:
-                            subtotal = round(precio_venta * cantidad, 2)
+                            cantidad = st.number_input(
+                                f"📦 Cantidad vendida ({unidad_venta})",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
+                        
+                        if cantidad > stock_disponible:
+                            st.error(f"❌ Stock insuficiente. Disponible: {stock_disponible:.2f} {unidad_venta}")
+                        else:
+                            subtotal = round(precio_base * cantidad, 2)
                             st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
                             
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
                                 producto_venta = {
                                     "cod_barra": cod_barra_real,
                                     "nombre": nombre_producto,
-                                    "precio_venta": precio_venta,
+                                    "precio_venta": precio_base,
                                     "cantidad": cantidad,
-                                    "unidad": "libras",
-                                    "unidad_mostrar": "libras",
-                                    "cantidad_mostrar": cantidad,
+                                    "unidad": unidad_venta,
                                     "subtotal": subtotal,
                                     "tipo_cliente": tipo_cliente,
                                 }
@@ -354,11 +421,8 @@ def modulo_ventas():
         total_venta = 0.0
         for i, prod in enumerate(st.session_state["productos_vendidos"]):
             total_venta += prod["subtotal"]
-            # Mostrar con la unidad original que seleccionó el usuario
-            cantidad_mostrar = prod.get("cantidad_mostrar", prod["cantidad"])
-            unidad_mostrar = prod.get("unidad_mostrar", prod["unidad"])
             st.markdown(
-                f"**{prod['nombre']}** — {cantidad_mostrar:.2f} {unidad_mostrar} — "
+                f"**{prod['nombre']}** — {prod['cantidad']:.2f} {prod['unidad']} — "
                 f"Subtotal: ${prod['subtotal']:.2f} — "
                 f"**Cliente:** {prod['tipo_cliente']}"
             )
@@ -387,11 +451,11 @@ def modulo_ventas():
                         (
                             nuevo_id,
                             prod["cod_barra"],
-                            prod["cantidad"],  # Siempre en libras
+                            prod["cantidad"],
                             prod["tipo_cliente"],
                             round(prod["precio_venta"], 2),
                             id_tienda,
-                            "libras",  # Siempre se guarda en libras
+                            prod["unidad"],
                         ),
                     )
                 conn.commit()
