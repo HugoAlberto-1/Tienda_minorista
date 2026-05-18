@@ -264,7 +264,6 @@ def menu_principal():
         # Submenús según macro módulo
         elif st.session_state["macro_modulo"] == "registro":
             with st.container():
-                st.markdown(f'<div class="macro-section">', unsafe_allow_html=True)
                 st.markdown(f'<div style="text-align: center;"><span class="section-title">✏️ Registra información</span></div>', unsafe_allow_html=True)
                 
                 col1, col2, col3, col4 = st.columns(4)
