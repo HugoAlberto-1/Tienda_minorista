@@ -309,7 +309,6 @@ def login():
     
     # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
-        st.markdown('<div class="form-content">', unsafe_allow_html=True)
         
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
