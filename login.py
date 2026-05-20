@@ -10,55 +10,67 @@ def configurar_pagina_login():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores corporativos (mismo que el menú principal)
-    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
-    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
-    COLOR_ACCENT = "#3a7ca5"       # Azul claro
-    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
-    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
-    COLOR_TEXT = "#333333"          # Texto oscuro
-    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
-    COLOR_BORDER = "#e0e0e0"        # Bordes
+    # Paleta de colores corporativos
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_ACCENT = "#3a7ca5"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_LIGHT = "#666666"
+    COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para el login
+    # CSS personalizado para el login CON BLOQUEO DE SCROLL
     st.markdown(f"""
         <style>
-        /* Fondo general */
-        .stApp {{
-            background-color: {COLOR_BG};
+        /* BLOQUEAR SCROLL COMPLETAMENTE */
+        html, body {{
+            overflow: hidden !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
-        /* BLOQUEAR SCROLL - SOLO PARA PÁGINA DE LOGIN */
-        html, body, .stApp {{
+        .stApp {{
+            background-color: {COLOR_BG};
             overflow: hidden !important;
             height: 100vh !important;
             position: fixed !important;
-            width: 100% !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
         }}
         
-        /* Asegurar que el contenedor principal también bloquee scroll */
+        /* Eliminar scroll del contenedor principal */
         .main .block-container {{
             overflow: hidden !important;
-            height: 100vh !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
             max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }}
         
-        /* Ajustar las columnas para que usen toda la altura */
+        /* Forzar que las columnas ocupen toda la pantalla sin scroll */
         .row-widget.stColumns {{
             height: 100vh !important;
             overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
-        /* Ocultar elementos no deseados */
-        header {{
-            display: none;
+        /* Ajustar cada columna individualmente */
+        div[data-testid="column"] {{
+            overflow-y: auto !important;
+            height: 100vh !important;
         }}
+        
+        /* Ocultar header y sidebar */
+        header {{
+            display: none !important;
+        }}
+        
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
         
         /* Contenedor principal - dos columnas */
         .login-container {{
@@ -172,7 +184,7 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
+        /* Lista de características */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -358,7 +370,7 @@ def login():
             </div>
         """, unsafe_allow_html=True)
     
-    # Columna derecha - Imagen decorativa con características centradas
+    # Columna derecha - Imagen decorativa
     with col_image:
         st.markdown("""
             <div class="image-content">
@@ -387,3 +399,8 @@ def login():
             <div class="bg-decoration"></div>
             <div class="bg-decoration-2"></div>
         """, unsafe_allow_html=True)
+
+
+# Ejecutar la función login
+if __name__ == "__main__":
+    login()
