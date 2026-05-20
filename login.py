@@ -99,7 +99,7 @@ def configurar_pagina_login():
         div[data-testid="column"]:first-child {{
             flex: 0.8;
             background-color: {COLOR_CARD};
-            padding: 20px !important;
+            padding: 0px !important;
             margin: 0 !important;
             height: 100vh !important;
             overflow: hidden !important;
