@@ -10,92 +10,192 @@ def configurar_pagina_login():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores corporativos (mismo que el menú principal)
-    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
-    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
-    COLOR_ACCENT = "#3a7ca5"       # Azul claro
-    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
-    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
-    COLOR_TEXT = "#333333"          # Texto oscuro
-    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
-    COLOR_BORDER = "#e0e0e0"        # Bordes
+    # Paleta de colores corporativos
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_LIGHT = "#666666"
+    COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para el login
+    # CSS personalizado para el login - SIN SCROLL
     st.markdown(f"""
         <style>
-        /* Fondo general */
+        /* ========== BLOQUEAR SCROLL COMPLETAMENTE ========== */
+        html, body {{
+            overflow: hidden !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        
         .stApp {{
+            overflow: hidden !important;
+            height: 100vh !important;
             background-color: {COLOR_BG};
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
-        /* Ocultar elementos no deseados */
+        .stAppViewContainer {{
+            overflow: hidden !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        
+        .main {{
+            overflow: hidden !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        
+        .block-container {{
+            overflow: hidden !important;
+            height: 100vh !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+        }}
+        
+        /* Ocultar scrollbars */
+        ::-webkit-scrollbar {{
+            display: none !important;
+        }}
+        
+        * {{
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }}
+        
+        /* Ocultar header */
         header {{
-            display: none;
+            display: none !important;
         }}
         
-        /* Contenedor principal - dos columnas */
-        .login-container {{
-            display: flex;
-            min-height: 100vh;
-            width: 100%;
+        .stDeployButton {{
+            display: none !important;
+        }}
+        
+        /* Eliminar cualquier padding/margin del contenedor principal */
+        .stApp > div {{
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        
+        /* Contenedor de las columnas - ocupa toda la pantalla */
+        .row-widget.stColumns {{
+            display: flex !important;
+            height: 100vh !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 0 !important;
         }}
         
         /* Columna izquierda - Formulario */
-        .login-form {{
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            background: {COLOR_CARD};
+        div[data-testid="column"]:first-child {{
+            flex: 0.8;
+            background-color: {COLOR_CARD};
+            padding: 20px !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
         }}
         
-        .form-wrapper {{
+        /* Columna derecha - Imagen SIN NINGÚN ESPACIO */
+        div[data-testid="column"]:last-child {{
+            flex: 1.2;
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+            position: relative;
+        }}
+        
+        /* Eliminar cualquier contenedor interno que pueda agregar padding */
+        div[data-testid="column"]:last-child > div {{
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100% !important;
+        }}
+        
+        /* Contenedor de la imagen - OCUPA TODA LA ALTURA */
+        .image-container {{
             width: 100%;
-            max-width: 400px;
+            height: 100vh;
+            overflow: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: 0;
+            padding: 0;
         }}
         
-        /* Logo y título */
+        .image-container img {{
+            width: 100%;
+            height: 100vh;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            margin: 0;
+            padding: 0;
+        }}
+        
+        /* Estilos del formulario */
+        .form-content {{
+            width: 100%;
+            max-width: 340px;
+            margin: 0 auto;
+        }}
+        
         .logo {{
-            font-size: 3em;
-            margin-bottom: 20px;
+            font-size: 2.5em;
+            margin-bottom: 10px;
             text-align: center;
         }}
         
         .company-name {{
-            font-size: 1.5em;
+            font-size: 1.2em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
             text-align: center;
-            margin-bottom: 10px;
-            letter-spacing: 2px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
         }}
         
         .system-name {{
-            font-size: 0.9em;
+            font-size: 0.75em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 25px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }}
         
-        /* Campos de entrada */
         .input-label {{
-            font-size: 0.75em;
+            font-size: 0.7em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            margin-top: 8px;
             display: block;
         }}
         
         .stTextInput > div > div > input {{
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid {COLOR_BORDER};
-            padding: 10px 15px;
-            font-size: 0.95em;
+            padding: 8px 12px;
+            font-size: 0.85em;
             background-color: {COLOR_CARD};
             color: {COLOR_TEXT};
         }}
@@ -105,148 +205,44 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Columna derecha - Imagen decorativa */
-        .login-image {{
-            flex: 1;
-            background: linear-gradient(135deg, {COLOR_BG}, {COLOR_CARD});
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            border-radius: 30px 0 0 30px;
-            margin: 20px 0;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
-        .image-content {{
-            text-align: center;
-            padding: 40px;
-            z-index: 2;
-            width: 100%;
-        }}
-        
-        .image-icon {{
-            font-size: 5em;
-            margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-        }}
-        
-        .image-title {{
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: {COLOR_PRIMARY};
-        }}
-        
-        .image-subtitle {{
-            font-size: 1em;
-            margin-bottom: 40px;
-            color: {COLOR_PRIMARY};
-        }}
-        
-        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
-        .feature-list {{
-            margin-top: 20px;
-            width: 100%;
-        }}
-        
-        .feature-item {{
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            max-width: 320px;
-        }}
-        
-        .feature-icon {{
-            font-size: 1.3em;
-            min-width: 35px;
-            text-align: center;
-        }}
-        
-        .feature-text {{
-            font-size: 0.95em;
-            text-align: left;
-            color: {COLOR_PRIMARY};
-        }}
-        
-        /* Animación flotante */
-        @keyframes float {{
-            0%, 100% {{ transform: translateY(0px); }}
-            50% {{ transform: translateY(-20px); }}
-        }}
-        
-        /* Decoración de fondo */
-        .bg-decoration {{
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(30,58,95,0.05);
-            border-radius: 50%;
-            bottom: -100px;
-            right: -100px;
-        }}
-        
-        .bg-decoration-2 {{
-            position: absolute;
-            width: 200px;
-            height: 200px;
-            background: rgba(30,58,95,0.03);
-            border-radius: 50%;
-            top: -50px;
-            left: -50px;
-        }}
-        
-        /* Botón de login */
         .stButton > button {{
             width: 100%;
-            padding: 12px;
-            margin-top: 20px;
+            padding: 8px;
+            margin-top: 15px;
             background-color: {COLOR_PRIMARY};
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-size: 0.85em;
             transition: all 0.3s ease;
+            cursor: pointer;
         }}
         
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }}
         
-        /* Checkbox */
         .stCheckbox {{
-            margin-top: 15px;
+            margin-top: 10px;
         }}
         
         .stCheckbox label {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.8em;
+            font-size: 0.75em;
         }}
         
-        /* Footer */
-        .login-footer {{
-            text-align: center;
-            margin-top: 40px;
-            font-size: 0.7em;
-            color: {COLOR_TEXT_LIGHT};
-        }}
-        
-        /* Links */
         .forgot-link {{
             text-align: right;
-            margin-top: 15px;
+            margin-top: 10px;
         }}
         
         .forgot-link a {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.75em;
+            font-size: 0.7em;
             text-decoration: none;
         }}
         
@@ -254,12 +250,31 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Versión */
-        .version {{
+        .login-footer {{
             text-align: center;
-            margin-top: 20px;
-            font-size: 0.7em;
+            margin-top: 25px;
+            font-size: 0.6em;
             color: {COLOR_TEXT_LIGHT};
+            line-height: 1.4;
+        }}
+        
+        /* Asegurar que los mensajes no causen scroll */
+        .stAlert {{
+            margin-top: 8px;
+            margin-bottom: 0;
+            padding: 6px;
+            font-size: 0.75em;
+        }}
+        
+        /* Eliminar márgenes extra */
+        .element-container {{
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        
+        .stMarkdown {{
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -289,15 +304,17 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Usar columnas de Streamlit para el diseño de dos columnas
-    col_form, col_image = st.columns([1, 1], gap="large")
+    # Crear las dos columnas
+    col_form, col_image = st.columns([0.8, 1.2], gap="small")
     
-    # Columna izquierda - Formulario
+    # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
+        st.markdown('<div class="form-content">', unsafe_allow_html=True)
+        
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
-        st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
+        st.markdown('<div class="system-name">SISTEMA DE INVENTARIO</div>', unsafe_allow_html=True)
         
         # Campos de entrada
         st.markdown('<label class="input-label">USUARIO</label>', unsafe_allow_html=True)
@@ -309,7 +326,7 @@ def login():
         # Checkbox y forgot password
         col1, col2 = st.columns([1, 1])
         with col1:
-            stay_signed = st.checkbox("Mantener sesión iniciada")
+            stay_signed = st.checkbox("Mantener sesión")
         with col2:
             st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
         
@@ -340,40 +357,28 @@ def login():
                     st.error("❌ Usuario o contraseña incorrectos")
         
         # Footer
-        st.markdown(f"""
+        st.markdown("""
             <div class="login-footer">
                 <div>v1.0.0</div>
-                <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
+                <div>Sistema de Gestión de Inventario</div>
                 <div>© 2024 - Tienda Cerro de Dios</div>
             </div>
         """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    # Columna derecha - Imagen decorativa con características centradas
+    # ========== COLUMNA DERECHA - IMAGEN ALTA RESOLUCIÓN ==========
     with col_image:
-        st.markdown("""
-            <div class="image-content">
-                <div class="image-icon">🏪</div>
-                <div class="image-title">Bienvenido</div>
-                <div class="image-subtitle">Gestiona tu negocio de manera eficiente</div>
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <span class="feature-icon">✅</span>
-                        <span class="feature-text">Control de inventario en tiempo real</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">💰</span>
-                        <span class="feature-text">Registro de compras y ventas</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">📊</span>
-                        <span class="feature-text">Reportes y análisis de datos</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🔐</span>
-                        <span class="feature-text">Seguridad y respaldo de información</span>
-                    </div>
-                </div>
+        # Imagen de alta resolución (4K) - Tienda moderna
+        imagen_url = "https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
+        
+        st.markdown(f"""
+            <div class="image-container">
+                <img src="{imagen_url}" alt="Tienda de abarrotes">
             </div>
-            <div class="bg-decoration"></div>
-            <div class="bg-decoration-2"></div>
         """, unsafe_allow_html=True)
+
+
+# Ejecutar la función login
+if __name__ == "__main__":
+    login()
