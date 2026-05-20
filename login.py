@@ -28,6 +28,33 @@ def configurar_pagina_login():
             background-color: {COLOR_BG};
         }}
         
+        /* BLOQUEAR SCROLL - SOLO PARA PÁGINA DE LOGIN */
+        html, body, .stApp {{
+            overflow: hidden !important;
+            height: 100vh !important;
+            position: fixed !important;
+            width: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+        }}
+        
+        /* Asegurar que el contenedor principal también bloquee scroll */
+        .main .block-container {{
+            overflow: hidden !important;
+            height: 100vh !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            max-width: 100% !important;
+        }}
+        
+        /* Ajustar las columnas para que usen toda la altura */
+        .row-widget.stColumns {{
+            height: 100vh !important;
+            overflow: hidden !important;
+        }}
+        
         /* Ocultar elementos no deseados */
         header {{
             display: none;
@@ -328,6 +355,7 @@ def login():
                 <div>v1.0.0</div>
                 <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
                 <div>© 2024 - Tienda Cerro de Dios</div>
+            </div>
         """, unsafe_allow_html=True)
     
     # Columna derecha - Imagen decorativa con características centradas
