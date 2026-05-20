@@ -19,54 +19,91 @@ def configurar_pagina_login():
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para el login
+    # CSS personalizado para el login - SIN SCROLL
     st.markdown(f"""
         <style>
-        /* Ocultar solo el header */
-        header {{
-            display: none !important;
+        /* ========== BLOQUEAR SCROLL COMPLETAMENTE ========== */
+        html, body {{
+            overflow: hidden !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
-        /* Eliminar padding del contenedor principal */
-        .main .block-container {{
+        .stApp {{
+            overflow: hidden !important;
+            height: 100vh !important;
+            background-color: {COLOR_BG};
+        }}
+        
+        .stAppViewContainer {{
+            overflow: hidden !important;
+            height: 100vh !important;
+        }}
+        
+        .main {{
+            overflow: hidden !important;
+            height: 100vh !important;
+        }}
+        
+        .block-container {{
+            overflow: hidden !important;
+            height: 100vh !important;
             padding: 0 !important;
             margin: 0 !important;
             max-width: 100% !important;
         }}
         
-        /* Asegurar que el contenedor principal ocupe toda la pantalla */
-        .stApp {{
-            background-color: {COLOR_BG};
+        /* Ocultar scrollbars */
+        ::-webkit-scrollbar {{
+            display: none !important;
         }}
         
-        .stAppViewContainer {{
-            width: 100% !important;
+        * {{
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }}
+        
+        /* Ocultar header */
+        header {{
+            display: none !important;
+        }}
+        
+        .stDeployButton {{
+            display: none !important;
+        }}
+        
+        /* Contenedor de las columnas - ocupa toda la pantalla */
+        .row-widget.stColumns {{
+            display: flex !important;
             height: 100vh !important;
+            width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-        }}
-        
-        /* Estilo para las columnas */
-        div[data-testid="column"] {{
-            padding: 0 !important;
-            margin: 0 !important;
+            gap: 0 !important;
         }}
         
         /* Columna izquierda - Formulario */
         div[data-testid="column"]:first-child {{
+            flex: 1;
             background-color: {COLOR_CARD};
-            padding: 40px !important;
-            height: 100vh;
-            overflow-y: auto;
+            padding: 20px !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
         }}
         
         /* Columna derecha - Imagen */
         div[data-testid="column"]:last-child {{
+            flex: 1.2;
             padding: 0 !important;
             margin: 0 !important;
-            height: 100vh;
+            height: 100vh !important;
+            overflow: hidden !important;
             position: relative;
-            overflow: hidden;
         }}
         
         /* Contenedor de la imagen */
@@ -88,51 +125,48 @@ def configurar_pagina_login():
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
-            padding: 20px 0;
         }}
         
         .logo {{
             font-size: 3em;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: center;
         }}
         
         .company-name {{
-            font-size: 1.5em;
+            font-size: 1.4em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             letter-spacing: 1px;
         }}
         
         .system-name {{
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }}
         
-        /* Labels de los campos */
         .input-label {{
-            font-size: 0.8em;
+            font-size: 0.75em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 5px;
-            margin-top: 15px;
+            margin-top: 10px;
             display: block;
         }}
         
-        /* Campos de entrada */
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
-            padding: 12px 15px;
-            font-size: 1em;
+            padding: 10px 12px;
+            font-size: 0.9em;
             background-color: {COLOR_CARD};
             color: {COLOR_TEXT};
         }}
@@ -142,11 +176,10 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Botón de login */
         .stButton > button {{
             width: 100%;
-            padding: 12px;
-            margin-top: 25px;
+            padding: 10px;
+            margin-top: 20px;
             background-color: {COLOR_PRIMARY};
             color: white;
             border: none;
@@ -160,28 +193,26 @@ def configurar_pagina_login():
         
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }}
         
-        /* Checkbox */
         .stCheckbox {{
-            margin-top: 15px;
+            margin-top: 12px;
         }}
         
         .stCheckbox label {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.85em;
+            font-size: 0.8em;
         }}
         
-        /* Link de olvidé contraseña */
         .forgot-link {{
             text-align: right;
-            margin-top: 15px;
+            margin-top: 12px;
         }}
         
         .forgot-link a {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.8em;
+            font-size: 0.75em;
             text-decoration: none;
         }}
         
@@ -189,33 +220,31 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Footer */
         .login-footer {{
             text-align: center;
-            margin-top: 40px;
-            font-size: 0.7em;
+            margin-top: 30px;
+            font-size: 0.65em;
             color: {COLOR_TEXT_LIGHT};
-            line-height: 1.6;
+            line-height: 1.5;
         }}
         
-        /* Ajustes para mensajes de error/success */
+        /* Asegurar que los mensajes no causen scroll */
         .stAlert {{
-            margin-top: 15px;
+            margin-top: 10px;
             margin-bottom: 0;
+            padding: 8px;
+            font-size: 0.8em;
         }}
         
-        /* Scroll solo si es necesario */
-        ::-webkit-scrollbar {{
-            width: 6px;
+        /* Eliminar márgenes extra */
+        .element-container {{
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
-        ::-webkit-scrollbar-track {{
-            background: #f1f1f1;
-        }}
-        
-        ::-webkit-scrollbar-thumb {{
-            background: #888;
-            border-radius: 3px;
+        .stMarkdown {{
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -246,7 +275,7 @@ def login():
     configurar_pagina_login()
     
     # Crear las dos columnas
-    col_form, col_image = st.columns([1, 1.2], gap="medium")
+    col_form, col_image = st.columns([1, 1.2], gap="small")
     
     # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
@@ -264,7 +293,7 @@ def login():
         st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
         
-        # Checkbox y forgot password en dos columnas
+        # Checkbox y forgot password
         col1, col2 = st.columns([1, 1])
         with col1:
             stay_signed = st.checkbox("Mantener sesión")
@@ -313,14 +342,16 @@ def login():
         # Cambia esta URL por tu imagen
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Si quieres usar imagen local, descomenta esto:
+        # Si quieres usar imagen local:
         # import base64
         # from PIL import Image
         # from io import BytesIO
         # 
         # img = Image.open("tu-imagen.jpg")
+        # # Redimensionar si es necesario
+        # img = img.resize((1920, 1080), Image.Resampling.LANCZOS)
         # buffered = BytesIO()
-        # img.save(buffered, format="JPEG")
+        # img.save(buffered, format="JPEG", quality=95)
         # img_base64 = base64.b64encode(buffered.getvalue()).decode()
         # imagen_url = f"data:image/jpeg;base64,{img_base64}"
         
