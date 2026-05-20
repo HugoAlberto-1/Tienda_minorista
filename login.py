@@ -365,7 +365,6 @@ def login():
         st.markdown(f"""
             <div class="image-container">
                 <img src="{imagen_url}" alt="Imagen de fondo">
-            </div>
         """, unsafe_allow_html=True)
 
 
