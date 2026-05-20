@@ -107,8 +107,7 @@ def configurar_pagina_login():
         
         /* Columna derecha - Imagen decorativa */
         .login-image {{
-            flex: 1;
-            background: linear-gradient(135deg, {COLOR_BG}, {COLOR_CARD});
+            flex: 2;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -116,88 +115,36 @@ def configurar_pagina_login():
             overflow: hidden;
             border-radius: 30px 0 0 30px;
             margin: 20px 0;
-            border: 1px solid {COLOR_BORDER};
+            box-shadow: -5px 0 20px rgba(0,0,0,0.05);
         }}
         
-        .image-content {{
-            text-align: center;
-            padding: 40px;
-            z-index: 2;
+        .image-container {{
             width: 100%;
-        }}
-        
-        .image-icon {{
-            font-size: 5em;
-            margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-        }}
-        
-        .image-title {{
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: {COLOR_PRIMARY};
-        }}
-        
-        .image-subtitle {{
-            font-size: 1em;
-            margin-bottom: 40px;
-            color: {COLOR_PRIMARY};
-        }}
-        
-        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
-        .feature-list {{
-            margin-top: 20px;
-            width: 100%;
-        }}
-        
-        .feature-item {{
-            margin: 20px auto;
+            height: 100%;
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 12px;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }}
+        
+        .login-image img {{
             width: 100%;
-            max-width: 320px;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 30px 0 0 30px;
         }}
         
-        .feature-icon {{
-            font-size: 1.3em;
-            min-width: 35px;
-            text-align: center;
-        }}
-        
-        .feature-text {{
-            font-size: 0.95em;
-            text-align: left;
-            color: {COLOR_PRIMARY};
-        }}
-        
-        /* Animación flotante */
-        @keyframes float {{
-            0%, 100% {{ transform: translateY(0px); }}
-            50% {{ transform: translateY(-20px); }}
-        }}
-        
-        /* Decoración de fondo */
-        .bg-decoration {{
+        /* Overlay opcional para la imagen */
+        .image-overlay {{
             position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(30,58,95,0.05);
-            border-radius: 50%;
-            bottom: -100px;
-            right: -100px;
-        }}
-        
-        .bg-decoration-2 {{
-            position: absolute;
-            width: 200px;
-            height: 200px;
-            background: rgba(30,58,95,0.03);
-            border-radius: 50%;
-            top: -50px;
-            left: -50px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            border-radius: 30px 0 0 30px;
+            z-index: 1;
         }}
         
         /* Botón de login */
@@ -289,8 +236,8 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Usar columnas de Streamlit para el diseño de dos columnas
-    col_form, col_image = st.columns([1, 1], gap="large")
+    # Usar columnas de Streamlit para el diseño de dos columnas (1:2)
+    col_form, col_image = st.columns([1, 2], gap="large")
     
     # Columna izquierda - Formulario
     with col_form:
@@ -348,32 +295,29 @@ def login():
             </div>
         """, unsafe_allow_html=True)
     
-    # Columna derecha - Imagen decorativa con características centradas
+    # Columna derecha - Imagen personalizada
     with col_image:
-        st.markdown("""
-            <div class="image-content">
-                <div class="image-icon">🏪</div>
-                <div class="image-title">Bienvenido</div>
-                <div class="image-subtitle">Gestiona tu negocio de manera eficiente</div>
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <span class="feature-icon">✅</span>
-                        <span class="feature-text">Control de inventario en tiempo real</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">💰</span>
-                        <span class="feature-text">Registro de compras y ventas</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">📊</span>
-                        <span class="feature-text">Reportes y análisis de datos</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🔐</span>
-                        <span class="feature-text">Seguridad y respaldo de información</span>
-                    </div>
-                </div>
+        # ==========================================
+        # 👇 REEMPLAZA ESTA URL CON TU PROPIA IMAGEN
+        # ==========================================
+        
+        # Opción 1: Usar imagen desde URL
+        imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
+        
+        # Opción 2: Usar imagen local (descomenta las siguientes líneas y comenta la de arriba)
+        # from PIL import Image
+        # imagen = Image.open("imagenes/tu-imagen.jpg")
+        # st.image(imagen, use_container_width=True)
+        
+        # Mostrar imagen con estilo
+        st.markdown(f"""
+            <div class="login-image">
+                <div class="image-overlay"></div>
+                <img src="{imagen_url}" alt="Imagen de fondo">
             </div>
-            <div class="bg-decoration"></div>
-            <div class="bg-decoration-2"></div>
         """, unsafe_allow_html=True)
+        
+        # ==========================================
+        # FIN DE LA SECCIÓN PARA REEMPLAZAR
+        # ==========================================
+        
