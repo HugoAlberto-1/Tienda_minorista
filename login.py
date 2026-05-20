@@ -167,10 +167,6 @@ def login():
     # Configurar la página con el estilo
     configurar_pagina_login()
     
-    # Contenedor principal
-    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
-    st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    
     # Icono y título
     st.markdown('<div class="login-icon">📦</div>', unsafe_allow_html=True)
     st.markdown('<div class="main-title">Sistema de Inventario</div>', unsafe_allow_html=True)
