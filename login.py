@@ -95,14 +95,14 @@ def configurar_pagina_login():
             padding: 0 !important;
         }}
         
-        /* Contenedor de las columnas - ocupa toda la pantalla */
-        .row-widget.stColumns {{
+        /* CORRECCIÓN: Contenedor de las columnas - Sobrescribe de forma agresiva el gap="small" visualmente */
+        .row-widget.stColumns, div[data-testid="stHorizontalBlock"] {{
             display: flex !important;
             height: 100vh !important;
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            gap: 0 !important;
+            gap: 0px !important;
         }}
         
         /* Columna izquierda - Formulario */
@@ -314,8 +314,8 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # CORRECCIÓN: Se cambia el parámetro gap a "none" para evitar desfases de layout externos
-    col_form, col_image = st.columns([0.8, 1.2], gap="none")
+    # CORRECCIÓN: Regresamos a gap="small" para que Streamlit compile de forma nativa sin errores.
+    col_form, col_image = st.columns([0.8, 1.2], gap="small")
     
     # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
