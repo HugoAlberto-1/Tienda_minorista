@@ -336,7 +336,7 @@ def login():
         st.markdown("""
             <div class="image-content">
                 <div class="image-icon">🏪</div>
-                <div class="image-title">Bienvenido</div>
+                <div class="image-title">Bienvenida</div>
                 <div class="image-subtitle">Gestiona tu negocio de manera eficiente</div>
                 <div class="feature-list">
                     <div class="feature-item">
