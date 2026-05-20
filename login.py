@@ -34,16 +34,22 @@ def configurar_pagina_login():
             overflow: hidden !important;
             height: 100vh !important;
             background-color: {COLOR_BG};
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
         .stAppViewContainer {{
             overflow: hidden !important;
             height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
         .main {{
             overflow: hidden !important;
             height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
         .block-container {{
@@ -73,6 +79,12 @@ def configurar_pagina_login():
             display: none !important;
         }}
         
+        /* Eliminar cualquier padding/margin del contenedor principal */
+        .stApp > div {{
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        
         /* Contenedor de las columnas - ocupa toda la pantalla */
         .row-widget.stColumns {{
             display: flex !important;
@@ -96,7 +108,7 @@ def configurar_pagina_login():
             justify-content: center !important;
         }}
         
-        /* Columna derecha - Imagen SIN ESPACIO ARRIBA */
+        /* Columna derecha - Imagen SIN NINGÚN ESPACIO */
         div[data-testid="column"]:last-child {{
             flex: 1.2;
             padding: 0 !important;
@@ -104,28 +116,37 @@ def configurar_pagina_login():
             height: 100vh !important;
             overflow: hidden !important;
             position: relative;
-            top: 0 !important;
-            left: 0 !important;
         }}
         
-        /* Contenedor de la imagen - SIN MÁRGENES */
+        /* Eliminar cualquier contenedor interno que pueda agregar padding */
+        div[data-testid="column"]:last-child > div {{
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100% !important;
+        }}
+        
+        /* Contenedor de la imagen - OCUPA TODA LA ALTURA */
         .image-container {{
             width: 100%;
-            height: 110vh;
+            height: 100vh;
             overflow: hidden;
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
+            margin: 0;
+            padding: 0;
         }}
         
         .image-container img {{
             width: 100%;
-            height: 100%;
+            height: 100vh;
             object-fit: cover;
             object-position: center;
             display: block;
+            margin: 0;
+            padding: 0;
         }}
         
         /* Estilos del formulario - MÁS COMPACTO */
@@ -346,26 +367,31 @@ def login():
         
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # ========== COLUMNA DERECHA - IMAGEN SIN ESPACIO ARRIBA ==========
+    # ========== COLUMNA DERECHA - IMAGEN SIN ESPACIO ==========
     with col_image:
-        # Cambia esta URL por tu imagen
+        # Usar st.image en lugar de HTML para mejor control
+        from PIL import Image
+        import requests
+        from io import BytesIO
+        
+        # Opción 1: Imagen desde URL
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Si quieres usar imagen local:
-        # import base64
-        # from PIL import Image
-        # from io import BytesIO
-        # 
-        # img = Image.open("tu-imagen.jpg")
-        # buffered = BytesIO()
-        # img.save(buffered, format="JPEG", quality=95)
-        # img_base64 = base64.b64encode(buffered.getvalue()).decode()
-        # imagen_url = f"data:image/jpeg;base64,{img_base64}"
+        # Opción 2: Imagen local (descomenta esta y comenta la de arriba)
+        # imagen = Image.open("tu-imagen.jpg")
         
-        st.markdown(f"""
-            <div class="image-container">
-                <img src="{imagen_url}" alt="Imagen de fondo">
-        """, unsafe_allow_html=True)
+        # Para URL, descargamos la imagen y la mostramos con st.image
+        try:
+            response = requests.get(imagen_url)
+            img = Image.open(BytesIO(response.content))
+            st.image(img, use_container_width=True)
+        except:
+            # Si falla la descarga, usar HTML como fallback
+            st.markdown(f"""
+                <div style="width: 100%; height: 100vh; overflow: hidden; margin: 0; padding: 0;">
+                    <img src="{imagen_url}" style="width: 100%; height: 100vh; object-fit: cover; object-position: center; margin: 0; padding: 0; display: block;">
+                </div>
+            """, unsafe_allow_html=True)
 
 
 # Ejecutar la función login
