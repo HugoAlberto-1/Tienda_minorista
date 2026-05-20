@@ -20,10 +20,10 @@ def configurar_pagina_login():
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para el login - VERSIÓN CON MÁRGENES CORREGIDOS
+    # CSS personalizado para el login
     st.markdown(f"""
         <style>
-        /* Solución más agresiva para bloquear scroll */
+        /* Solución para bloquear scroll */
         header, footer, .stDeployButton, [data-testid="stToolbar"] {{
             display: none !important;
         }}
@@ -60,10 +60,6 @@ def configurar_pagina_login():
             margin: 0 !important;
         }}
         
-        .element-container, .stMarkdown, .stVerticalBlock {{
-            overflow: visible !important;
-        }}
-        
         /* Forzar que las columnas no generen scroll */
         .row-widget.stColumns {{
             height: 100vh !important;
@@ -72,7 +68,7 @@ def configurar_pagina_login():
             padding: 0 !important;
         }}
         
-        /* Ajustar cada columna - AGREGAMOS PADDING A LA COLUMNA IZQUIERDA */
+        /* Ajustar cada columna */
         div[data-testid="column"] {{
             overflow-y: auto !important;
             height: 100vh !important;
@@ -80,59 +76,42 @@ def configurar_pagina_login():
             -ms-overflow-style: none !important;
         }}
         
-        /* Añadir padding SOLO a la primera columna (columna del formulario) */
-        div[data-testid="column"]:first-child {{
-            padding-left: 80px !important;
-            padding-right: 40px !important;
-        }}
-        
-        /* Padding para la segunda columna (imagen) */
-        div[data-testid="column"]:last-child {{
-            padding-right: 40px !important;
-        }}
-        
         div[data-testid="column"]::-webkit-scrollbar {{
             display: none !important;
+        }}
+        
+        /* Contenedor del formulario con padding izquierdo */
+        .form-container {{
+            padding-left: 100px !important;
+            padding-right: 50px !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100vh;
+        }}
+        
+        /* Ajustar el contenido dentro del formulario */
+        .form-content {{
+            width: 100%;
+            max-width: 450px;
         }}
         
         /* Ocultar elementos no deseados */
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         
-        /* Contenedor principal - dos columnas */
-        .login-container {{
-            display: flex;
-            min-height: 100vh;
-            width: 100%;
-        }}
-        
-        /* Columna izquierda - Formulario */
-        .login-form {{
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            background: {COLOR_CARD};
-        }}
-        
-        .form-wrapper {{
-            width: 100%;
-            max-width: 400px;
-        }}
-        
         /* Logo y título */
         .logo {{
             font-size: 3em;
             margin-bottom: 20px;
-            text-align: center;
+            text-align: left;
         }}
         
         .company-name {{
             font-size: 1.5em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
-            text-align: center;
+            text-align: left;
             margin-bottom: 10px;
             letter-spacing: 2px;
         }}
@@ -140,7 +119,7 @@ def configurar_pagina_login():
         .system-name {{
             font-size: 0.9em;
             color: {COLOR_TEXT_LIGHT};
-            text-align: center;
+            text-align: left;
             margin-bottom: 40px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -155,6 +134,7 @@ def configurar_pagina_login():
             letter-spacing: 1px;
             margin-bottom: 8px;
             display: block;
+            text-align: left;
         }}
         
         .stTextInput > div > div > input {{
@@ -171,20 +151,35 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Columna derecha - Imagen decorativa */
-        .login-image {{
-            flex: 1;
-            background: linear-gradient(135deg, {COLOR_BG}, {COLOR_CARD});
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            border-radius: 30px 0 0 30px;
-            margin: 20px 0;
-            border: 1px solid {COLOR_BORDER};
+        /* Botón de login */
+        .stButton > button {{
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
         }}
         
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-2px);
+        }}
+        
+        /* Footer */
+        .login-footer {{
+            text-align: left;
+            margin-top: 40px;
+            font-size: 0.7em;
+            color: {COLOR_TEXT_LIGHT};
+        }}
+        
+        /* Columna derecha - Imagen decorativa */
         .image-content {{
             text-align: center;
             padding: 40px;
@@ -211,7 +206,6 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Lista de características */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -266,66 +260,10 @@ def configurar_pagina_login():
             left: -50px;
         }}
         
-        /* Botón de login */
-        .stButton > button {{
-            width: 100%;
-            padding: 12px;
-            margin-top: 20px;
-            background-color: {COLOR_PRIMARY};
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-        }}
-        
-        .stButton > button:hover {{
-            background-color: {COLOR_SECONDARY};
-            transform: translateY(-2px);
-        }}
-        
-        /* Footer */
-        .login-footer {{
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.7em;
-            color: {COLOR_TEXT_LIGHT};
-        }}
-        
-        /* Links */
-        .forgot-link {{
-            text-align: right;
-            margin-top: 15px;
-        }}
-        
-        .forgot-link a {{
-            color: {COLOR_TEXT_LIGHT};
-            font-size: 0.75em;
-            text-decoration: none;
-        }}
-        
-        .forgot-link a:hover {{
-            color: {COLOR_PRIMARY};
-        }}
-        
-        /* Versión */
-        .version {{
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.7em;
-            color: {COLOR_TEXT_LIGHT};
-        }}
-        
-        /* Ajustes responsivos para pantallas pequeñas */
+        /* Ajustes responsivos */
         @media (max-width: 768px) {{
-            div[data-testid="column"]:first-child {{
+            .form-container {{
                 padding-left: 20px !important;
-                padding-right: 20px !important;
-            }}
-            
-            div[data-testid="column"]:last-child {{
                 padding-right: 20px !important;
             }}
         }}
@@ -360,8 +298,12 @@ def login():
     # Usar columnas de Streamlit para el diseño de dos columnas
     col_form, col_image = st.columns([1, 1], gap="large")
     
-    # Columna izquierda - Formulario
+    # Columna izquierda - Formulario con contenedor para padding
     with col_form:
+        # Contenedor con padding izquierdo
+        st.markdown('<div class="form-container">', unsafe_allow_html=True)
+        st.markdown('<div class="form-content">', unsafe_allow_html=True)
+        
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
@@ -408,6 +350,8 @@ def login():
                 <div>© 2024 - Tienda Cerro de Dios</div>
             </div>
         """, unsafe_allow_html=True)
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
     
     # Columna derecha - Imagen decorativa
     with col_image:
