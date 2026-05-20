@@ -83,9 +83,9 @@ def configurar_pagina_login():
             gap: 0 !important;
         }}
         
-        /* Columna izquierda - Formulario */
+        /* Columna izquierda - Formulario más compacto */
         div[data-testid="column"]:first-child {{
-            flex: 1;
+            flex: 0.8;
             background-color: {COLOR_CARD};
             padding: 20px !important;
             margin: 0 !important;
@@ -96,7 +96,7 @@ def configurar_pagina_login():
             justify-content: center !important;
         }}
         
-        /* Columna derecha - Imagen */
+        /* Columna derecha - Imagen SIN ESPACIO ARRIBA */
         div[data-testid="column"]:last-child {{
             flex: 1.2;
             padding: 0 !important;
@@ -104,13 +104,20 @@ def configurar_pagina_login():
             height: 100vh !important;
             overflow: hidden !important;
             position: relative;
+            top: 0 !important;
+            left: 0 !important;
         }}
         
-        /* Contenedor de la imagen */
+        /* Contenedor de la imagen - SIN MÁRGENES */
         .image-container {{
             width: 100%;
             height: 100vh;
             overflow: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }}
         
         .image-container img {{
@@ -118,23 +125,24 @@ def configurar_pagina_login():
             height: 100%;
             object-fit: cover;
             object-position: center;
+            display: block;
         }}
         
-        /* Estilos del formulario */
+        /* Estilos del formulario - MÁS COMPACTO */
         .form-content {{
             width: 100%;
-            max-width: 400px;
+            max-width: 340px;
             margin: 0 auto;
         }}
         
         .logo {{
-            font-size: 3em;
-            margin-bottom: 15px;
+            font-size: 2.5em;
+            margin-bottom: 10px;
             text-align: center;
         }}
         
         .company-name {{
-            font-size: 1.4em;
+            font-size: 1.2em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
             text-align: center;
@@ -143,30 +151,30 @@ def configurar_pagina_login():
         }}
         
         .system-name {{
-            font-size: 0.85em;
+            font-size: 0.75em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }}
         
         .input-label {{
-            font-size: 0.75em;
+            font-size: 0.7em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 5px;
-            margin-top: 10px;
+            margin-bottom: 4px;
+            margin-top: 8px;
             display: block;
         }}
         
         .stTextInput > div > div > input {{
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid {COLOR_BORDER};
-            padding: 10px 12px;
-            font-size: 0.9em;
+            padding: 8px 12px;
+            font-size: 0.85em;
             background-color: {COLOR_CARD};
             color: {COLOR_TEXT};
         }}
@@ -178,15 +186,16 @@ def configurar_pagina_login():
         
         .stButton > button {{
             width: 100%;
-            padding: 10px;
-            margin-top: 20px;
+            padding: 8px;
+            margin-top: 15px;
             background-color: {COLOR_PRIMARY};
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-size: 0.85em;
             transition: all 0.3s ease;
             cursor: pointer;
         }}
@@ -197,22 +206,22 @@ def configurar_pagina_login():
         }}
         
         .stCheckbox {{
-            margin-top: 12px;
+            margin-top: 10px;
         }}
         
         .stCheckbox label {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.8em;
+            font-size: 0.75em;
         }}
         
         .forgot-link {{
             text-align: right;
-            margin-top: 12px;
+            margin-top: 10px;
         }}
         
         .forgot-link a {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.75em;
+            font-size: 0.7em;
             text-decoration: none;
         }}
         
@@ -222,18 +231,18 @@ def configurar_pagina_login():
         
         .login-footer {{
             text-align: center;
-            margin-top: 30px;
-            font-size: 0.65em;
+            margin-top: 25px;
+            font-size: 0.6em;
             color: {COLOR_TEXT_LIGHT};
-            line-height: 1.5;
+            line-height: 1.4;
         }}
         
         /* Asegurar que los mensajes no causen scroll */
         .stAlert {{
-            margin-top: 10px;
+            margin-top: 8px;
             margin-bottom: 0;
-            padding: 8px;
-            font-size: 0.8em;
+            padding: 6px;
+            font-size: 0.75em;
         }}
         
         /* Eliminar márgenes extra */
@@ -275,7 +284,7 @@ def login():
     configurar_pagina_login()
     
     # Crear las dos columnas
-    col_form, col_image = st.columns([1, 1.2], gap="small")
+    col_form, col_image = st.columns([0.8, 1.2], gap="small")
     
     # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
@@ -337,7 +346,7 @@ def login():
         
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # ========== COLUMNA DERECHA - IMAGEN ==========
+    # ========== COLUMNA DERECHA - IMAGEN SIN ESPACIO ARRIBA ==========
     with col_image:
         # Cambia esta URL por tu imagen
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
@@ -348,8 +357,6 @@ def login():
         # from io import BytesIO
         # 
         # img = Image.open("tu-imagen.jpg")
-        # # Redimensionar si es necesario
-        # img = img.resize((1920, 1080), Image.Resampling.LANCZOS)
         # buffered = BytesIO()
         # img.save(buffered, format="JPEG", quality=95)
         # img_base64 = base64.b64encode(buffered.getvalue()).decode()
