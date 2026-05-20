@@ -10,59 +10,69 @@ def configurar_pagina_login():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores corporativos (mismo que el menú principal)
-    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
-    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
-    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
-    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
-    COLOR_TEXT = "#333333"          # Texto oscuro
-    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
-    COLOR_BORDER = "#e0e0e0"        # Bordes
+    # Paleta de colores corporativos
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_LIGHT = "#666666"
+    COLOR_BORDER = "#e0e0e0"
     
     # CSS personalizado para el login
     st.markdown(f"""
         <style>
-        /* Fondo general */
-        .stApp {{
-            background-color: {COLOR_BG};
+        /* Eliminar todos los márgenes y paddings por defecto */
+        .main {{
+            margin: 0;
+            padding: 0;
         }}
         
-        /* Ocultar elementos no deseados */
+        .main .block-container {{
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+        }}
+        
+        /* Ocultar header */
         header {{
             display: none;
         }}
         
-        /* Eliminar padding por defecto */
-        .main .block-container {{
-            padding: 0 !important;
-            max-width: 100% !important;
-        }}
-        
-        /* Eliminar gap entre columnas */
+        /* Eliminar padding de las columnas */
         div[data-testid="column"] {{
             padding: 0 !important;
             margin: 0 !important;
-            gap: 0 !important;
         }}
         
-        /* Contenedor de las columnas */
+        /* Eliminar gap del row */
         .row-widget.stHorizontal {{
             gap: 0 !important;
+            margin: 0 !important;
         }}
         
-        /* Columna izquierda - Formulario */
+        /* Eliminar padding del contenedor de Streamlit */
+        .stApp {{
+            margin: 0;
+            padding: 0;
+            background-color: {COLOR_BG};
+        }}
+        
+        /* Columna izquierda - Formulario (sin bordes) */
         .login-form {{
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 40px;
             background: {COLOR_CARD};
             height: 100vh;
+            width: 100%;
         }}
         
         .form-wrapper {{
             width: 100%;
-            max-width: 400px;
+            max-width: 380px;
+            margin: 0 auto;
         }}
         
         /* Logo y título */
@@ -115,12 +125,13 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Columna derecha - Imagen full */
+        /* Columna derecha - Imagen full sin bordes */
         .login-image {{
             height: 100vh;
             width: 100%;
-            position: relative;
             overflow: hidden;
+            margin: 0;
+            padding: 0;
         }}
         
         .login-image img {{
@@ -128,6 +139,7 @@ def configurar_pagina_login():
             height: 100%;
             object-fit: cover;
             object-position: center;
+            display: block;
         }}
         
         /* Botón de login */
@@ -211,7 +223,7 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Usar columnas de Streamlit con proporción 1:2 y sin gap
+    # Usar columnas sin ningún espacio entre ellas
     col_form, col_image = st.columns([1, 2], gap="small")
     
     # Columna izquierda - Formulario
@@ -276,28 +288,16 @@ def login():
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # Columna derecha - Imagen que ocupa todo el espacio
+    # Columna derecha - Imagen que ocupa todo el espacio sin bordes
     with col_image:
         # ==========================================
         # 👇 REEMPLAZA ESTA URL CON TU PROPIA IMAGEN
         # ==========================================
         
-        # Imagen de ejemplo (tienda minorista)
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Opción 2: Usar imagen local (descomenta las siguientes líneas y comenta la de arriba)
-        # import base64
-        # with open("imagenes/tu-imagen.jpg", "rb") as img_file:
-        #     img_data = base64.b64encode(img_file.read()).decode()
-        # imagen_url = f"data:image/jpeg;base64,{img_data}"
-        
-        # Mostrar imagen sin bordes ni márgenes
         st.markdown(f"""
             <div class="login-image">
                 <img src="{imagen_url}" alt="Imagen de fondo">
             </div>
         """, unsafe_allow_html=True)
-        
-        # ==========================================
-        # FIN DE LA SECCIÓN PARA REEMPLAZAR
-        # ==========================================
