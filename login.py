@@ -33,6 +33,12 @@ def configurar_pagina_login():
             display: none;
         }}
         
+        /* Eliminar padding por defecto de las columnas */
+        .main .block-container {{
+            padding-top: 0;
+            padding-bottom: 0;
+        }}
+        
         /* Contenedor principal - dos columnas */
         .login-container {{
             display: flex;
@@ -40,7 +46,7 @@ def configurar_pagina_login():
             width: 100%;
         }}
         
-        /* Columna izquierda - Formulario */
+        /* Columna izquierda - Formulario (más pequeña) */
         .login-form {{
             flex: 1;
             display: flex;
@@ -52,42 +58,42 @@ def configurar_pagina_login():
         
         .form-wrapper {{
             width: 100%;
-            max-width: 400px;
+            max-width: 350px;
         }}
         
         /* Logo y título */
         .logo {{
-            font-size: 3em;
-            margin-bottom: 20px;
+            font-size: 2.5em;
+            margin-bottom: 15px;
             text-align: center;
         }}
         
         .company-name {{
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             letter-spacing: 2px;
         }}
         
         .system-name {{
-            font-size: 0.9em;
+            font-size: 0.8em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 35px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }}
         
         /* Campos de entrada */
         .input-label {{
-            font-size: 0.75em;
+            font-size: 0.7em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: block;
         }}
         
@@ -95,7 +101,7 @@ def configurar_pagina_login():
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
             padding: 10px 15px;
-            font-size: 0.95em;
+            font-size: 0.9em;
             background-color: {COLOR_CARD};
             color: {COLOR_TEXT};
         }}
@@ -105,10 +111,10 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Columna derecha - Imagen decorativa */
+        /* Columna derecha - Imagen decorativa (más grande) */
         .login-image {{
-            flex: 1;
-            background: linear-gradient(135deg, {COLOR_BG}, {COLOR_CARD});
+            flex: 2;
+            background: linear-gradient(135deg, {COLOR_PRIMARY}, {COLOR_SECONDARY});
             display: flex;
             justify-content: center;
             align-items: center;
@@ -116,61 +122,61 @@ def configurar_pagina_login():
             overflow: hidden;
             border-radius: 30px 0 0 30px;
             margin: 20px 0;
-            border: 1px solid {COLOR_BORDER};
+            box-shadow: -5px 0 20px rgba(0,0,0,0.05);
         }}
         
         .image-content {{
             text-align: center;
-            padding: 40px;
+            padding: 50px;
             z-index: 2;
             width: 100%;
         }}
         
         .image-icon {{
-            font-size: 5em;
-            margin-bottom: 20px;
+            font-size: 6em;
+            margin-bottom: 25px;
             animation: float 3s ease-in-out infinite;
         }}
         
         .image-title {{
-            font-size: 2em;
+            font-size: 2.5em;
             font-weight: bold;
             margin-bottom: 15px;
-            color: {COLOR_PRIMARY};
+            color: white;
         }}
         
         .image-subtitle {{
-            font-size: 1em;
-            margin-bottom: 40px;
-            color: {COLOR_PRIMARY};
+            font-size: 1.1em;
+            margin-bottom: 50px;
+            color: rgba(255,255,255,0.85);
         }}
         
-        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
+        /* Lista de características */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
         }}
         
         .feature-item {{
-            margin: 20px auto;
+            margin: 25px auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 15px;
             width: 100%;
-            max-width: 320px;
+            max-width: 380px;
         }}
         
         .feature-icon {{
-            font-size: 1.3em;
-            min-width: 35px;
+            font-size: 1.5em;
+            min-width: 40px;
             text-align: center;
         }}
         
         .feature-text {{
-            font-size: 0.95em;
+            font-size: 1em;
             text-align: left;
-            color: {COLOR_PRIMARY};
+            color: white;
         }}
         
         /* Animación flotante */
@@ -182,22 +188,32 @@ def configurar_pagina_login():
         /* Decoración de fondo */
         .bg-decoration {{
             position: absolute;
-            width: 300px;
-            height: 300px;
-            background: rgba(30,58,95,0.05);
+            width: 400px;
+            height: 400px;
+            background: rgba(255,255,255,0.08);
             border-radius: 50%;
-            bottom: -100px;
-            right: -100px;
+            bottom: -150px;
+            right: -150px;
         }}
         
         .bg-decoration-2 {{
             position: absolute;
-            width: 200px;
-            height: 200px;
-            background: rgba(30,58,95,0.03);
+            width: 250px;
+            height: 250px;
+            background: rgba(255,255,255,0.05);
             border-radius: 50%;
-            top: -50px;
-            left: -50px;
+            top: -80px;
+            left: -80px;
+        }}
+        
+        .bg-decoration-3 {{
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 50%;
+            top: 50%;
+            right: 20%;
         }}
         
         /* Botón de login */
@@ -289,10 +305,10 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Usar columnas de Streamlit para el diseño de dos columnas
-    col_form, col_image = st.columns([1, 1], gap="large")
+    # Usar columnas de Streamlit con proporción 1:2 (1/3 para formulario, 2/3 para contenido)
+    col_form, col_image = st.columns([1, 2], gap="large")
     
-    # Columna izquierda - Formulario
+    # Columna izquierda - Formulario (1/3)
     with col_form:
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
@@ -341,7 +357,7 @@ def login():
             </div>
         """, unsafe_allow_html=True)
     
-    # Columna derecha - Imagen decorativa con características centradas
+    # Columna derecha - Contenido de bienvenida (2/3)
     with col_image:
         st.markdown("""
             <div class="image-content">
@@ -369,4 +385,5 @@ def login():
             </div>
             <div class="bg-decoration"></div>
             <div class="bg-decoration-2"></div>
+            <div class="bg-decoration-3"></div>
         """, unsafe_allow_html=True)
