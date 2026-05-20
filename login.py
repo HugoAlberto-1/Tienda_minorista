@@ -220,16 +220,6 @@ def configurar_pagina_login():
             transform: translateY(-2px);
         }}
         
-        /* Checkbox */
-        .stCheckbox {{
-            margin-top: 15px;
-        }}
-        
-        .stCheckbox label {{
-            color: {COLOR_TEXT_LIGHT};
-            font-size: 0.8em;
-        }}
-        
         /* Footer */
         .login-footer {{
             text-align: center;
