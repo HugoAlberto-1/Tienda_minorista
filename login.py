@@ -338,7 +338,6 @@ def login():
                 <div>v1.0.0</div>
                 <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
                 <div>© 2024 - Tienda Cerro de Dios</div>
-            </div>
         """, unsafe_allow_html=True)
     
     # Columna derecha - Imagen decorativa con características centradas
