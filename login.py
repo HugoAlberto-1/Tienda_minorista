@@ -18,86 +18,72 @@ def configurar_pagina_login():
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para eliminar TODOS los espacios
+    # CSS más suave pero efectivo
     st.markdown(f"""
         <style>
-        /* Eliminar todo el padding y margin por defecto */
-        .stApp {{
-            background-color: {COLOR_BG};
-        }}
-        
-        /* Ocultar header y elementos de Streamlit */
-        header, .stDeployButton, .stStatusWidget, .stAppViewContainer > div:first-child {{
+        /* Ocultar solo el header y sidebar */
+        header {{
             display: none !important;
         }}
         
-        /* Eliminar padding del main container */
+        .stDeployButton {{
+            display: none !important;
+        }}
+        
+        /* Eliminar padding del main container pero mantenerlo visible */
         .main .block-container {{
-            padding: 0 !important;
-            margin: 0 !important;
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
             max-width: 100% !important;
-            width: 100% !important;
         }}
         
-        /* Forzar que el contenedor principal ocupe toda la pantalla */
-        .stAppViewContainer, .stAppViewContainer > div, .stAppViewContainer > div > div {{
-            width: 100% !important;
-            height: 100vh !important;
-            margin: 0 !important;
-            padding: 0 !important;
+        /* Hacer que las columnas ocupen toda la altura */
+        .stColumns {{
+            gap: 0rem !important;
         }}
         
-        /* Contenedor de las columnas - ocupa toda la pantalla */
-        .row-widget.stColumns {{
-            display: flex !important;
-            height: 100vh !important;
-            width: 100vw !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-        }}
-        
-        /* Columnas sin padding ni margin */
-        div[data-testid="column"] {{
-            padding: 0 !important;
-            margin: 0 !important;
-            height: 100vh !important;
-        }}
-        
-        /* Columna izquierda - Formulario centrado */
+        /* Columna izquierda - formulario */
         div[data-testid="column"]:first-child {{
-            flex: 1;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            background: {COLOR_CARD};
-            overflow-y: auto;
-            padding: 20px !important;
+            background-color: {COLOR_CARD};
+            padding: 2rem !important;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }}
         
-        /* Columna derecha - Imagen sin espacios */
+        /* Columna derecha - imagen */
         div[data-testid="column"]:last-child {{
-            flex: 2;
             padding: 0 !important;
             margin: 0 !important;
+            min-height: 100vh;
             position: relative;
+        }}
+        
+        /* Contenedor de la imagen */
+        .image-container {{
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
         }}
         
-        /* Contenedor interno del formulario */
-        .form-wrapper {{
+        .image-container img {{
             width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
         }}
         
-        /* Logo y título */
+        /* Estilos del formulario */
         .logo {{
-            font-size: 3em;
+            font-size: 3.5em;
             margin-bottom: 20px;
             text-align: center;
         }}
@@ -112,31 +98,29 @@ def configurar_pagina_login():
         }}
         
         .system-name {{
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
             margin-bottom: 40px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }}
         
-        /* Campos de entrada */
         .input-label {{
-            font-size: 0.75em;
+            font-size: 0.7em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             display: block;
         }}
         
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
-            padding: 10px 15px;
-            font-size: 0.95em;
-            background-color: {COLOR_CARD};
+            padding: 10px 12px;
+            font-size: 0.9em;
         }}
         
         .stTextInput > div > div > input:focus {{
@@ -144,23 +128,6 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Contenedor de la imagen - SIN NINGÚN ESPACIO */
-        .login-image {{
-            width: 100%;
-            height: 100vh;
-            position: relative;
-            overflow: hidden;
-        }}
-        
-        .login-image img {{
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            display: block;
-        }}
-        
-        /* Botón de login */
         .stButton > button {{
             width: 100%;
             padding: 12px;
@@ -180,7 +147,6 @@ def configurar_pagina_login():
             transform: translateY(-2px);
         }}
         
-        /* Checkbox */
         .stCheckbox {{
             margin-top: 15px;
         }}
@@ -190,15 +156,6 @@ def configurar_pagina_login():
             font-size: 0.8em;
         }}
         
-        /* Footer */
-        .login-footer {{
-            text-align: center;
-            margin-top: 40px;
-            font-size: 0.7em;
-            color: {COLOR_TEXT_LIGHT};
-        }}
-        
-        /* Links */
         .forgot-link {{
             text-align: right;
             margin-top: 15px;
@@ -214,24 +171,18 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Eliminar espacios de elementos de Streamlit */
-        .element-container, .stMarkdown, .stVerticalBlock, .stHorizontalBlock {{
-            margin: 0 !important;
-            padding: 0 !important;
+        .login-footer {{
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.7em;
+            color: {COLOR_TEXT_LIGHT};
         }}
         
-        /* Ocultar scrollbar si aparece (opcional) */
-        ::-webkit-scrollbar {{
-            width: 8px;
-        }}
-        
-        ::-webkit-scrollbar-track {{
-            background: #f1f1f1;
-        }}
-        
-        ::-webkit-scrollbar-thumb {{
-            background: #888;
-            border-radius: 4px;
+        /* Asegurar que el formulario sea visible */
+        .form-content {{
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -261,15 +212,12 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Crear columnas sin gap y sin espacios
-    # Usamos un contenedor vacío para eliminar espacios adicionales
-    col_form, col_image = st.columns([1, 2], gap="small")
+    # Crear las dos columnas
+    col_form, col_image = st.columns([1, 1.5], gap="small")
     
     # Columna izquierda - Formulario
     with col_form:
-        # Contenedor para centrar el formulario
-        st.markdown('<div style="width: 100%; display: flex; justify-content: center;">', unsafe_allow_html=True)
-        st.markdown('<div style="width: 100%; max-width: 400px;">', unsafe_allow_html=True)
+        st.markdown('<div class="form-content">', unsafe_allow_html=True)
         
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
@@ -320,36 +268,36 @@ def login():
         st.markdown(f"""
             <div class="login-footer">
                 <div>v1.0.0</div>
-                <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
+                <div style="margin-top: 5px;">Sistema de Gestión de Inventario</div>
                 <div>© 2024 - Tienda Cerro de Dios</div>
             </div>
         """, unsafe_allow_html=True)
         
-        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    # Columna derecha - Imagen que ocupa TODA la columna sin espacios
+    # Columna derecha - Imagen
     with col_image:
-        # Usar imagen local (recomendado) o URL
-        # Opción 1: Imagen desde URL
+        # URL de la imagen (puedes cambiarla)
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Opción 2: Imagen local (descomenta estas líneas)
-        # from PIL import Image
+        # Si quieres usar imagen local, descomenta esto:
         # import base64
+        # from PIL import Image
         # from io import BytesIO
         # 
-        # img = Image.open("imagenes/tu-imagen.jpg")
+        # img = Image.open("ruta/a/tu/imagen.jpg")
         # buffered = BytesIO()
-        # img.save(buffered, format="JPEG", quality=95)
+        # img.save(buffered, format="JPEG")
         # img_base64 = base64.b64encode(buffered.getvalue()).decode()
         # imagen_url = f"data:image/jpeg;base64,{img_base64}"
         
         st.markdown(f"""
-            <div class="login-image">
-                <img src="{imagen_url}" alt="Imagen de fondo">
+            <div style="position: relative; width: 100%; height: 100vh; overflow: hidden;">
+                <img src="{imagen_url}" style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
             </div>
         """, unsafe_allow_html=True)
 
-# Para ejecutar la función login cuando se llama al script
+
+# Ejecutar la función login
 if __name__ == "__main__":
     login()
