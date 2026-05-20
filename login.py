@@ -153,7 +153,7 @@ def configurar_pagina_login():
         .form-content {{
             width: 100%;
             max-width: 340px;
-            margin: 0 auto;
+            margin: 20 auto;
         }}
         
         .logo {{
