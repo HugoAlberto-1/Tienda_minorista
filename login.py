@@ -13,7 +13,6 @@ def configurar_pagina_login():
     # Paleta de colores corporativos (mismo que el menú principal)
     COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
     COLOR_SECONDARY = "#2c5f8a"    # Azul medio
-    COLOR_ACCENT = "#3a7ca5"       # Azul claro
     COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
     COLOR_CARD = "#ffffff"          # Blanco para tarjetas
     COLOR_TEXT = "#333333"          # Texto oscuro
@@ -39,64 +38,7 @@ def configurar_pagina_login():
             padding-bottom: 0;
         }}
         
-        /* Contenedor principal - dos columnas */
-        .login-container {{
-            display: flex;
-            min-height: 100vh;
-            width: 100%;
-        }}
-        
-        /* Columna izquierda - Formulario (más pequeña) */
-        .login-form {{
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            background: {COLOR_CARD};
-        }}
-        
-        .form-wrapper {{
-            width: 100%;
-            max-width: 350px;
-        }}
-        
-        /* Logo y título */
-        .logo {{
-            font-size: 2.5em;
-            margin-bottom: 15px;
-            text-align: center;
-        }}
-        
-        .company-name {{
-            font-size: 1.3em;
-            font-weight: 700;
-            color: {COLOR_PRIMARY};
-            text-align: center;
-            margin-bottom: 8px;
-            letter-spacing: 2px;
-        }}
-        
-        .system-name {{
-            font-size: 0.8em;
-            color: {COLOR_TEXT_LIGHT};
-            text-align: center;
-            margin-bottom: 35px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }}
-        
         /* Campos de entrada */
-        .input-label {{
-            font-size: 0.7em;
-            font-weight: 600;
-            color: {COLOR_PRIMARY};
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-            display: block;
-        }}
-        
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
@@ -111,7 +53,7 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Columna derecha - Imagen decorativa (más grande) */
+        /* Columna derecha - Imagen decorativa */
         .login-image {{
             flex: 2;
             background: linear-gradient(135deg, {COLOR_PRIMARY}, {COLOR_SECONDARY});
@@ -125,95 +67,33 @@ def configurar_pagina_login():
             box-shadow: -5px 0 20px rgba(0,0,0,0.05);
         }}
         
-        .image-content {{
-            text-align: center;
-            padding: 50px;
-            z-index: 2;
+        .image-container {{
             width: 100%;
-        }}
-        
-        .image-icon {{
-            font-size: 6em;
-            margin-bottom: 25px;
-            animation: float 3s ease-in-out infinite;
-        }}
-        
-        .image-title {{
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: white;
-        }}
-        
-        .image-subtitle {{
-            font-size: 1.1em;
-            margin-bottom: 50px;
-            color: rgba(255,255,255,0.85);
-        }}
-        
-        /* Lista de características */
-        .feature-list {{
-            margin-top: 20px;
-            width: 100%;
-        }}
-        
-        .feature-item {{
-            margin: 25px auto;
+            height: 100%;
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 15px;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }}
+        
+        .login-image img {{
             width: 100%;
-            max-width: 380px;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 30px 0 0 30px;
         }}
         
-        .feature-icon {{
-            font-size: 1.5em;
-            min-width: 40px;
-            text-align: center;
-        }}
-        
-        .feature-text {{
-            font-size: 1em;
-            text-align: left;
-            color: white;
-        }}
-        
-        /* Animación flotante */
-        @keyframes float {{
-            0%, 100% {{ transform: translateY(0px); }}
-            50% {{ transform: translateY(-20px); }}
-        }}
-        
-        /* Decoración de fondo */
-        .bg-decoration {{
+        /* Overlay opcional para la imagen */
+        .image-overlay {{
             position: absolute;
-            width: 400px;
-            height: 400px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 50%;
-            bottom: -150px;
-            right: -150px;
-        }}
-        
-        .bg-decoration-2 {{
-            position: absolute;
-            width: 250px;
-            height: 250px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 50%;
-            top: -80px;
-            left: -80px;
-        }}
-        
-        .bg-decoration-3 {{
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 50%;
-            top: 50%;
-            right: 20%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            border-radius: 30px 0 0 30px;
+            z-index: 1;
         }}
         
         /* Botón de login */
@@ -269,14 +149,6 @@ def configurar_pagina_login():
         .forgot-link a:hover {{
             color: {COLOR_PRIMARY};
         }}
-        
-        /* Versión */
-        .version {{
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.7em;
-            color: {COLOR_TEXT_LIGHT};
-        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -305,21 +177,20 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Usar columnas de Streamlit con proporción 1:2 (1/3 para formulario, 2/3 para contenido)
+    # Usar columnas de Streamlit con proporción 1:2
     col_form, col_image = st.columns([1, 2], gap="large")
     
-    # Columna izquierda - Formulario (1/3)
+    # Columna izquierda - Formulario
     with col_form:
-        # Logo y título
-        st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
-        st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
-        st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
+        st.markdown('<div style="text-align: center; font-size: 2.5em; margin-bottom: 15px;">📦</div>', unsafe_allow_html=True)
+        st.markdown('<h2 style="text-align: center; color: #1e3a5f; margin-bottom: 8px;">TIENDA CERRO DE DIOS</h2>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; color: #666; font-size: 0.8em; margin-bottom: 35px; text-transform: uppercase;">Sistema de Inventario</p>', unsafe_allow_html=True)
         
         # Campos de entrada
-        st.markdown('<label class="input-label">USUARIO</label>', unsafe_allow_html=True)
+        st.markdown('<label style="font-size: 0.7em; font-weight: 600; color: #1e3a5f; text-transform: uppercase;">USUARIO</label>', unsafe_allow_html=True)
         usuario = st.text_input("", key="usuario_input", placeholder="Ingresa tu usuario", label_visibility="collapsed")
         
-        st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
+        st.markdown('<label style="font-size: 0.7em; font-weight: 600; color: #1e3a5f; text-transform: uppercase;">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
         
         # Botón de login
@@ -357,33 +228,28 @@ def login():
             </div>
         """, unsafe_allow_html=True)
     
-    # Columna derecha - Contenido de bienvenida (2/3)
+    # Columna derecha - Imagen personalizada
     with col_image:
-        st.markdown("""
-            <div class="image-content">
-                <div class="image-icon">🏪</div>
-                <div class="image-title">Bienvenido</div>
-                <div class="image-subtitle">Gestiona tu negocio de manera eficiente</div>
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <span class="feature-icon">✅</span>
-                        <span class="feature-text">Control de inventario en tiempo real</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">💰</span>
-                        <span class="feature-text">Registro de compras y ventas</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">📊</span>
-                        <span class="feature-text">Reportes y análisis de datos</span>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon">🔐</span>
-                        <span class="feature-text">Seguridad y respaldo de información</span>
-                    </div>
-                </div>
+        # ==========================================
+        # 👇 REEMPLAZA ESTA PARTE CON TU PROPIA IMAGEN
+        # ==========================================
+        
+        # Opción 1: Usar imagen desde URL
+        imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
+        
+        # Opción 2: Usar imagen local (descomenta la siguiente línea y comenta la de arriba)
+        # from PIL import Image
+        # imagen = Image.open("ruta/de/tu/imagen.jpg")
+        # st.image(imagen, use_container_width=True)
+        
+        # Mostrar imagen con estilo
+        st.markdown(f"""
+            <div class="login-image">
+                <div class="image-overlay"></div>
+                <img src="{imagen_url}" alt="Imagen de fondo">
             </div>
-            <div class="bg-decoration"></div>
-            <div class="bg-decoration-2"></div>
-            <div class="bg-decoration-3"></div>
         """, unsafe_allow_html=True)
+        
+        # ==========================================
+        # FIN DE LA SECCIÓN PARA REEMPLAZAR
+        # ==========================================
