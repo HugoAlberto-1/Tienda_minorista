@@ -233,7 +233,7 @@ def configurar_pagina_login():
         /* Footer */
         .login-footer {{
             text-align: center;
-            margin-top: 40px;
+            margin-top: 20px;
             font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
         }}
@@ -306,13 +306,6 @@ def login():
         st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
         
-        # Checkbox y forgot password
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            stay_signed = st.checkbox("Mantener sesión iniciada")
-        with col2:
-            st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
-        
         # Botón de login
         if st.button("INICIAR SESIÓN", key="login_button", use_container_width=True):
             if not usuario or not contrasena:
@@ -345,7 +338,6 @@ def login():
                 <div>v1.0.0</div>
                 <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
                 <div>© 2024 - Tienda Cerro de Dios</div>
-            </div>
         """, unsafe_allow_html=True)
     
     # Columna derecha - Imagen decorativa con características centradas
