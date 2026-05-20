@@ -33,6 +33,15 @@ def configurar_pagina_login():
             display: none;
         }}
         
+        /* Eliminar padding extra del contenedor principal */
+        .main .block-container {{
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
+            max-width: 100% !important;
+        }}
+        
         /* Contenedor principal - dos columnas */
         .login-container {{
             display: flex;
@@ -67,7 +76,7 @@ def configurar_pagina_login():
             font-weight: 700;
             color: {COLOR_PRIMARY};
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             letter-spacing: 2px;
         }}
         
@@ -75,7 +84,7 @@ def configurar_pagina_login():
             font-size: 0.9em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }}
@@ -204,7 +213,7 @@ def configurar_pagina_login():
         .stButton > button {{
             width: 100%;
             padding: 12px;
-            margin-top: 20px;
+            margin-top: 10px;
             background-color: {COLOR_PRIMARY};
             color: white;
             border: none;
@@ -230,10 +239,10 @@ def configurar_pagina_login():
             font-size: 0.8em;
         }}
         
-        /* Footer */
+        /* Footer - REDUCIDO EL MARGEN SUPERIOR */
         .login-footer {{
             text-align: center;
-            margin-top: 30px;
+            margin-top: 20px;
             font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
         }}
@@ -260,6 +269,19 @@ def configurar_pagina_login():
             margin-top: 20px;
             font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
+        }}
+        
+        /* Reducir espacio entre elementos del formulario */
+        .element-container:last-child {{
+            margin-bottom: 0 !important;
+        }}
+        
+        /* Ajustar el contenedor del formulario para que ocupe toda la altura */
+        div[data-testid="column"]:first-child {{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100vh;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -332,12 +354,13 @@ def login():
                 else:
                     st.error("❌ Usuario o contraseña incorrectos")
         
-        # Footer
+        # Footer - Con márgenes reducidos
         st.markdown(f"""
             <div class="login-footer">
                 <div>v1.0.0</div>
-                <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
+                <div>Sistema de Gestión de Inventario</div>
                 <div>© 2024 - Tienda Cerro de Dios</div>
+            </div>
         """, unsafe_allow_html=True)
     
     # Columna derecha - Imagen decorativa con características centradas
