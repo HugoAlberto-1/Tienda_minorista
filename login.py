@@ -58,7 +58,7 @@ def configurar_pagina_login():
         /* Logo y título */
         .logo {{
             font-size: 3em;
-            margin-bottom: 20px;
+            margin-bottom: 100px;
             text-align: center;
         }}
         
