@@ -233,7 +233,7 @@ def configurar_pagina_login():
         /* Footer */
         .login-footer {{
             text-align: center;
-            margin-top: 40px;
+            margin-top: 30px;
             font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
         }}
