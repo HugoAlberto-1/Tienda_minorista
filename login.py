@@ -16,33 +16,43 @@ def configurar_pagina_login():
     COLOR_ACCENT = "#3a7ca5"       # Azul claro
     COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
     COLOR_CARD = "#ffffff"          # Blanco para tarjetas
-    COLOR_TEXT = "#333333"          # Texto oscuro
-    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
     
     # CSS personalizado para el login
     st.markdown(f"""
         <style>
+        /* Eliminar padding y margin por defecto */
+        .main {{
+            padding: 0rem 1rem;
+        }}
+        
         /* Fondo general */
         .stApp {{
             background-color: {COLOR_BG};
         }}
         
+        /* Ocultar elementos no deseados */
+        header {{
+            display: none;
+        }}
+        
         /* Contenedor principal del login */
-        .login-container {{
+        .login-wrapper {{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80vh;
+            min-height: 90vh;
+            width: 100%;
         }}
         
         /* Tarjeta de login */
         .login-card {{
             background: {COLOR_CARD};
             border-radius: 20px;
-            padding: 40px;
+            padding: 40px 30px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
-            max-width: 450px;
+            width: 100%;
+            max-width: 420px;
             margin: 0 auto;
             border: 1px solid #e0e0e0;
         }}
@@ -51,22 +61,22 @@ def configurar_pagina_login():
         .main-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
-            font-size: 2em;
+            font-size: 1.8em;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }}
         
         .subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
-            font-size: 1em;
-            margin-bottom: 30px;
+            font-size: 0.95em;
+            margin-bottom: 25px;
         }}
         
         /* Icono decorativo */
         .login-icon {{
-            font-size: 4em;
-            margin-bottom: 20px;
+            font-size: 3.5em;
+            margin-bottom: 15px;
         }}
         
         /* Campos de entrada */
@@ -74,7 +84,8 @@ def configurar_pagina_login():
             border-radius: 10px;
             border: 1px solid #e0e0e0;
             padding: 10px 15px;
-            font-size: 1em;
+            font-size: 0.95em;
+            background-color: white;
         }}
         
         .stTextInput > div > div > input:focus {{
@@ -92,7 +103,8 @@ def configurar_pagina_login():
             border: none;
             padding: 10px 20px;
             width: 100%;
-            font-size: 1.1em;
+            font-size: 1em;
+            margin-top: 10px;
         }}
         
         .stButton > button:hover {{
@@ -104,14 +116,25 @@ def configurar_pagina_login():
         /* Mensajes de error y éxito */
         .stAlert {{
             border-radius: 10px;
+            margin-top: 15px;
         }}
         
         /* Footer */
         .login-footer {{
             text-align: center;
-            color: {COLOR_TEXT_LIGHT};
-            font-size: 0.8em;
-            margin-top: 30px;
+            color: #666;
+            font-size: 0.75em;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }}
+        
+        /* Labels */
+        label {{
+            font-weight: 500;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 5px;
+            display: block;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -135,7 +158,7 @@ def verificar_usuario(usuario, contrasena):
         """
         cursor.execute(query, (usuario, contrasena))
         resultado = cursor.fetchone()
-        return resultado  # None si no encuentra
+        return resultado
     finally:
         con.close()
 
@@ -145,55 +168,47 @@ def login():
     configurar_pagina_login()
     
     # Contenedor principal
-    with st.container():
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        
-        # Tarjeta de login
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        
-        # Icono y título
-        st.markdown('<div class="login-icon">📦</div>', unsafe_allow_html=True)
-        st.markdown('<div class="main-title">Sistema de Inventario</div>', unsafe_allow_html=True)
-        st.markdown('<div class="subtitle">Tienda Cerro de Dios</div>', unsafe_allow_html=True)
-        
-        # Campos de entrada
-        usuario = st.text_input("Usuario", key="usuario_input", placeholder="Ingresa tu usuario")
-        contrasena = st.text_input("Contraseña", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña")
-        
-        # Botón de login
-        if st.button("Iniciar sesión", key="login_button", use_container_width=True):
-            if not usuario or not contrasena:
-                st.warning("⚠️ Por favor, completa todos los campos.")
+    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
+    
+    # Icono y título
+    st.markdown('<div class="login-icon">📦</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Sistema de Inventario</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">Tienda Cerro de Dios</div>', unsafe_allow_html=True)
+    
+    # Campos de entrada
+    usuario = st.text_input("Usuario", key="usuario_input", placeholder="Ingresa tu usuario")
+    contrasena = st.text_input("Contraseña", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña")
+    
+    # Botón de login
+    if st.button("Iniciar sesión", key="login_button", use_container_width=True):
+        if not usuario or not contrasena:
+            st.warning("⚠️ Por favor, completa todos los campos.")
+        else:
+            resultado = verificar_usuario(usuario.strip(), contrasena.strip())
+
+            if resultado:
+                id_empleado, nombre_empleado, id_tienda, nivel_usuario = resultado
+
+                # Validación: el empleado debe tener tienda asignada
+                if id_tienda is None:
+                    st.error("⚠️ Este usuario no tiene una tienda asignada. Contacta al administrador.")
+                    return
+
+                st.session_state["logueado"] = True
+                st.session_state["usuario"] = usuario.strip()
+                st.session_state["nombre_empleado"] = nombre_empleado
+                st.session_state["id_empleado"] = id_empleado
+                st.session_state["id_tienda"] = int(id_tienda)
+                st.session_state["nivel_usuario"] = nivel_usuario
+
+                st.success(f"✔️ ¡Bienvenido, {nombre_empleado}!")
+                st.rerun()
             else:
-                resultado = verificar_usuario(usuario.strip(), contrasena.strip())
-
-                if resultado:
-                    # ahora vienen 4 campos
-                    id_empleado, nombre_empleado, id_tienda, nivel_usuario = resultado
-
-                    # Validación: el empleado debe tener tienda asignada
-                    if id_tienda is None:
-                        st.error("⚠️ Este usuario no tiene una tienda asignada. Contacta al administrador.")
-                        return
-
-                    st.session_state["logueado"] = True
-                    st.session_state["usuario"] = usuario.strip()
-                    st.session_state["nombre_empleado"] = nombre_empleado
-                    st.session_state["id_empleado"] = id_empleado
-
-                    # ✅ Clave para multi-tienda
-                    st.session_state["id_tienda"] = int(id_tienda)
-
-                    # opcional (por roles)
-                    st.session_state["nivel_usuario"] = nivel_usuario
-
-                    st.success(f"✔️ ¡Bienvenido, {nombre_empleado}!")
-                    st.rerun()
-                else:
-                    st.error("❌ Usuario o contraseña incorrectos")
-        
-        # Footer
-        st.markdown('<div class="login-footer">© 2024 - Sistema de Gestión de Inventario</div>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.error("❌ Usuario o contraseña incorrectos")
+    
+    # Footer
+    st.markdown('<div class="login-footer">© 2024 - Sistema de Gestión de Inventario</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
