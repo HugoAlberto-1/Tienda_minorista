@@ -52,12 +52,22 @@ def configurar_pagina_login():
             padding: 0 !important;
         }}
         
+        /* CORRECCIÓN: Forzar paddings a 0 en el contenedor general de Streamlit */
         .block-container {{
             overflow: hidden !important;
             height: 100vh !important;
-            padding: 0 !important;
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
             margin: 0 !important;
             max-width: 100% !important;
+        }}
+
+        /* CORRECCIÓN: Eliminar márgenes por defecto en el primer elemento interno */
+        .block-container > div:first-child {{
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }}
         
         /* Ocultar scrollbars */
@@ -304,12 +314,11 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Crear las dos columnas
-    col_form, col_image = st.columns([0.8, 1.2], gap="small")
+    # CORRECCIÓN: Se cambia el parámetro gap a "none" para evitar desfases de layout externos
+    col_form, col_image = st.columns([0.8, 1.2], gap="none")
     
     # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
-        
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
@@ -368,7 +377,6 @@ def login():
     
     # ========== COLUMNA DERECHA - IMAGEN ALTA RESOLUCIÓN ==========
     with col_image:
-        # Imagen de alta resolución (4K) - Tienda moderna
         imagen_url = "https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
         
         st.markdown(f"""
