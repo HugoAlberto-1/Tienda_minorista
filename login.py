@@ -14,11 +14,12 @@ def configurar_pagina_login():
     COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
     COLOR_SECONDARY = "#2c5f8a"    # Azul medio
     COLOR_ACCENT = "#3a7ca5"       # Azul claro
-    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro (mismo que menú principal)
+    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
     COLOR_CARD = "#ffffff"          # Blanco para tarjetas
     COLOR_TEXT = "#333333"          # Texto oscuro
     COLOR_TEXT_LIGHT = "#666666"    # Texto gris
     COLOR_BORDER = "#e0e0e0"        # Bordes
+    COLOR_LIST_TEXT = "#c8d6e5"     # Gris azulado claro para la lista
     
     # CSS personalizado para el login
     st.markdown(f"""
@@ -120,7 +121,6 @@ def configurar_pagina_login():
         
         .image-content {{
             text-align: center;
-            color: white;
             padding: 40px;
             z-index: 2;
             width: 100%;
@@ -143,10 +143,10 @@ def configurar_pagina_login():
             font-size: 1em;
             opacity: 0.9;
             margin-bottom: 40px;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.85);
         }}
         
-        /* Lista de características - CENTRADA CON TEXTO VISIBLE */
+        /* Lista de características - CENTRADA CON TEXTO EN GRIS AZULADO */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -171,7 +171,7 @@ def configurar_pagina_login():
         .feature-text {{
             font-size: 0.95em;
             text-align: left;
-            color: white;
+            color: {COLOR_LIST_TEXT};
         }}
         
         /* Animación flotante */
