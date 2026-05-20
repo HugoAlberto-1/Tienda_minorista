@@ -108,7 +108,7 @@ def configurar_pagina_login():
         /* Columna derecha - Imagen decorativa */
         .login-image {{
             flex: 1;
-            background: linear-gradient(135deg, {COLOR_PRIMARY}, {COLOR_SECONDARY});
+            background: linear-gradient(135deg, {COLOR_BG}, {COLOR_CARD});
             display: flex;
             justify-content: center;
             align-items: center;
@@ -116,6 +116,7 @@ def configurar_pagina_login():
             overflow: hidden;
             border-radius: 30px 0 0 30px;
             margin: 20px 0;
+            border: 1px solid {COLOR_BORDER};
         }}
         
         .image-content {{
@@ -135,14 +136,13 @@ def configurar_pagina_login():
             font-size: 2em;
             font-weight: bold;
             margin-bottom: 15px;
-            color: white;
+            color: {COLOR_PRIMARY};
         }}
         
         .image-subtitle {{
             font-size: 1em;
-            opacity: 0.9;
             margin-bottom: 40px;
-            color: rgba(255,255,255,0.85);
+            color: {COLOR_PRIMARY};
         }}
         
         /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
@@ -184,7 +184,7 @@ def configurar_pagina_login():
             position: absolute;
             width: 300px;
             height: 300px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(30,58,95,0.05);
             border-radius: 50%;
             bottom: -100px;
             right: -100px;
@@ -194,7 +194,7 @@ def configurar_pagina_login():
             position: absolute;
             width: 200px;
             height: 200px;
-            background: rgba(255,255,255,0.03);
+            background: rgba(30,58,95,0.03);
             border-radius: 50%;
             top: -50px;
             left: -50px;
