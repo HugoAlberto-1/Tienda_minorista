@@ -16,6 +16,7 @@ def configurar_pagina_login():
     COLOR_ACCENT = "#3a7ca5"       # Azul claro
     COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
     COLOR_CARD = "#ffffff"          # Blanco para tarjetas
+    COLOR_TEXT = "#333333"          # Texto oscuro
     
     # CSS personalizado para el login
     st.markdown(f"""
@@ -79,18 +80,40 @@ def configurar_pagina_login():
             margin-bottom: 15px;
         }}
         
-        /* Campos de entrada */
+        /* Campos de entrada - CORREGIDO */
         .stTextInput > div > div > input {{
             border-radius: 10px;
             border: 1px solid #e0e0e0;
             padding: 10px 15px;
             font-size: 0.95em;
-            background-color: white;
+            background-color: {COLOR_CARD};
+            color: {COLOR_TEXT} !important;
+            caret-color: {COLOR_PRIMARY};
+        }}
+        
+        .stTextInput > div > div > input::placeholder {{
+            color: #999;
         }}
         
         .stTextInput > div > div > input:focus {{
             border-color: {COLOR_PRIMARY};
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
+            outline: none;
+        }}
+        
+        /* Para el input de contraseña */
+        .stTextInput > div > div > input[type="password"] {{
+            background-color: {COLOR_CARD};
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Labels */
+        label {{
+            font-weight: 500;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 5px;
+            display: block;
+            text-align: left;
         }}
         
         /* Botón de login */
@@ -127,14 +150,6 @@ def configurar_pagina_login():
             margin-top: 25px;
             padding-top: 15px;
             border-top: 1px solid #e0e0e0;
-        }}
-        
-        /* Labels */
-        label {{
-            font-weight: 500;
-            color: {COLOR_PRIMARY};
-            margin-bottom: 5px;
-            display: block;
         }}
         </style>
     """, unsafe_allow_html=True)
