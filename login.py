@@ -13,6 +13,7 @@ def configurar_pagina_login():
     # Paleta de colores corporativos (mismo que el menú principal)
     COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
     COLOR_SECONDARY = "#2c5f8a"    # Azul medio
+    COLOR_ACCENT = "#3a7ca5"       # Azul claro
     COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
     COLOR_CARD = "#ffffff"          # Blanco para tarjetas
     COLOR_TEXT = "#333333"          # Texto oscuro
@@ -32,18 +33,69 @@ def configurar_pagina_login():
             display: none;
         }}
         
-        /* Eliminar padding por defecto de las columnas */
-        .main .block-container {{
-            padding-top: 0;
-            padding-bottom: 0;
+        /* Contenedor principal - dos columnas */
+        .login-container {{
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }}
+        
+        /* Columna izquierda - Formulario */
+        .login-form {{
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: {COLOR_CARD};
+        }}
+        
+        .form-wrapper {{
+            width: 100%;
+            max-width: 400px;
+        }}
+        
+        /* Logo y título */
+        .logo {{
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }}
+        
+        .company-name {{
+            font-size: 1.5em;
+            font-weight: 700;
+            color: {COLOR_PRIMARY};
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }}
+        
+        .system-name {{
+            font-size: 0.9em;
+            color: {COLOR_TEXT_LIGHT};
+            text-align: center;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }}
         
         /* Campos de entrada */
+        .input-label {{
+            font-size: 0.75em;
+            font-weight: 600;
+            color: {COLOR_PRIMARY};
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: block;
+        }}
+        
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
             padding: 10px 15px;
-            font-size: 0.9em;
+            font-size: 0.95em;
             background-color: {COLOR_CARD};
             color: {COLOR_TEXT};
         }}
@@ -56,7 +108,6 @@ def configurar_pagina_login():
         /* Columna derecha - Imagen decorativa */
         .login-image {{
             flex: 2;
-            background: linear-gradient(135deg, {COLOR_PRIMARY}, {COLOR_SECONDARY});
             display: flex;
             justify-content: center;
             align-items: center;
@@ -149,6 +200,14 @@ def configurar_pagina_login():
         .forgot-link a:hover {{
             color: {COLOR_PRIMARY};
         }}
+        
+        /* Versión */
+        .version {{
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.7em;
+            color: {COLOR_TEXT_LIGHT};
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -177,21 +236,29 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Usar columnas de Streamlit con proporción 1:2
+    # Usar columnas de Streamlit para el diseño de dos columnas (1:2)
     col_form, col_image = st.columns([1, 2], gap="large")
     
     # Columna izquierda - Formulario
     with col_form:
-        st.markdown('<div style="text-align: center; font-size: 2.5em; margin-bottom: 15px;">📦</div>', unsafe_allow_html=True)
-        st.markdown('<h2 style="text-align: center; color: #1e3a5f; margin-bottom: 8px;">TIENDA CERRO DE DIOS</h2>', unsafe_allow_html=True)
-        st.markdown('<p style="text-align: center; color: #666; font-size: 0.8em; margin-bottom: 35px; text-transform: uppercase;">Sistema de Inventario</p>', unsafe_allow_html=True)
+        # Logo y título
+        st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
+        st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
         
         # Campos de entrada
-        st.markdown('<label style="font-size: 0.7em; font-weight: 600; color: #1e3a5f; text-transform: uppercase;">USUARIO</label>', unsafe_allow_html=True)
+        st.markdown('<label class="input-label">USUARIO</label>', unsafe_allow_html=True)
         usuario = st.text_input("", key="usuario_input", placeholder="Ingresa tu usuario", label_visibility="collapsed")
         
-        st.markdown('<label style="font-size: 0.7em; font-weight: 600; color: #1e3a5f; text-transform: uppercase;">CONTRASEÑA</label>', unsafe_allow_html=True)
+        st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
+        
+        # Checkbox y forgot password
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            stay_signed = st.checkbox("Mantener sesión iniciada")
+        with col2:
+            st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
         
         # Botón de login
         if st.button("INICIAR SESIÓN", key="login_button", use_container_width=True):
@@ -231,15 +298,15 @@ def login():
     # Columna derecha - Imagen personalizada
     with col_image:
         # ==========================================
-        # 👇 REEMPLAZA ESTA PARTE CON TU PROPIA IMAGEN
+        # 👇 REEMPLAZA ESTA URL CON TU PROPIA IMAGEN
         # ==========================================
         
         # Opción 1: Usar imagen desde URL
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Opción 2: Usar imagen local (descomenta la siguiente línea y comenta la de arriba)
+        # Opción 2: Usar imagen local (descomenta las siguientes líneas y comenta la de arriba)
         # from PIL import Image
-        # imagen = Image.open("ruta/de/tu/imagen.jpg")
+        # imagen = Image.open("imagenes/tu-imagen.jpg")
         # st.image(imagen, use_container_width=True)
         
         # Mostrar imagen con estilo
