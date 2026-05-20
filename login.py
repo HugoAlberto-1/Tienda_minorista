@@ -136,15 +136,17 @@ def configurar_pagina_login():
             font-size: 2em;
             font-weight: bold;
             margin-bottom: 15px;
+            color: white;
         }}
         
         .image-subtitle {{
             font-size: 1em;
             opacity: 0.9;
             margin-bottom: 40px;
+            color: rgba(255,255,255,0.9);
         }}
         
-        /* Lista de características - CENTRADA */
+        /* Lista de características - CENTRADA CON TEXTO VISIBLE */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -157,7 +159,7 @@ def configurar_pagina_login():
             justify-content: center;
             gap: 12px;
             width: 100%;
-            max-width: 300px;
+            max-width: 320px;
         }}
         
         .feature-icon {{
@@ -169,6 +171,7 @@ def configurar_pagina_login():
         .feature-text {{
             font-size: 0.95em;
             text-align: left;
+            color: white;
         }}
         
         /* Animación flotante */
