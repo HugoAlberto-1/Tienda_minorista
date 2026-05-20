@@ -111,7 +111,7 @@ def configurar_pagina_login():
         /* Contenedor de la imagen - SIN MÁRGENES */
         .image-container {{
             width: 100%;
-            height: 100vh;
+            height: 110vh;
             overflow: hidden;
             position: absolute;
             top: 0;
