@@ -19,7 +19,6 @@ def configurar_pagina_login():
     COLOR_TEXT = "#333333"          # Texto oscuro
     COLOR_TEXT_LIGHT = "#666666"    # Texto gris
     COLOR_BORDER = "#e0e0e0"        # Bordes
-    COLOR_LIST_TEXT = "#c8d6e5"     # Gris azulado claro para la lista
     
     # CSS personalizado para el login
     st.markdown(f"""
@@ -146,7 +145,7 @@ def configurar_pagina_login():
             color: rgba(255,255,255,0.85);
         }}
         
-        /* Lista de características - CENTRADA CON TEXTO EN GRIS AZULADO */
+        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -171,7 +170,7 @@ def configurar_pagina_login():
         .feature-text {{
             font-size: 0.95em;
             text-align: left;
-            color: {COLOR_LIST_TEXT};
+            color: {COLOR_PRIMARY};
         }}
         
         /* Animación flotante */
