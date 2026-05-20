@@ -20,19 +20,24 @@ def configurar_pagina_login():
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para el login CON BLOQUEO DE SCROLL
+    # CSS personalizado para el login - VERSIÓN AGRESIVA SIN SCROLL
     st.markdown(f"""
         <style>
-        /* BLOQUEAR SCROLL COMPLETAMENTE */
+        /* Solución más agresiva para bloquear scroll */
+        header, footer, .stDeployButton, [data-testid="stToolbar"] {{
+            display: none !important;
+        }}
+        
         html, body {{
             overflow: hidden !important;
             height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
+            position: fixed !important;
+            width: 100% !important;
         }}
         
         .stApp {{
-            background-color: {COLOR_BG};
             overflow: hidden !important;
             height: 100vh !important;
             position: fixed !important;
@@ -40,17 +45,26 @@ def configurar_pagina_login():
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
+            background-color: {COLOR_BG};
         }}
         
-        /* Eliminar scroll del contenedor principal */
-        .main .block-container {{
+        .main > div {{
             overflow: hidden !important;
-            max-width: 100% !important;
+            height: 100vh !important;
+        }}
+        
+        .block-container {{
+            overflow: hidden !important;
             padding: 0 !important;
+            max-width: 100% !important;
             margin: 0 !important;
         }}
         
-        /* Forzar que las columnas ocupen toda la pantalla sin scroll */
+        .element-container, .stMarkdown, .stVerticalBlock {{
+            overflow: visible !important;
+        }}
+        
+        /* Forzar que las columnas no generen scroll */
         .row-widget.stColumns {{
             height: 100vh !important;
             overflow: hidden !important;
@@ -58,17 +72,19 @@ def configurar_pagina_login():
             padding: 0 !important;
         }}
         
-        /* Ajustar cada columna individualmente */
+        /* Ajustar cada columna */
         div[data-testid="column"] {{
             overflow-y: auto !important;
             height: 100vh !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
         }}
         
-        /* Ocultar header y sidebar */
-        header {{
+        div[data-testid="column"]::-webkit-scrollbar {{
             display: none !important;
         }}
         
+        /* Ocultar elementos no deseados */
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
         
