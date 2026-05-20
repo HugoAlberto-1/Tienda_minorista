@@ -20,7 +20,7 @@ def configurar_pagina_login():
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_BORDER = "#e0e0e0"
     
-    # CSS personalizado para el login - VERSIÓN AGRESIVA SIN SCROLL
+    # CSS personalizado para el login - VERSIÓN CON MÁRGENES CORREGIDOS
     st.markdown(f"""
         <style>
         /* Solución más agresiva para bloquear scroll */
@@ -72,12 +72,23 @@ def configurar_pagina_login():
             padding: 0 !important;
         }}
         
-        /* Ajustar cada columna */
+        /* Ajustar cada columna - AGREGAMOS PADDING A LA COLUMNA IZQUIERDA */
         div[data-testid="column"] {{
             overflow-y: auto !important;
             height: 100vh !important;
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
+        }}
+        
+        /* Añadir padding SOLO a la primera columna (columna del formulario) */
+        div[data-testid="column"]:first-child {{
+            padding-left: 80px !important;
+            padding-right: 40px !important;
+        }}
+        
+        /* Padding para la segunda columna (imagen) */
+        div[data-testid="column"]:last-child {{
+            padding-right: 40px !important;
         }}
         
         div[data-testid="column"]::-webkit-scrollbar {{
@@ -305,6 +316,18 @@ def configurar_pagina_login():
             margin-top: 20px;
             font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
+        }}
+        
+        /* Ajustes responsivos para pantallas pequeñas */
+        @media (max-width: 768px) {{
+            div[data-testid="column"]:first-child {{
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }}
+            
+            div[data-testid="column"]:last-child {{
+                padding-right: 20px !important;
+            }}
         }}
         </style>
     """, unsafe_allow_html=True)
