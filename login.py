@@ -10,60 +10,59 @@ def configurar_pagina_login():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores corporativos
-    COLOR_PRIMARY = "#1e3a5f"
-    COLOR_SECONDARY = "#2c5f8a"
-    COLOR_BG = "#f5f7fa"
-    COLOR_CARD = "#ffffff"
-    COLOR_TEXT = "#333333"
-    COLOR_TEXT_LIGHT = "#666666"
-    COLOR_BORDER = "#e0e0e0"
+    # Paleta de colores corporativos (mismo que el menú principal)
+    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
+    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
+    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
+    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
+    COLOR_TEXT = "#333333"          # Texto oscuro
+    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
+    COLOR_BORDER = "#e0e0e0"        # Bordes
     
-    # CSS personalizado
+    # CSS personalizado para el login
     st.markdown(f"""
         <style>
-        /* Eliminar todos los márgenes */
-        .main .block-container {{
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: 100% !important;
+        /* Fondo general */
+        .stApp {{
+            background-color: {COLOR_BG};
         }}
         
+        /* Ocultar elementos no deseados */
         header {{
             display: none;
         }}
         
-        /* Eliminar gap entre columnas */
-        .stHorizontalBlock {{
-            gap: 0 !important;
+        /* Eliminar padding por defecto */
+        .main .block-container {{
+            padding: 0 !important;
+            max-width: 100% !important;
         }}
         
-        /* Estilo de las columnas */
+        /* Eliminar gap entre columnas */
         div[data-testid="column"] {{
             padding: 0 !important;
             margin: 0 !important;
+            gap: 0 !important;
         }}
         
-        /* Columna izquierda */
-        .left-column {{
-            background-color: {COLOR_CARD};
-            height: 100vh;
+        /* Contenedor de las columnas */
+        .row-widget.stHorizontal {{
+            gap: 0 !important;
+        }}
+        
+        /* Columna izquierda - Formulario */
+        .login-form {{
             display: flex;
-            flex-direction: column;
             justify-content: center;
+            align-items: center;
             padding: 40px;
-        }}
-        
-        /* Columna derecha */
-        .right-column {{
+            background: {COLOR_CARD};
             height: 100vh;
-            overflow: hidden;
         }}
         
-        .right-column img {{
+        .form-wrapper {{
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 400px;
         }}
         
         /* Logo y título */
@@ -102,6 +101,35 @@ def configurar_pagina_login():
             display: block;
         }}
         
+        .stTextInput > div > div > input {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            padding: 10px 15px;
+            font-size: 0.95em;
+            background-color: {COLOR_CARD};
+            color: {COLOR_TEXT};
+        }}
+        
+        .stTextInput > div > div > input:focus {{
+            border-color: {COLOR_PRIMARY};
+            box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
+        }}
+        
+        /* Columna derecha - Imagen full */
+        .login-image {{
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }}
+        
+        .login-image img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }}
+        
         /* Botón de login */
         .stButton > button {{
             width: 100%;
@@ -114,13 +142,19 @@ def configurar_pagina_login():
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
+            transition: all 0.3s ease;
         }}
         
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
+            transform: translateY(-2px);
         }}
         
         /* Checkbox */
+        .stCheckbox {{
+            margin-top: 15px;
+        }}
+        
         .stCheckbox label {{
             color: {COLOR_TEXT_LIGHT};
             font-size: 0.8em;
@@ -137,6 +171,7 @@ def configurar_pagina_login():
         /* Links */
         .forgot-link {{
             text-align: right;
+            margin-top: 15px;
         }}
         
         .forgot-link a {{
@@ -147,11 +182,6 @@ def configurar_pagina_login():
         
         .forgot-link a:hover {{
             color: {COLOR_PRIMARY};
-        }}
-        
-        /* Ajustes de los inputs de Streamlit */
-        .stTextInput {{
-            margin-bottom: 20px;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -181,29 +211,34 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Crear dos columnas sin gap
-    col_left, col_right = st.columns([1, 2], gap="small")
+    # Usar columnas de Streamlit con proporción 1:2 y sin gap
+    col_form, col_image = st.columns([1, 2], gap="small")
     
-    # Columna izquierda - Formulario (1/3)
-    with col_left:
-        st.markdown('<div class="left-column">', unsafe_allow_html=True)
+    # Columna izquierda - Formulario
+    with col_form:
+        st.markdown('<div class="login-form">', unsafe_allow_html=True)
+        st.markdown('<div class="form-wrapper">', unsafe_allow_html=True)
         
+        # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
         st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
         
+        # Campos de entrada
         st.markdown('<label class="input-label">USUARIO</label>', unsafe_allow_html=True)
         usuario = st.text_input("", key="usuario_input", placeholder="Ingresa tu usuario", label_visibility="collapsed")
         
         st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
         
-        col_check, col_forgot = st.columns([1, 1])
-        with col_check:
+        # Checkbox y forgot password
+        col1, col2 = st.columns([1, 1])
+        with col1:
             stay_signed = st.checkbox("Mantener sesión iniciada")
-        with col_forgot:
+        with col2:
             st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
         
+        # Botón de login
         if st.button("INICIAR SESIÓN", key="login_button", use_container_width=True):
             if not usuario or not contrasena:
                 st.error("❌ Por favor, completa todos los campos.")
@@ -229,6 +264,7 @@ def login():
                 else:
                     st.error("❌ Usuario o contraseña incorrectos")
         
+        # Footer
         st.markdown(f"""
             <div class="login-footer">
                 <div>v1.0.0</div>
@@ -238,9 +274,30 @@ def login():
         """, unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Columna derecha - Imagen (2/3)
-    with col_right:
-        st.markdown('<div class="right-column">', unsafe_allow_html=True)
-        st.image("https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Columna derecha - Imagen que ocupa todo el espacio
+    with col_image:
+        # ==========================================
+        # 👇 REEMPLAZA ESTA URL CON TU PROPIA IMAGEN
+        # ==========================================
+        
+        # Imagen de ejemplo (tienda minorista)
+        imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
+        
+        # Opción 2: Usar imagen local (descomenta las siguientes líneas y comenta la de arriba)
+        # import base64
+        # with open("imagenes/tu-imagen.jpg", "rb") as img_file:
+        #     img_data = base64.b64encode(img_file.read()).decode()
+        # imagen_url = f"data:image/jpeg;base64,{img_data}"
+        
+        # Mostrar imagen sin bordes ni márgenes
+        st.markdown(f"""
+            <div class="login-image">
+                <img src="{imagen_url}" alt="Imagen de fondo">
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # ==========================================
+        # FIN DE LA SECCIÓN PARA REEMPLAZAR
+        # ==========================================
