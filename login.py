@@ -10,108 +10,63 @@ def configurar_pagina_login():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores corporativos
-    COLOR_PRIMARY = "#1e3a5f"
-    COLOR_SECONDARY = "#2c5f8a"
-    COLOR_ACCENT = "#3a7ca5"
-    COLOR_BG = "#f5f7fa"
-    COLOR_CARD = "#ffffff"
-    COLOR_TEXT = "#333333"
-    COLOR_TEXT_LIGHT = "#666666"
-    COLOR_BORDER = "#e0e0e0"
+    # Paleta de colores corporativos (mismo que el menú principal)
+    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
+    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
+    COLOR_ACCENT = "#3a7ca5"       # Azul claro
+    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
+    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
+    COLOR_TEXT = "#333333"          # Texto oscuro
+    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
+    COLOR_BORDER = "#e0e0e0"        # Bordes
     
     # CSS personalizado para el login
     st.markdown(f"""
         <style>
-        /* Solución para bloquear scroll */
-        header, footer, .stDeployButton, [data-testid="stToolbar"] {{
-            display: none !important;
-        }}
-        
-        html, body {{
-            overflow: hidden !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            position: fixed !important;
-            width: 100% !important;
-        }}
-        
+        /* Fondo general */
         .stApp {{
-            overflow: hidden !important;
-            height: 100vh !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
             background-color: {COLOR_BG};
         }}
         
-        .main > div {{
-            overflow: hidden !important;
-            height: 100vh !important;
-        }}
-        
-        .block-container {{
-            overflow: hidden !important;
-            padding: 0 !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-        }}
-        
-        /* Forzar que las columnas no generen scroll */
-        .row-widget.stColumns {{
-            height: 100vh !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }}
-        
-        /* Ajustar cada columna */
-        div[data-testid="column"] {{
-            overflow-y: auto !important;
-            height: 100vh !important;
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
-        }}
-        
-        div[data-testid="column"]::-webkit-scrollbar {{
-            display: none !important;
-        }}
-        
-        /* Contenedor del formulario con padding izquierdo */
-        .form-container {{
-            padding-left: 100px !important;
-            padding-right: 50px !important;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 100vh;
-        }}
-        
-        /* Ajustar el contenido dentro del formulario */
-        .form-content {{
-            width: 100%;
-            max-width: 450px;
-        }}
-        
         /* Ocultar elementos no deseados */
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
+        header {{
+            display: none;
+        }}
+        
+        /* Contenedor principal - dos columnas */
+        .login-container {{
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }}
+        
+        /* Columna izquierda - Formulario */
+        .login-form {{
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: {COLOR_CARD};
+        }}
+        
+        .form-wrapper {{
+            width: 100%;
+            max-width: 400px;
+        }}
         
         /* Logo y título */
         .logo {{
             font-size: 3em;
             margin-bottom: 20px;
-            text-align: left;
+            text-align: center;
         }}
         
         .company-name {{
             font-size: 1.5em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
-            text-align: left;
+            text-align: center;
             margin-bottom: 10px;
             letter-spacing: 2px;
         }}
@@ -119,7 +74,7 @@ def configurar_pagina_login():
         .system-name {{
             font-size: 0.9em;
             color: {COLOR_TEXT_LIGHT};
-            text-align: left;
+            text-align: center;
             margin-bottom: 40px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -134,7 +89,6 @@ def configurar_pagina_login():
             letter-spacing: 1px;
             margin-bottom: 8px;
             display: block;
-            text-align: left;
         }}
         
         .stTextInput > div > div > input {{
@@ -151,35 +105,20 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Botón de login */
-        .stButton > button {{
-            width: 100%;
-            padding: 12px;
-            margin-top: 20px;
-            background-color: {COLOR_PRIMARY};
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-        }}
-        
-        .stButton > button:hover {{
-            background-color: {COLOR_SECONDARY};
-            transform: translateY(-2px);
-        }}
-        
-        /* Footer */
-        .login-footer {{
-            text-align: left;
-            margin-top: 40px;
-            font-size: 0.7em;
-            color: {COLOR_TEXT_LIGHT};
-        }}
-        
         /* Columna derecha - Imagen decorativa */
+        .login-image {{
+            flex: 1;
+            background: linear-gradient(135deg, {COLOR_BG}, {COLOR_CARD});
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px 0 0 30px;
+            margin: 20px 0;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
         .image-content {{
             text-align: center;
             padding: 40px;
@@ -206,6 +145,7 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
+        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -260,12 +200,66 @@ def configurar_pagina_login():
             left: -50px;
         }}
         
-        /* Ajustes responsivos */
-        @media (max-width: 768px) {{
-            .form-container {{
-                padding-left: 20px !important;
-                padding-right: 20px !important;
-            }}
+        /* Botón de login */
+        .stButton > button {{
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-2px);
+        }}
+        
+        /* Checkbox */
+        .stCheckbox {{
+            margin-top: 15px;
+        }}
+        
+        .stCheckbox label {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.8em;
+        }}
+        
+        /* Footer */
+        .login-footer {{
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.7em;
+            color: {COLOR_TEXT_LIGHT};
+        }}
+        
+        /* Links */
+        .forgot-link {{
+            text-align: right;
+            margin-top: 15px;
+        }}
+        
+        .forgot-link a {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.75em;
+            text-decoration: none;
+        }}
+        
+        .forgot-link a:hover {{
+            color: {COLOR_PRIMARY};
+        }}
+        
+        /* Versión */
+        .version {{
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.7em;
+            color: {COLOR_TEXT_LIGHT};
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -298,12 +292,8 @@ def login():
     # Usar columnas de Streamlit para el diseño de dos columnas
     col_form, col_image = st.columns([1, 1], gap="large")
     
-    # Columna izquierda - Formulario con contenedor para padding
+    # Columna izquierda - Formulario
     with col_form:
-        # Contenedor con padding izquierdo
-        st.markdown('<div class="form-container">', unsafe_allow_html=True)
-        st.markdown('<div class="form-content">', unsafe_allow_html=True)
-        
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
@@ -315,6 +305,13 @@ def login():
         
         st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
+        
+        # Checkbox y forgot password
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            stay_signed = st.checkbox("Mantener sesión iniciada")
+        with col2:
+            st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
         
         # Botón de login
         if st.button("INICIAR SESIÓN", key="login_button", use_container_width=True):
@@ -350,10 +347,8 @@ def login():
                 <div>© 2024 - Tienda Cerro de Dios</div>
             </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown('</div></div>', unsafe_allow_html=True)
     
-    # Columna derecha - Imagen decorativa
+    # Columna derecha - Imagen decorativa con características centradas
     with col_image:
         st.markdown("""
             <div class="image-content">
@@ -382,8 +377,3 @@ def login():
             <div class="bg-decoration"></div>
             <div class="bg-decoration-2"></div>
         """, unsafe_allow_html=True)
-
-
-# Ejecutar la función login
-if __name__ == "__main__":
-    login()
