@@ -33,21 +33,42 @@ def configurar_pagina_login():
             display: none;
         }}
         
-        /* Contenedor principal - dos columnas */
-        .login-container {{
+        /* Eliminar márgenes y padding por defecto */
+        .main .block-container {{
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+        }}
+        
+        /* Contenedor principal de las columnas */
+        .row-widget.stColumns {{
             display: flex;
-            min-height: 100vh;
-            width: 100%;
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
         }}
         
         /* Columna izquierda - Formulario */
-        .login-form {{
+        div[data-testid="column"]:first-child {{
             flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 40px;
             background: {COLOR_CARD};
+            overflow-y: auto;
+            padding: 40px;
+        }}
+        
+        /* Columna derecha - Imagen */
+        div[data-testid="column"]:last-child {{
+            flex: 2;
+            padding: 0 !important;
+            margin: 0 !important;
+            position: relative;
+            overflow: hidden;
         }}
         
         .form-wrapper {{
@@ -105,46 +126,19 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
-        /* Columna derecha - Imagen decorativa */
+        /* Contenedor de la imagen */
         .login-image {{
-            flex: 2;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 100%;
+            height: 100vh;
             position: relative;
             overflow: hidden;
-            border-radius: 30px 0 0 30px;
-            margin: 20px 0;
-            box-shadow: -5px 0 20px rgba(0,0,0,0.05);
-        }}
-        
-        .image-container {{
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            z-index: 2;
         }}
         
         .login-image img {{
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 30px 0 0 30px;
-        }}
-        
-        /* Overlay opcional para la imagen */
-        .image-overlay {{
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.3);
-            border-radius: 30px 0 0 30px;
-            z-index: 1;
+            object-position: center;
         }}
         
         /* Botón de login */
@@ -207,6 +201,11 @@ def configurar_pagina_login():
             margin-top: 20px;
             font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
+        }}
+        
+        /* Eliminar espacios adicionales de Streamlit */
+        .element-container, .stMarkdown {{
+            margin: 0;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -295,7 +294,7 @@ def login():
             </div>
         """, unsafe_allow_html=True)
     
-    # Columna derecha - Imagen personalizada
+    # Columna derecha - Imagen que ocupa toda la altura
     with col_image:
         # ==========================================
         # 👇 REEMPLAZA ESTA URL CON TU PROPIA IMAGEN
@@ -304,15 +303,21 @@ def login():
         # Opción 1: Usar imagen desde URL
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Opción 2: Usar imagen local (descomenta las siguientes líneas y comenta la de arriba)
+        # Opción 2: Usar imagen local (descomenta estas líneas y comenta la de arriba)
         # from PIL import Image
+        # import base64
+        # from io import BytesIO
+        # 
         # imagen = Image.open("imagenes/tu-imagen.jpg")
-        # st.image(imagen, use_container_width=True)
+        # # Redimensionar si es necesario
+        # buffered = BytesIO()
+        # imagen.save(buffered, format="JPEG")
+        # img_str = base64.b64encode(buffered.getvalue()).decode()
+        # imagen_url = f"data:image/jpeg;base64,{img_str}"
         
-        # Mostrar imagen con estilo
+        # Mostrar imagen que ocupa toda la columna
         st.markdown(f"""
             <div class="login-image">
-                <div class="image-overlay"></div>
                 <img src="{imagen_url}" alt="Imagen de fondo">
             </div>
         """, unsafe_allow_html=True)
