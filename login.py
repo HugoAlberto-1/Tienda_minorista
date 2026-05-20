@@ -2,7 +2,7 @@ import streamlit as st
 from config.conexion import obtener_conexion
 
 def configurar_pagina_login():
-    """Configuración de la página con CSS personalizado para el login estilo Riot Games"""
+    """Configuración de la página con CSS personalizado para el login"""
     st.set_page_config(
         page_title="Sistema de Inventario - Login",
         page_icon="📦",
@@ -10,16 +10,17 @@ def configurar_pagina_login():
         initial_sidebar_state="collapsed"
     )
     
-    # Paleta de colores
+    # Paleta de colores corporativos (mismo que el menú principal)
     COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
     COLOR_SECONDARY = "#2c5f8a"    # Azul medio
-    COLOR_BG = "#0a0e27"           # Fondo oscuro elegante
-    COLOR_CARD = "#111827"          # Fondo de la tarjeta
-    COLOR_TEXT = "#f3f4f6"          # Texto claro
-    COLOR_TEXT_MUTED = "#9ca3af"    # Texto gris
-    COLOR_BORDER = "#374151"        # Bordes
+    COLOR_ACCENT = "#3a7ca5"       # Azul claro
+    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro (mismo que menú principal)
+    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
+    COLOR_TEXT = "#333333"          # Texto oscuro
+    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
+    COLOR_BORDER = "#e0e0e0"        # Bordes
     
-    # CSS personalizado para el login estilo Riot Games
+    # CSS personalizado para el login
     st.markdown(f"""
         <style>
         /* Fondo general */
@@ -46,7 +47,7 @@ def configurar_pagina_login():
             justify-content: center;
             align-items: center;
             padding: 40px;
-            background: linear-gradient(135deg, {COLOR_BG} 0%, {COLOR_CARD} 100%);
+            background: {COLOR_CARD};
         }}
         
         .form-wrapper {{
@@ -64,15 +65,15 @@ def configurar_pagina_login():
         .company-name {{
             font-size: 1.5em;
             font-weight: 700;
-            color: {COLOR_TEXT};
+            color: {COLOR_PRIMARY};
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             letter-spacing: 2px;
         }}
         
         .system-name {{
             font-size: 0.9em;
-            color: {COLOR_TEXT_MUTED};
+            color: {COLOR_TEXT_LIGHT};
             text-align: center;
             margin-bottom: 40px;
             text-transform: uppercase;
@@ -83,11 +84,25 @@ def configurar_pagina_login():
         .input-label {{
             font-size: 0.75em;
             font-weight: 600;
-            color: {COLOR_TEXT_MUTED};
+            color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 8px;
             display: block;
+        }}
+        
+        .stTextInput > div > div > input {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            padding: 10px 15px;
+            font-size: 0.95em;
+            background-color: {COLOR_CARD};
+            color: {COLOR_TEXT};
+        }}
+        
+        .stTextInput > div > div > input:focus {{
+            border-color: {COLOR_PRIMARY};
+            box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
         /* Columna derecha - Imagen decorativa */
@@ -99,6 +114,8 @@ def configurar_pagina_login():
             align-items: center;
             position: relative;
             overflow: hidden;
+            border-radius: 30px 0 0 30px;
+            margin: 20px 0;
         }}
         
         .image-content {{
@@ -106,11 +123,12 @@ def configurar_pagina_login():
             color: white;
             padding: 40px;
             z-index: 2;
+            width: 100%;
         }}
         
         .image-icon {{
-            font-size: 8em;
-            margin-bottom: 30px;
+            font-size: 5em;
+            margin-bottom: 20px;
             animation: float 3s ease-in-out infinite;
         }}
         
@@ -123,23 +141,34 @@ def configurar_pagina_login():
         .image-subtitle {{
             font-size: 1em;
             opacity: 0.9;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }}
         
+        /* Lista de características - CENTRADA */
         .feature-list {{
-            text-align: left;
-            margin-top: 30px;
+            margin-top: 20px;
+            width: 100%;
         }}
         
         .feature-item {{
-            margin: 15px 0;
+            margin: 20px auto;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 300px;
         }}
         
         .feature-icon {{
-            font-size: 1.2em;
+            font-size: 1.3em;
+            min-width: 35px;
+            text-align: center;
+        }}
+        
+        .feature-text {{
+            font-size: 0.95em;
+            text-align: left;
         }}
         
         /* Animación flotante */
@@ -170,24 +199,33 @@ def configurar_pagina_login():
         }}
         
         /* Botón de login */
-        .login-btn {{
+        .stButton > button {{
             width: 100%;
             padding: 12px;
             margin-top: 20px;
-            background: {COLOR_PRIMARY};
+            background-color: {COLOR_PRIMARY};
             color: white;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
-            cursor: pointer;
             transition: all 0.3s ease;
         }}
         
-        .login-btn:hover {{
-            background: {COLOR_SECONDARY};
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
             transform: translateY(-2px);
+        }}
+        
+        /* Checkbox */
+        .stCheckbox {{
+            margin-top: 15px;
+        }}
+        
+        .stCheckbox label {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.8em;
         }}
         
         /* Footer */
@@ -195,30 +233,17 @@ def configurar_pagina_login():
             text-align: center;
             margin-top: 40px;
             font-size: 0.7em;
-            color: {COLOR_TEXT_MUTED};
-        }}
-        
-        /* Checkbox personalizado */
-        .checkbox-container {{
-            display: flex;
-            align-items: center;
-            margin: 15px 0;
-            gap: 8px;
-        }}
-        
-        .checkbox-container label {{
-            color: {COLOR_TEXT_MUTED};
-            font-size: 0.8em;
+            color: {COLOR_TEXT_LIGHT};
         }}
         
         /* Links */
         .forgot-link {{
             text-align: right;
-            margin-top: 10px;
+            margin-top: 15px;
         }}
         
         .forgot-link a {{
-            color: {COLOR_TEXT_MUTED};
+            color: {COLOR_TEXT_LIGHT};
             font-size: 0.75em;
             text-decoration: none;
         }}
@@ -232,7 +257,7 @@ def configurar_pagina_login():
             text-align: center;
             margin-top: 20px;
             font-size: 0.7em;
-            color: {COLOR_TEXT_MUTED};
+            color: {COLOR_TEXT_LIGHT};
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -267,28 +292,26 @@ def login():
     
     # Columna izquierda - Formulario
     with col_form:
-        st.markdown('<div class="form-wrapper">', unsafe_allow_html=True)
-        
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
         st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
         
-        # Campos de entrada con estilo personalizado
+        # Campos de entrada
         st.markdown('<label class="input-label">USUARIO</label>', unsafe_allow_html=True)
         usuario = st.text_input("", key="usuario_input", placeholder="Ingresa tu usuario", label_visibility="collapsed")
         
         st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
         
-        # Checkbox Stay signed in
+        # Checkbox y forgot password
         col1, col2 = st.columns([1, 1])
         with col1:
-            stay_signed = st.checkbox("Mantener sesión iniciada", key="stay_signed")
+            stay_signed = st.checkbox("Mantener sesión iniciada")
         with col2:
-            st.markdown('<div class="forgot-link"><a href="#">¿OLVIDASTE TU CONTRASEÑA?</a></div>', unsafe_allow_html=True)
+            st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
         
-        # Botón de login personalizado
+        # Botón de login
         if st.button("INICIAR SESIÓN", key="login_button", use_container_width=True):
             if not usuario or not contrasena:
                 st.error("❌ Por favor, completa todos los campos.")
@@ -318,14 +341,12 @@ def login():
         st.markdown(f"""
             <div class="login-footer">
                 <div>v1.0.0</div>
-                <div style="margin-top: 10px;">Este sistema está protegido por autenticación de usuarios</div>
-                <div>© 2024 - Sistema de Gestión de Inventario</div>
+                <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
+                <div>© 2024 - Tienda Cerro de Dios</div>
             </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
     
-    # Columna derecha - Imagen decorativa
+    # Columna derecha - Imagen decorativa con características centradas
     with col_image:
         st.markdown("""
             <div class="image-content">
@@ -335,19 +356,19 @@ def login():
                 <div class="feature-list">
                     <div class="feature-item">
                         <span class="feature-icon">✅</span>
-                        <span>Control de inventario en tiempo real</span>
+                        <span class="feature-text">Control de inventario en tiempo real</span>
                     </div>
                     <div class="feature-item">
                         <span class="feature-icon">💰</span>
-                        <span>Registro de compras y ventas</span>
+                        <span class="feature-text">Registro de compras y ventas</span>
                     </div>
                     <div class="feature-item">
                         <span class="feature-icon">📊</span>
-                        <span>Reportes y análisis de datos</span>
+                        <span class="feature-text">Reportes y análisis de datos</span>
                     </div>
                     <div class="feature-item">
                         <span class="feature-icon">🔐</span>
-                        <span>Seguridad y respaldo de información</span>
+                        <span class="feature-text">Seguridad y respaldo de información</span>
                     </div>
                 </div>
             </div>
