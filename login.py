@@ -11,64 +11,19 @@ def configurar_pagina_login():
     )
     
     # Paleta de colores corporativos
-    COLOR_PRIMARY = "#1e3a5f"      # Azul oscuro principal
-    COLOR_SECONDARY = "#2c5f8a"    # Azul medio
-    COLOR_BG = "#f5f7fa"           # Fondo gris muy claro
-    COLOR_CARD = "#ffffff"          # Blanco para tarjetas
-    COLOR_TEXT = "#333333"          # Texto oscuro
-    COLOR_TEXT_LIGHT = "#666666"    # Texto gris
-    COLOR_BORDER = "#e0e0e0"        # Bordes
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_LIGHT = "#666666"
+    COLOR_BORDER = "#e0e0e0"
     
     # CSS personalizado para el login
     st.markdown(f"""
         <style>
-        /* ========== BLOQUEAR SCROLL ========== */
-        body {{
-            overflow: hidden !important;
-            position: fixed !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }}
-        
-        .stApp {{
-            overflow: hidden !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background-color: {COLOR_BG};
-        }}
-        
-        .stAppViewContainer, 
-        .stAppViewContainer > div,
-        .main,
-        .block-container,
-        div[data-testid="stAppViewBlockContainer"] {{
-            overflow: hidden !important;
-            height: 100vh !important;
-            max-height: 100vh !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }}
-        
-        /* Ocultar scrollbars */
-        ::-webkit-scrollbar {{
-            display: none !important;
-        }}
-        
-        * {{
-            scrollbar-width: none !important;
-        }}
-        
-        /* ========== OCULTAR ELEMENTOS DE STREAMLIT ========== */
+        /* Ocultar solo el header */
         header {{
-            display: none !important;
-        }}
-        
-        .stDeployButton {{
             display: none !important;
         }}
         
@@ -79,49 +34,45 @@ def configurar_pagina_login():
             max-width: 100% !important;
         }}
         
-        /* ========== CONTENEDOR PRINCIPAL ========== */
-        .row-widget.stColumns {{
-            display: flex !important;
-            height: 100vh !important;
+        /* Asegurar que el contenedor principal ocupe toda la pantalla */
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
+        
+        .stAppViewContainer {{
             width: 100% !important;
+            height: 100vh !important;
             margin: 0 !important;
             padding: 0 !important;
-            gap: 0 !important;
+        }}
+        
+        /* Estilo para las columnas */
+        div[data-testid="column"] {{
+            padding: 0 !important;
+            margin: 0 !important;
         }}
         
         /* Columna izquierda - Formulario */
         div[data-testid="column"]:first-child {{
-            flex: 1;
-            display: flex !important;
-            flex-direction: column;
-            justify-content: center !important;
-            align-items: center !important;
             background-color: {COLOR_CARD};
             padding: 40px !important;
-            margin: 0 !important;
-            height: 100vh !important;
-            overflow-y: auto !important;
+            height: 100vh;
+            overflow-y: auto;
         }}
         
         /* Columna derecha - Imagen */
         div[data-testid="column"]:last-child {{
-            flex: 1.5;
             padding: 0 !important;
             margin: 0 !important;
-            height: 100vh !important;
+            height: 100vh;
             position: relative;
-            overflow: hidden !important;
+            overflow: hidden;
         }}
         
         /* Contenedor de la imagen */
         .image-container {{
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh;
             overflow: hidden;
         }}
         
@@ -132,52 +83,56 @@ def configurar_pagina_login():
             object-position: center;
         }}
         
-        /* ========== ESTILOS DEL FORMULARIO ========== */
+        /* Estilos del formulario */
         .form-content {{
             width: 100%;
-            max-width: 380px;
+            max-width: 400px;
             margin: 0 auto;
+            padding: 20px 0;
         }}
         
         .logo {{
-            font-size: 3.5em;
-            margin-bottom: 15px;
+            font-size: 3em;
+            margin-bottom: 20px;
             text-align: center;
         }}
         
         .company-name {{
-            font-size: 1.4em;
+            font-size: 1.5em;
             font-weight: 700;
             color: {COLOR_PRIMARY};
             text-align: center;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
         }}
         
         .system-name {{
-            font-size: 0.8em;
+            font-size: 0.9em;
             color: {COLOR_TEXT_LIGHT};
             text-align: center;
-            margin-bottom: 35px;
+            margin-bottom: 40px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }}
         
+        /* Labels de los campos */
         .input-label {{
-            font-size: 0.7em;
+            font-size: 0.8em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 5px;
+            margin-top: 15px;
             display: block;
         }}
         
+        /* Campos de entrada */
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
-            padding: 10px 12px;
-            font-size: 0.9em;
+            padding: 12px 15px;
+            font-size: 1em;
             background-color: {COLOR_CARD};
             color: {COLOR_TEXT};
         }}
@@ -187,10 +142,11 @@ def configurar_pagina_login():
             box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
         }}
         
+        /* Botón de login */
         .stButton > button {{
             width: 100%;
             padding: 12px;
-            margin-top: 15px;
+            margin-top: 25px;
             background-color: {COLOR_PRIMARY};
             color: white;
             border: none;
@@ -207,15 +163,17 @@ def configurar_pagina_login():
             transform: translateY(-2px);
         }}
         
+        /* Checkbox */
         .stCheckbox {{
             margin-top: 15px;
         }}
         
         .stCheckbox label {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.8em;
+            font-size: 0.85em;
         }}
         
+        /* Link de olvidé contraseña */
         .forgot-link {{
             text-align: right;
             margin-top: 15px;
@@ -223,7 +181,7 @@ def configurar_pagina_login():
         
         .forgot-link a {{
             color: {COLOR_TEXT_LIGHT};
-            font-size: 0.7em;
+            font-size: 0.8em;
             text-decoration: none;
         }}
         
@@ -231,28 +189,33 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
+        /* Footer */
         .login-footer {{
             text-align: center;
-            margin-top: 30px;
-            font-size: 0.65em;
+            margin-top: 40px;
+            font-size: 0.7em;
             color: {COLOR_TEXT_LIGHT};
-            line-height: 1.5;
+            line-height: 1.6;
         }}
         
-        /* Eliminar márgenes extra de Streamlit */
-        .element-container {{
-            margin: 0 !important;
-            padding: 0 !important;
+        /* Ajustes para mensajes de error/success */
+        .stAlert {{
+            margin-top: 15px;
+            margin-bottom: 0;
         }}
         
-        .stMarkdown {{
-            margin: 0 !important;
-            padding: 0 !important;
+        /* Scroll solo si es necesario */
+        ::-webkit-scrollbar {{
+            width: 6px;
         }}
         
-        /* Ajustar espacio entre campos */
-        div:has(> .stTextInput) {{
-            margin-bottom: 5px;
+        ::-webkit-scrollbar-track {{
+            background: #f1f1f1;
+        }}
+        
+        ::-webkit-scrollbar-thumb {{
+            background: #888;
+            border-radius: 3px;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -282,8 +245,8 @@ def verificar_usuario(usuario, contrasena):
 def login():
     configurar_pagina_login()
     
-    # Crear las dos columnas (1:1.5 para que la imagen sea más grande)
-    col_form, col_image = st.columns([1, 1.5], gap="small")
+    # Crear las dos columnas
+    col_form, col_image = st.columns([1, 1.2], gap="medium")
     
     # ========== COLUMNA IZQUIERDA - FORMULARIO ==========
     with col_form:
@@ -301,10 +264,10 @@ def login():
         st.markdown('<label class="input-label">CONTRASEÑA</label>', unsafe_allow_html=True)
         contrasena = st.text_input("", type="password", key="contrasena_input", placeholder="Ingresa tu contraseña", label_visibility="collapsed")
         
-        # Checkbox y forgot password
+        # Checkbox y forgot password en dos columnas
         col1, col2 = st.columns([1, 1])
         with col1:
-            stay_signed = st.checkbox("Mantener sesión iniciada")
+            stay_signed = st.checkbox("Mantener sesión")
         with col2:
             st.markdown('<div class="forgot-link"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
         
@@ -347,21 +310,17 @@ def login():
     
     # ========== COLUMNA DERECHA - IMAGEN ==========
     with col_image:
-        # =====================================================
-        # CAMBIA ESTA URL POR TU PROPIA IMAGEN
-        # =====================================================
-        
-        # Opción 1: Imagen desde URL (ejemplo)
+        # Cambia esta URL por tu imagen
         imagen_url = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
         
-        # Opción 2: Imagen local (descomenta esto y comenta la de arriba)
+        # Si quieres usar imagen local, descomenta esto:
         # import base64
         # from PIL import Image
         # from io import BytesIO
         # 
-        # img = Image.open("ruta/a/tu/imagen.jpg")
+        # img = Image.open("tu-imagen.jpg")
         # buffered = BytesIO()
-        # img.save(buffered, format="JPEG", quality=95)
+        # img.save(buffered, format="JPEG")
         # img_base64 = base64.b64encode(buffered.getvalue()).decode()
         # imagen_url = f"data:image/jpeg;base64,{img_base64}"
         
