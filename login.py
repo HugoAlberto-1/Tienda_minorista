@@ -286,7 +286,7 @@ def login():
     with col_form:
         # Logo y título
         st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
-        st.markdown('<div class="company-name">TIENDA CERRO DE DIOS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="company-name">TIENDAS MINORISTAS</div>', unsafe_allow_html=True)
         st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
         
         # Campos de entrada
@@ -327,7 +327,7 @@ def login():
             <div class="login-footer">
                 <div>v1.0.0</div>
                 <div style="margin-top: 10px;">Sistema de Gestión de Inventario</div>
-                <div>© 2024 - Tienda Cerro de Dios</div>
+                <div>© 2024 - Tiendas Minoristas</div>
             </div>
         """, unsafe_allow_html=True)
     
