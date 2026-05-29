@@ -267,7 +267,7 @@ def verificar_usuario(usuario, contrasena):
         # Usando IFNULL en lugar de COALESCE para MySQL
         query = """
             SELECT e.id_empleado, e.Nombre, e.id_tienda, e.Nivel_usuario, 
-                   IFNULL(t.nombre, 'Todas las tiendas') as nombre_tienda
+                   IFNULL(t.nombre, 'Tiendas Minoristas') as nombre_tienda
             FROM Empleado e
             LEFT JOIN tienda t ON e.id_tienda = t.id_tienda
             WHERE e.Usuario = %s AND e.Contrasena = %s
