@@ -476,7 +476,7 @@ def menu_principal():
 
 
 # ─────────────────────────────────────────────
-# 🔄 ROUTER DE MÓDULOS CON VERIFICACIÓN DE ROL
+# 🔄 ROUTER DE MÓDULOS CON VERIFICACIÓN DE ROL (CORREGIDO)
 # ─────────────────────────────────────────────
 def cargar_modulo():
     # 🔐 Verificar si el usuario tiene acceso al módulo solicitado
@@ -486,36 +486,39 @@ def cargar_modulo():
     # Módulos permitidos para Administrador
     modulos_permitidos_admin = ["Inventario", "Reportes_Ventas", "productomasvendido"]
     
-    # Si es Administrador y el módulo no está permitido, redirigir
+    # 🔥 CORRECCIÓN: Si no hay módulo seleccionado, mostrar menú principal
+    if modulo_solicitado == "" or modulo_solicitado is None:
+        menu_principal()
+        return
+    
+    # Si es Administrador y el módulo no está permitido, mostrar error y volver
     if rol == "Administrador" and modulo_solicitado not in modulos_permitidos_admin:
         st.warning("⚠️ No tienes acceso a este módulo como Administrador.")
         st.session_state["macro_modulo"] = None
         if "module" in st.session_state:
             del st.session_state["module"]
         st.rerun()
+        return
     
     # Cargar el módulo correspondiente
-    if "module" in st.session_state:
-        if st.session_state.module == "Ventas":
-            modulo_ventas()
-        elif st.session_state.module == "Compras":
-            modulo_compras()
-        elif st.session_state.module == "Producto":
-            modulo_producto()
-        elif st.session_state.module == "Editar":
-            modulo_editar_producto()
-        elif st.session_state.module == "Dashboard":
-            dashboard()
-        elif st.session_state.module == "Empleado":
-            modulo_empleado()
-        elif st.session_state.module == "Inventario":
-            modulo_inventario()
-        elif st.session_state.module == "Reportes_Ventas":
-            reporte_ventas()
-        elif st.session_state.module == "Categoria":
-            modulo_categoria()
-        else:
-            menu_principal()
+    if st.session_state.module == "Ventas":
+        modulo_ventas()
+    elif st.session_state.module == "Compras":
+        modulo_compras()
+    elif st.session_state.module == "Producto":
+        modulo_producto()
+    elif st.session_state.module == "Editar":
+        modulo_editar_producto()
+    elif st.session_state.module == "Dashboard":
+        dashboard()
+    elif st.session_state.module == "Empleado":
+        modulo_empleado()
+    elif st.session_state.module == "Inventario":
+        modulo_inventario()
+    elif st.session_state.module == "Reportes_Ventas":
+        reporte_ventas()
+    elif st.session_state.module == "Categoria":
+        modulo_categoria()
     else:
         menu_principal()
 
