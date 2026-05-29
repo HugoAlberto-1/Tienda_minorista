@@ -47,7 +47,7 @@ def convertir_a_arroba(cantidad_libras):
     return cantidad_libras / 25
 
 def configurar_estilo():
-    """Configuración de estilos CSS para el módulo de inventario"""
+    """Configuración de estilos CSS para el módulo de inventario - MODO CLARO"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_BG = "#f5f7fa"
@@ -140,7 +140,9 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Estilos para la tabla - FORZADO */
+        /* ============================================ */
+        /* ESTILOS PARA TABLA EN MODO CLARO */
+        /* ============================================ */
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
         }}
@@ -155,6 +157,7 @@ def configurar_estilo():
             background-color: {COLOR_CARD} !important;
         }}
         
+        /* Encabezados - Azul oscuro con texto blanco */
         [data-testid="stDataFrame"] th {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -163,19 +166,28 @@ def configurar_estilo():
             padding: 12px 8px !important;
         }}
         
+        /* Celdas - Fondo blanco, texto oscuro */
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
             text-align: center !important;
             padding: 10px 8px !important;
             background-color: {COLOR_CARD} !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
         }}
         
+        /* Filas pares - Gris muy claro */
         [data-testid="stDataFrame"] tr:nth-child(even) td {{
             background-color: #f8f9fa !important;
         }}
         
+        /* Hover - Azul muy claro */
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
+        }}
+        
+        /* Texto dentro de las celdas - Asegurar que sea oscuro */
+        [data-testid="stDataFrame"] td div {{
+            color: {COLOR_TEXT} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -382,6 +394,7 @@ def modulo_inventario():
                             "Stock Quintal": round(convertir_a_quintal(stock_libras), 2),
                             "Stock Arroba": round(convertir_a_arroba(stock_libras), 2),
                             "Stock Libras": round(stock_libras, 2),
+                            "Stock Unidades": "—",
                             "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                         })
                     elif categoria == "Carnes y congelados":
@@ -392,6 +405,8 @@ def modulo_inventario():
                                 "Categoría": categoria,
                                 "Stock Libras": round(stock_libras, 2),
                                 "Stock Unidades": "—",
+                                "Stock Quintal": "—",
+                                "Stock Arroba": "—",
                                 "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                             })
                         else:
@@ -401,6 +416,8 @@ def modulo_inventario():
                                 "Categoría": categoria,
                                 "Stock Libras": "—",
                                 "Stock Unidades": int(stock_unidades) if stock_unidades > 0 else 0,
+                                "Stock Quintal": "—",
+                                "Stock Arroba": "—",
                                 "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                             })
                     else:
@@ -409,6 +426,9 @@ def modulo_inventario():
                             "Nombre": nombre,
                             "Categoría": categoria,
                             "Stock Unidades": int(stock_unidades) if stock_unidades > 0 else 0,
+                            "Stock Libras": "—",
+                            "Stock Quintal": "—",
+                            "Stock Arroba": "—",
                             "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                         })
 
@@ -417,18 +437,16 @@ def modulo_inventario():
                 if df.empty:
                     st.warning(f"⚠️ No hay productos para mostrar.")
                 else:
-                    # Agrupar por código
-                    df_agrupado = df.groupby("Código", as_index=False).first()
+                    # Definir orden de columnas
+                    columnas_orden = ["Código", "Nombre", "Categoría", "Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades", "Fecha Vencimiento"]
+                    df = df[columnas_orden]
                     
-                    # Ordenar
-                    df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
-                    
-                    # Reemplazar NaN con "—"
-                    df_agrupado = df_agrupado.fillna("—")
+                    # Ordenar por nombre
+                    df = df.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                     
                     if buscador:
                         st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
-                        st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
+                        st.info(f"✅ Se encontraron {len(df)} productos")
                         if filtro_categoria != "Todas las categorías":
                             st.caption(f"Filtrando por categoría: {filtro_categoria}")
                     else:
@@ -437,8 +455,8 @@ def modulo_inventario():
                         else:
                             st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
                     
-                    # Mostrar dataframe
-                    st.dataframe(df_agrupado, use_container_width=True)
+                    # Mostrar dataframe con estilo claro
+                    st.dataframe(df, use_container_width=True)
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
