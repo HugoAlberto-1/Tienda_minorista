@@ -50,18 +50,13 @@ def configurar_estilo():
     """Configuración de estilos CSS para el módulo de inventario"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
-    COLOR_ACCENT = "#3a7ca5"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
     COLOR_TEXT_DARK = "#1a1a1a"
-    COLOR_TEXT_LIGHT = "#666666"
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
-    COLOR_TABLE_HEADER = "#1e3a5f"
-    COLOR_TABLE_ROW_ODD = "#ffffff"
-    COLOR_TABLE_ROW_EVEN = "#f8f9fa"
     
     st.markdown(f"""
         <style>
@@ -98,7 +93,7 @@ def configurar_estilo():
         }}
         
         /* Labels */
-        .stTextInput > label, .stSelectbox > label, .stDateInput > label {{
+        .stTextInput > label, .stSelectbox > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
@@ -116,12 +111,6 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
-        .stTextInput > div > div > input:focus {{
-            border-color: {COLOR_PRIMARY};
-            box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
-        }}
-        
-        /* Selectbox */
         .stSelectbox > div > div {{
             background-color: {COLOR_BUTTON};
             border-radius: 8px;
@@ -151,105 +140,45 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* ============================================ */
-        /* ESTILOS FORZADOS PARA LA TABLA (DATAFRAME) */
-        /* ============================================ */
+        /* Estilos para la tabla - FORZADO */
+        .stDataFrame {{
+            background-color: {COLOR_CARD} !important;
+        }}
         
-        /* Contenedor de la tabla */
         [data-testid="stDataFrame"] {{
             background-color: {COLOR_CARD} !important;
             border-radius: 12px !important;
-            overflow: hidden !important;
             border: 1px solid {COLOR_BORDER} !important;
         }}
         
-        /* Tabla completa */
         [data-testid="stDataFrame"] table {{
-            width: 100% !important;
-            border-collapse: collapse !important;
             background-color: {COLOR_CARD} !important;
         }}
         
-        /* Encabezados de la tabla */
         [data-testid="stDataFrame"] th {{
-            background-color: {COLOR_TABLE_HEADER} !important;
+            background-color: {COLOR_PRIMARY} !important;
             color: white !important;
             font-weight: 600 !important;
             text-align: center !important;
             padding: 12px 8px !important;
-            border: none !important;
-            font-size: 0.9em !important;
         }}
         
-        /* Celdas de la tabla */
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
             text-align: center !important;
             padding: 10px 8px !important;
-            border-bottom: 1px solid {COLOR_BORDER} !important;
             background-color: {COLOR_CARD} !important;
         }}
         
-        /* Filas pares */
         [data-testid="stDataFrame"] tr:nth-child(even) td {{
-            background-color: {COLOR_TABLE_ROW_EVEN} !important;
+            background-color: #f8f9fa !important;
         }}
         
-        /* Filas impares */
-        [data-testid="stDataFrame"] tr:nth-child(odd) td {{
-            background-color: {COLOR_TABLE_ROW_ODD} !important;
-        }}
-        
-        /* Hover sobre filas */
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
         }}
-        
-        /* Scrollbar */
-        [data-testid="stDataFrame"] .dataframe {{
-            scrollbar-width: thin;
-        }}
         </style>
     """, unsafe_allow_html=True)
-
-
-def aplicar_estilo_tabla(df):
-    """Aplica estilo CSS directamente al DataFrame"""
-    # Estilo para el encabezado
-    styled = df.style.set_table_styles([
-        {'selector': 'thead tr th', 'props': [
-            ('background-color', '#1e3a5f'),
-            ('color', 'white'),
-            ('font-weight', '600'),
-            ('text-align', 'center'),
-            ('padding', '12px 8px'),
-            ('font-size', '0.9em')
-        ]},
-        {'selector': 'tbody tr td', 'props': [
-            ('text-align', 'center'),
-            ('padding', '10px 8px'),
-            ('color', '#333333'),
-            ('border-bottom', '1px solid #e0e0e0')
-        ]},
-        {'selector': 'tbody tr:nth-child(even)', 'props': [
-            ('background-color', '#f8f9fa')
-        ]},
-        {'selector': 'tbody tr:nth-child(odd)', 'props': [
-            ('background-color', '#ffffff')
-        ]},
-        {'selector': 'tbody tr:hover', 'props': [
-            ('background-color', '#e8f0fe')
-        ]}
-    ])
-    
-    # Formato numérico
-    for col in df.columns:
-        if col in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
-            styled = styled.format({col: "{:.2f}"})
-        elif col == "Stock Unidades":
-            styled = styled.format({col: "{:.0f}"})
-    
-    return styled
 
 
 def modulo_inventario():
@@ -337,14 +266,13 @@ def modulo_inventario():
 
     conn = None
     cursor = None
-    mostrar_contenido = True
     mensaje_info = None
 
     try:
         conn = obtener_conexion()
         if not conn:
             st.error("❌ No se pudo conectar a la base de datos.")
-            mostrar_contenido = False
+            return
         else:
             cursor = conn.cursor()
 
@@ -396,7 +324,6 @@ def modulo_inventario():
                         mensaje_info = f"ℹ️ No hay productos registrados en ninguna categoría."
                     else:
                         mensaje_info = f"ℹ️ No hay productos registrados en la categoría '{filtro_categoria}' para esta tienda."
-                mostrar_contenido = False
             else:
                 inventario_detalle = []
 
@@ -452,10 +379,10 @@ def modulo_inventario():
                             "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
-                            "Stock Quintal": convertir_a_quintal(stock_libras),
-                            "Stock Arroba": convertir_a_arroba(stock_libras),
-                            "Stock Libras": stock_libras,
-                            "Fecha Vencimiento": fecha_vencimiento
+                            "Stock Quintal": round(convertir_a_quintal(stock_libras), 2),
+                            "Stock Arroba": round(convertir_a_arroba(stock_libras), 2),
+                            "Stock Libras": round(stock_libras, 2),
+                            "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                         })
                     elif categoria == "Carnes y congelados":
                         if unidad_principal == "libras":
@@ -463,185 +390,55 @@ def modulo_inventario():
                                 "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
-                                "Stock Libras": stock_libras,
-                                "Stock Unidades": None,
-                                "Fecha Vencimiento": fecha_vencimiento
+                                "Stock Libras": round(stock_libras, 2),
+                                "Stock Unidades": "—",
+                                "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                             })
                         else:
                             inventario_detalle.append({
                                 "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
-                                "Stock Libras": None,
-                                "Stock Unidades": stock_unidades,
-                                "Fecha Vencimiento": fecha_vencimiento
+                                "Stock Libras": "—",
+                                "Stock Unidades": int(stock_unidades) if stock_unidades > 0 else 0,
+                                "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                             })
                     else:
                         inventario_detalle.append({
                             "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
-                            "Stock Unidades": stock_unidades,
-                            "Fecha Vencimiento": fecha_vencimiento
+                            "Stock Unidades": int(stock_unidades) if stock_unidades > 0 else 0,
+                            "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
                         })
 
                 df = pd.DataFrame(inventario_detalle)
 
                 if df.empty:
                     st.warning(f"⚠️ No hay productos para mostrar.")
-                    mostrar_contenido = False
                 else:
-                    # Agrupar por tipo de categoría
-                    df_granos = df[df["Categoría"] == "Granos y productos a granel"] if not df[df["Categoría"] == "Granos y productos a granel"].empty else None
-                    df_carnes = df[df["Categoría"] == "Carnes y congelados"] if not df[df["Categoría"] == "Carnes y congelados"].empty else None
-                    df_otros = df[~df["Categoría"].isin(["Granos y productos a granel", "Carnes y congelados"])] if not df[~df["Categoría"].isin(["Granos y productos a granel", "Carnes y congelados"])].empty else None
+                    # Agrupar por código
+                    df_agrupado = df.groupby("Código", as_index=False).first()
                     
-                    frames = []
+                    # Ordenar
+                    df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                     
-                    if df_granos is not None:
-                        df_granos_agg = df_granos.groupby(df_granos["Código"], as_index=False).agg({
-                            "Código": "first",
-                            "Nombre": "first",
-                            "Categoría": "first",
-                            "Stock Quintal": "sum",
-                            "Stock Arroba": "sum",
-                            "Stock Libras": "sum",
-                            "Fecha Vencimiento": lambda x: min(x.dropna()) if not x.dropna().empty else None
-                        })
-                        frames.append(df_granos_agg)
+                    # Reemplazar NaN con "—"
+                    df_agrupado = df_agrupado.fillna("—")
                     
-                    if df_carnes is not None:
-                        agg_dict = {
-                            "Código": "first",
-                            "Nombre": "first",
-                            "Categoría": "first",
-                            "Fecha Vencimiento": lambda x: min(x.dropna()) if not x.dropna().empty else None
-                        }
-                        if "Stock Libras" in df_carnes.columns:
-                            agg_dict["Stock Libras"] = "sum"
-                        if "Stock Unidades" in df_carnes.columns:
-                            agg_dict["Stock Unidades"] = "sum"
-                        df_carnes_agg = df_carnes.groupby(df_carnes["Código"], as_index=False).agg(agg_dict)
-                        frames.append(df_carnes_agg)
-                    
-                    if df_otros is not None:
-                        df_otros_agg = df_otros.groupby(df_otros["Código"], as_index=False).agg({
-                            "Código": "first",
-                            "Nombre": "first",
-                            "Categoría": "first",
-                            "Stock Unidades": "sum",
-                            "Fecha Vencimiento": lambda x: min(x.dropna()) if not x.dropna().empty else None
-                        })
-                        frames.append(df_otros_agg)
-                    
-                    if frames:
-                        df_agrupado = pd.concat(frames, ignore_index=True, sort=False)
-                        df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
-                        
-                        columnas = ["Código"] + [col for col in df_agrupado.columns if col not in ["Código", "Fecha Vencimiento"]] + ["Fecha Vencimiento"]
-                        df_agrupado = df_agrupado[columnas]
-                        
-                        # Formatear valores
-                        for col in df_agrupado.columns:
-                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
-                                df_agrupado[col] = df_agrupado[col].apply(lambda x: f"{x:.2f}" if pd.notna(x) and x != 0 else "—" if pd.isna(x) or x == 0 else "—")
-                            elif col == "Stock Unidades":
-                                df_agrupado[col] = df_agrupado[col].apply(lambda x: f"{int(x)}" if pd.notna(x) and x > 0 else "—" if pd.isna(x) or x == 0 else "—")
-                            elif col == "Fecha Vencimiento":
-                                df_agrupado[col] = df_agrupado[col].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else "—")
-                        
-                        # Rellenar NaN con "—"
-                        df_agrupado = df_agrupado.fillna("—")
-                        
-                        # Aplicar estilo a la tabla
-                        styled_df = aplicar_estilo_tabla(df_agrupado)
-                        
-                        if buscador:
-                            st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
-                            st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
-                            if filtro_categoria != "Todas las categorías":
-                                st.caption(f"Filtrando por categoría: {filtro_categoria}")
-                        else:
-                            if filtro_categoria == "Todas las categorías":
-                                st.markdown('<div class="inventory-subtitle">📋 Inventario completo - Todas las categorías</div>', unsafe_allow_html=True)
-                            else:
-                                st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
-                        
-                        # Mostrar dataframe con estilos
-                        st.dataframe(styled_df, use_container_width=True)
-
-                    # Productos próximos a vencer
-                    if filtro_categoria != "Granos y productos a granel":
-                        hoy = datetime.now().date()
-                        prox_mes = (datetime.now() + timedelta(days=30)).date()
-
+                    if buscador:
+                        st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
+                        st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
+                        if filtro_categoria != "Todas las categorías":
+                            st.caption(f"Filtrando por categoría: {filtro_categoria}")
+                    else:
                         if filtro_categoria == "Todas las categorías":
-                            if buscador:
-                                cursor.execute("""
-                                    SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento, p.categoria
-                                    FROM ProductoxCompra pc
-                                    JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-                                    WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-                                      AND pc.id_tienda = %s
-                                      AND p.id_tienda = %s
-                                      AND p.categoria != 'Granos y productos a granel'
-                                      AND LOWER(p.Nombre) LIKE LOWER(%s)
-                                    ORDER BY pc.fecha_vencimiento ASC
-                                """, (hoy, prox_mes, id_tienda, id_tienda, f"%{buscador}%"))
-                            else:
-                                cursor.execute("""
-                                    SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento, p.categoria
-                                    FROM ProductoxCompra pc
-                                    JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-                                    WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-                                      AND pc.id_tienda = %s
-                                      AND p.id_tienda = %s
-                                      AND p.categoria != 'Granos y productos a granel'
-                                    ORDER BY pc.fecha_vencimiento ASC
-                                """, (hoy, prox_mes, id_tienda, id_tienda))
+                            st.markdown('<div class="inventory-subtitle">📋 Inventario completo - Todas las categorías</div>', unsafe_allow_html=True)
                         else:
-                            if filtro_categoria != "Granos y productos a granel":
-                                if buscador:
-                                    cursor.execute("""
-                                        SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
-                                        FROM ProductoxCompra pc
-                                        JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-                                        WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-                                          AND pc.id_tienda = %s
-                                          AND p.id_tienda = %s
-                                          AND p.categoria = %s
-                                          AND LOWER(p.Nombre) LIKE LOWER(%s)
-                                        ORDER BY pc.fecha_vencimiento ASC
-                                    """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria, f"%{buscador}%"))
-                                else:
-                                    cursor.execute("""
-                                        SELECT pc.Cod_barra, p.Nombre, pc.unidad, pc.fecha_vencimiento
-                                        FROM ProductoxCompra pc
-                                        JOIN Producto p ON pc.Cod_barra = p.Cod_barra
-                                        WHERE pc.fecha_vencimiento BETWEEN %s AND %s
-                                          AND pc.id_tienda = %s
-                                          AND p.id_tienda = %s
-                                          AND p.categoria = %s
-                                        ORDER BY pc.fecha_vencimiento ASC
-                                    """, (hoy, prox_mes, id_tienda, id_tienda, filtro_categoria))
-
-                        proximos = cursor.fetchall() if 'cursor' in locals() else []
-                        
-                        if proximos:
-                            if filtro_categoria == "Todas las categorías":
-                                df_v = pd.DataFrame(
-                                    proximos,
-                                    columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento", "Categoría"]
-                                )
-                            else:
-                                df_v = pd.DataFrame(
-                                    proximos,
-                                    columns=["Código de barras", "Nombre", "Unidad", "Fecha vencimiento"]
-                                )
-                            df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
-
-                            st.markdown('<div class="inventory-subtitle">⏳ Productos próximos a vencer (30 días)</div>', unsafe_allow_html=True)
-                            st.dataframe(df_v, use_container_width=True)
+                            st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
+                    
+                    # Mostrar dataframe
+                    st.dataframe(df_agrupado, use_container_width=True)
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
