@@ -263,10 +263,11 @@ def verificar_usuario(usuario, contrasena):
 
     try:
         cursor = con.cursor()
-        # 🔧 CORREGIDO: LEFT JOIN para incluir administradores con id_tienda = NULL
+        # LEFT JOIN para incluir administradores con id_tienda = NULL
+        # Usando IFNULL en lugar de COALESCE para MySQL
         query = """
             SELECT e.id_empleado, e.Nombre, e.id_tienda, e.Nivel_usuario, 
-                   COALESCE(t.nombre, 'Todas las tiendas') as nombre_tienda
+                   IFNULL(t.nombre, 'Todas las tiendas') as nombre_tienda
             FROM Empleado e
             LEFT JOIN tienda t ON e.id_tienda = t.id_tienda
             WHERE e.Usuario = %s AND e.Contrasena = %s
@@ -275,7 +276,11 @@ def verificar_usuario(usuario, contrasena):
         cursor.execute(query, (usuario, contrasena))
         resultado = cursor.fetchone()
         return resultado
+    except Exception as e:
+        st.error(f"❌ Error en consulta: {e}")
+        return None
     finally:
+        cursor.close()
         con.close()
 
 
@@ -310,7 +315,7 @@ def login():
                     # Recibimos 5 valores
                     id_empleado, nombre_empleado, id_tienda, nivel_usuario, nombre_tienda = resultado
                     
-                    # 🔧 CORREGIDO: Los administradores pueden tener id_tienda = NULL
+                    # Los administradores pueden tener id_tienda = NULL
                     if id_tienda is None and nivel_usuario != "Administrador":
                         st.error("⚠️ Este usuario no tiene una tienda asignada. Contacta al administrador.")
                         return
@@ -319,10 +324,7 @@ def login():
                     st.session_state["usuario"] = usuario.strip()
                     st.session_state["nombre_empleado"] = nombre_empleado
                     st.session_state["id_empleado"] = id_empleado
-                    if id_tienda is not None:
-                        st.session_state["id_tienda"] = int(id_tienda)
-                    else:
-                        st.session_state["id_tienda"] = None
+                    st.session_state["id_tienda"] = id_tienda
                     st.session_state["nivel_usuario"] = nivel_usuario
                     st.session_state["nombre_tienda"] = nombre_tienda
                     
@@ -369,3 +371,7 @@ def login():
             <div class="bg-decoration"></div>
             <div class="bg-decoration-2"></div>
         """, unsafe_allow_html=True)
+
+
+if __name__ == "__main__":
+    login()
