@@ -21,29 +21,12 @@ def modulo_gestion_admin():
         st.markdown("### 📝 Crear Nueva Tienda")
 
         with st.form("form_nueva_tienda"):
-            col1, col2 = st.columns(2)
-
-            with col1:
-                nombre = st.text_input(
-                    "Nombre de la tienda *",
-                    placeholder="Ej: Tienda Centro Histórico"
-                )
-                direccion = st.text_area(
-                    "Dirección",
-                    placeholder="Dirección completa de la tienda",
-                    height=100
-                )
-
-            with col2:
-                telefono = st.text_input(
-                    "Teléfono",
-                    placeholder="Ej: 1234-5678"
-                )
-                email = st.text_input(
-                    "Email",
-                    placeholder="tienda@correo.com"
-                )
-                activo = st.checkbox("Tienda activa", value=True)
+            # Solo los campos que existen en tu tabla tienda
+            nombre = st.text_input(
+                "Nombre de la tienda *",
+                placeholder="Ej: Tienda Centro Histórico"
+            )
+            activo = st.checkbox("Tienda activa", value=True)
 
             submitted = st.form_submit_button("🏪 Crear Tienda", use_container_width=True)
 
@@ -56,9 +39,9 @@ def modulo_gestion_admin():
                         cursor = conn.cursor()
                         try:
                             cursor.execute("""
-                                INSERT INTO tienda (nombre, direccion, telefono, email, activo)
-                                VALUES (%s, %s, %s, %s, %s)
-                            """, (nombre, direccion, telefono, email, 1 if activo else 0))
+                                INSERT INTO tienda (nombre, activo)
+                                VALUES (%s, %s)
+                            """, (nombre, 1 if activo else 0))
                             conn.commit()
                             st.success(f"✅ Tienda '{nombre}' creada exitosamente")
                             st.rerun()
@@ -80,7 +63,7 @@ def modulo_gestion_admin():
             cursor = conn.cursor(dictionary=True)
             try:
                 cursor.execute("""
-                    SELECT id_tienda, nombre, direccion, telefono, email, activo
+                    SELECT id_tienda, nombre, activo
                     FROM tienda
                     ORDER BY nombre
                 """)
@@ -97,9 +80,6 @@ def modulo_gestion_admin():
                 df = df.rename(columns={
                     "id_tienda": "ID",
                     "nombre": "Nombre",
-                    "direccion": "Dirección",
-                    "telefono": "Teléfono",
-                    "email": "Email",
                     "activo": "Activa"
                 })
                 df["Activa"] = df["Activa"].apply(lambda x: "✅ Sí" if x == 1 else "❌ No")
