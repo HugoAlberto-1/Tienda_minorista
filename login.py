@@ -263,17 +263,18 @@ def verificar_usuario(usuario, contrasena):
 
     try:
         cursor = con.cursor()
-        # Tabla: tienda, columna: nombre
+        # 🔧 CORREGIDO: LEFT JOIN para incluir administradores con id_tienda = NULL
         query = """
-            SELECT e.Id_empleado, e.nombre, e.id_tienda, e.Nivel_usuario, t.nombre
+            SELECT e.id_empleado, e.Nombre, e.id_tienda, e.Nivel_usuario, 
+                   COALESCE(t.nombre, 'Todas las tiendas') as nombre_tienda
             FROM Empleado e
-            JOIN tienda t ON e.id_tienda = t.id_tienda
-            WHERE e.Usuario = %s AND e.contrasena = %s
+            LEFT JOIN tienda t ON e.id_tienda = t.id_tienda
+            WHERE e.Usuario = %s AND e.Contrasena = %s
             LIMIT 1
         """
         cursor.execute(query, (usuario, contrasena))
         resultado = cursor.fetchone()
-        return resultado  # Retorna (id_empleado, nombre, id_tienda, nivel_usuario, nombre_tienda)
+        return resultado
     finally:
         con.close()
 
@@ -306,10 +307,11 @@ def login():
                 resultado = verificar_usuario(usuario.strip(), contrasena.strip())
                 
                 if resultado:
-                    # Ahora recibimos 5 valores
+                    # Recibimos 5 valores
                     id_empleado, nombre_empleado, id_tienda, nivel_usuario, nombre_tienda = resultado
                     
-                    if id_tienda is None:
+                    # 🔧 CORREGIDO: Los administradores pueden tener id_tienda = NULL
+                    if id_tienda is None and nivel_usuario != "Administrador":
                         st.error("⚠️ Este usuario no tiene una tienda asignada. Contacta al administrador.")
                         return
                     
@@ -317,9 +319,12 @@ def login():
                     st.session_state["usuario"] = usuario.strip()
                     st.session_state["nombre_empleado"] = nombre_empleado
                     st.session_state["id_empleado"] = id_empleado
-                    st.session_state["id_tienda"] = int(id_tienda)
+                    if id_tienda is not None:
+                        st.session_state["id_tienda"] = int(id_tienda)
+                    else:
+                        st.session_state["id_tienda"] = None
                     st.session_state["nivel_usuario"] = nivel_usuario
-                    st.session_state["nombre_tienda"] = nombre_tienda  # ← Guardar nombre de la tienda
+                    st.session_state["nombre_tienda"] = nombre_tienda
                     
                     st.success(f"✔️ ¡Bienvenido, {nombre_empleado}!")
                     st.rerun()
