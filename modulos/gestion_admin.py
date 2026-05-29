@@ -305,10 +305,17 @@ def modulo_gestion_admin():
                 cursor.close()
                 conn.close()
 
-    # Botón para volver al menú principal (fuera de las tabs)
+    
+        # Botón para volver al menú principal (fuera de las tabs)
     st.divider()
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("🔙 Volver al menú principal", use_container_width=True):
-            st.session_state["macro_modulo"] = None
+            # Limpiar el módulo actual
+            if "module" in st.session_state:
+                del st.session_state["module"]
+            # Limpiar macro_modulo si existe
+            if "macro_modulo" in st.session_state:
+                st.session_state["macro_modulo"] = None
             st.rerun()
+   
