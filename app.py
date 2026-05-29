@@ -20,7 +20,7 @@ def configurar_pagina():
     """Configuración de la página con CSS personalizado"""
     st.set_page_config(
         page_title="Sistema de Inventario",
-        page_icon="📦",
+        page_icon="🛒​",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
@@ -192,11 +192,11 @@ def menu_principal():
     
     with st.container():
         # Título principal
-        st.markdown('<div class="main-title">📦 Tienda Cerro de Dios</div>', unsafe_allow_html=True)
+        st.markdown('<div class="main-title">🛒​ Tienda Minorista</div>', unsafe_allow_html=True)
         
         # Mensaje de bienvenida
         nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
-        st.markdown(f'<div class="welcome-text">✨ Bienvenido, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtitle">Gestiona tu negocio de manera eficiente</div>', unsafe_allow_html=True)
 
         if "macro_modulo" not in st.session_state:
