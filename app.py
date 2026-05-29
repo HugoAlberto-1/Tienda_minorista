@@ -20,7 +20,7 @@ def configurar_pagina():
     """Configuración de la página con CSS personalizado"""
     st.set_page_config(
         page_title="Sistema de Inventario",
-        page_icon="🛒​",
+        page_icon="🛒",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
@@ -191,8 +191,11 @@ def menu_principal():
     configurar_pagina()
     
     with st.container():
-        # Título principal
-        st.markdown('<div class="main-title">🛒​ Tienda Minorista</div>', unsafe_allow_html=True)
+        # Obtener el nombre de la tienda de la sesión
+        nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
+        
+        # Título principal con el nombre de la tienda
+        st.markdown(f'<div class="main-title">🛒 {nombre_tienda}</div>', unsafe_allow_html=True)
         
         # Mensaje de bienvenida
         nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
@@ -394,7 +397,7 @@ def menu_principal():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("🚪 Cerrar sesión", use_container_width=True):
-                for key in ['logueado', 'usuario', 'module', 'nombre_empleado', 'macro_modulo']: 
+                for key in ['logueado', 'usuario', 'module', 'nombre_empleado', 'macro_modulo', 'nombre_tienda']: 
                     if key in st.session_state:
                         del st.session_state[key]
                 st.success("✅ Sesión cerrada correctamente.")
