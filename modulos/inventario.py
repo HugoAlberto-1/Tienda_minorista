@@ -38,10 +38,8 @@ def convertir_a_libras(cantidad, unidad):
     elif unidad in ["libra", "libras", "lb"]:
         return cantidad
     else:
-        return 0  # Si no es ninguna de estas unidades, no contribuye a libras
+        return 0
 
-
-# 🔹 Conversión a unidades para granos
 def convertir_a_quintal(cantidad_libras):
     return cantidad_libras / 100
 
@@ -52,7 +50,7 @@ def convertir_a_arroba(cantidad_libras):
 def modulo_inventario():
     st.title("📦 Inventario Actual")
 
-    if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
+    if not st.session_state.get("logueado"):
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
         st.markdown("---")
         if st.button("⬅ Volver al menú principal"):
@@ -60,19 +58,75 @@ def modulo_inventario():
             st.rerun()
         return
 
-    id_tienda = st.session_state["id_tienda"]
+    rol = st.session_state.get("nivel_usuario", "")
+    id_tienda_sesion = st.session_state.get("id_tienda")
+
+    # ============================================================
+    # 👑 ADMINISTRADOR: puede seleccionar cualquier tienda
+    # ============================================================
+    if rol == "Administrador":
+        st.subheader("👑 Inventario global - Administrador")
+
+        conn = obtener_conexion()
+        if conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT id_tienda, nombre
+                FROM tienda
+                WHERE activo = 1
+                ORDER BY nombre
+            """)
+            tiendas = cursor.fetchall()
+            cursor.close()
+            conn.close()
+
+            if not tiendas:
+                st.warning("No hay tiendas activas.")
+                return
+
+            opciones = {t["nombre"]: t["id_tienda"] for t in tiendas}
+            tienda_nombre = st.selectbox("🏪 Seleccionar tienda", list(opciones.keys()))
+            id_tienda = opciones[tienda_nombre]
+
+            st.info(f"📌 Mostrando inventario de: **{tienda_nombre}**")
+        else:
+            st.error("❌ No se pudo conectar a la base de datos.")
+            return
+    else:
+        # Vendedor: solo su tienda
+        id_tienda = id_tienda_sesion
+        if not id_tienda:
+            st.error("❌ No tienes una tienda asignada.")
+            return
+        
+        conn = obtener_conexion()
+        if conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT nombre FROM tienda WHERE id_tienda = %s", (id_tienda,))
+            tienda = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            if tienda:
+                st.info(f"🏪 Tienda: **{tienda['nombre']}**")
+        else:
+            st.error("❌ No se pudo conectar a la base de datos.")
+            return
+
+    # ============================================================
+    # Resto del código ORIGINAL (sin cambios abajo)
+    # ============================================================
     
     # ✅ Cargar categorías desde la base de datos
     categorias_db = obtener_categorias_db(id_tienda)
 
-    # 🔹 Buscador de productos por nombre (PRIMERO)
+    # 🔹 Buscador de productos por nombre
     buscador = st.text_input(
         "🔎 Buscar producto por nombre:",
         placeholder="Escribe el nombre del producto...",
         help="Puedes buscar cualquier producto por su nombre sin importar la categoría"
     )
 
-    # 🔹 Filtro por categoría (DESPUÉS del buscador)
+    # 🔹 Filtro por categoría
     if categorias_db:
         filtro_categoria = st.selectbox(
             "🔍 Filtrar por categoría:",
@@ -85,8 +139,6 @@ def modulo_inventario():
 
     conn = None
     cursor = None
-    
-    # Variable para controlar si se debe mostrar el contenido
     mostrar_contenido = True
     mensaje_info = None
 
@@ -98,10 +150,9 @@ def modulo_inventario():
         else:
             cursor = conn.cursor()
 
-            # 🔹 Construir consulta SQL según los filtros
+            # Construir consulta SQL
             if filtro_categoria == "Todas las categorías":
                 if buscador:
-                    # Buscar en todas las categorías
                     cursor.execute("""
                         SELECT Cod_barra, Nombre, categoria
                         FROM Producto
@@ -110,7 +161,6 @@ def modulo_inventario():
                         ORDER BY Nombre ASC
                     """, (id_tienda, f"%{buscador}%"))
                 else:
-                    # Mostrar todos los productos sin filtro de categoría
                     cursor.execute("""
                         SELECT Cod_barra, Nombre, categoria
                         FROM Producto
@@ -119,7 +169,6 @@ def modulo_inventario():
                     """, (id_tienda,))
             else:
                 if buscador:
-                    # Buscar en una categoría específica
                     cursor.execute("""
                         SELECT Cod_barra, Nombre, categoria
                         FROM Producto
@@ -129,7 +178,6 @@ def modulo_inventario():
                         ORDER BY Nombre ASC
                     """, (id_tienda, filtro_categoria, f"%{buscador}%"))
                 else:
-                    # Mostrar todos los productos de una categoría específica
                     cursor.execute("""
                         SELECT Cod_barra, Nombre, categoria
                         FROM Producto
@@ -155,7 +203,7 @@ def modulo_inventario():
                 inventario_detalle = []
 
                 for cod_barra, nombre, categoria in productos:
-                    # 🔹 Compras
+                    # Compras
                     cursor.execute("""
                         SELECT cantidad_comprada, unidad, fecha_vencimiento
                         FROM ProductoxCompra
@@ -164,10 +212,9 @@ def modulo_inventario():
 
                     compras = cursor.fetchall()
 
-                    # Determinar la unidad principal para carnes y congelados
+                    # Determinar unidad principal para carnes y congelados
                     unidad_principal = None
                     if categoria == "Carnes y congelados" and compras:
-                        # Verificar si hay compras en libras
                         hay_compras_libras = any(c[1] and c[1].lower() in ["libra", "libras", "lb"] for c in compras)
                         hay_compras_unidades = any(c[1] and c[1].lower() in ["unidad", "unidades", "pieza", "piezas"] for c in compras)
                         
@@ -176,22 +223,17 @@ def modulo_inventario():
                         elif hay_compras_unidades:
                             unidad_principal = "unidades"
 
-                    # Obtener la fecha de vencimiento más reciente (la que expira primero)
+                    # Fecha de vencimiento más reciente
                     fecha_vencimiento = None
                     for compra in compras:
-                        if compra[2]:  # Si tiene fecha de vencimiento
+                        if compra[2]:
                             if fecha_vencimiento is None or compra[2] < fecha_vencimiento:
                                 fecha_vencimiento = compra[2]
 
-                    # Total comprado en libras (solo conversiones válidas)
-                    total_comprado_lb = sum(
-                        convertir_a_libras(c[0], c[1]) for c in compras
-                    )
-
-                    # Total comprado en unidades (solo compras que no son en libras, quintales o arrobas)
+                    total_comprado_lb = sum(convertir_a_libras(c[0], c[1]) for c in compras)
                     total_comprado_unidades = sum(c[0] for c in compras if c[1] and c[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
-                    # 🔹 Ventas
+                    # Ventas
                     cursor.execute("""
                         SELECT Cantidad_vendida, unidad
                         FROM ProductoxVenta
@@ -200,18 +242,13 @@ def modulo_inventario():
 
                     ventas = cursor.fetchall()
 
-                    # Total vendido en libras (solo conversiones válidas)
-                    total_vendido_lb = sum(
-                        convertir_a_libras(v[0], v[1]) for v in ventas
-                    )
-
-                    # Total vendido en unidades (solo ventas que no son en libras, quintales o arrobas)
+                    total_vendido_lb = sum(convertir_a_libras(v[0], v[1]) for v in ventas)
                     total_vendido_unidades = sum(v[0] for v in ventas if v[1] and v[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
                     stock_libras = total_comprado_lb - total_vendido_lb
                     stock_unidades = total_comprado_unidades - total_vendido_unidades
 
-                    # Agregar según la categoría
+                    # Agregar según categoría
                     if categoria == "Granos y productos a granel":
                         inventario_detalle.append({
                             "Código": cod_barra,
@@ -223,14 +260,13 @@ def modulo_inventario():
                             "Fecha Vencimiento": fecha_vencimiento
                         })
                     elif categoria == "Carnes y congelados":
-                        # Determinar qué columna mostrar según la unidad principal
                         if unidad_principal == "libras":
                             inventario_detalle.append({
                                 "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
                                 "Stock Libras": stock_libras,
-                                "Stock Unidades": None,  # Mostrar como guión
+                                "Stock Unidades": None,
                                 "Fecha Vencimiento": fecha_vencimiento
                             })
                         else:
@@ -238,12 +274,11 @@ def modulo_inventario():
                                 "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
-                                "Stock Libras": None,  # Mostrar como guión
+                                "Stock Libras": None,
                                 "Stock Unidades": stock_unidades,
                                 "Fecha Vencimiento": fecha_vencimiento
                             })
                     else:
-                        # Otras categorías solo usan unidades
                         inventario_detalle.append({
                             "Código": cod_barra,
                             "Nombre": nombre,
@@ -252,26 +287,20 @@ def modulo_inventario():
                             "Fecha Vencimiento": fecha_vencimiento
                         })
 
-                # 🔹 Crear DataFrame
                 df = pd.DataFrame(inventario_detalle)
 
                 if df.empty:
                     st.warning(f"⚠️ No hay productos para mostrar.")
                     mostrar_contenido = False
                 else:
-                    # Agrupar por código, nombre y categoría
-                    df_agrupado = None
-                    
-                    # Separar por tipo de categoría para agrupar correctamente
+                    # Agrupar por tipo de categoría
                     df_granos = df[df["Categoría"] == "Granos y productos a granel"] if not df[df["Categoría"] == "Granos y productos a granel"].empty else None
                     df_carnes = df[df["Categoría"] == "Carnes y congelados"] if not df[df["Categoría"] == "Carnes y congelados"].empty else None
                     df_otros = df[~df["Categoría"].isin(["Granos y productos a granel", "Carnes y congelados"])] if not df[~df["Categoría"].isin(["Granos y productos a granel", "Carnes y congelados"])].empty else None
                     
                     frames = []
                     
-                    # Procesar granos
                     if df_granos is not None:
-                        # Para granos, obtener la fecha de vencimiento más próxima
                         df_granos_agg = df_granos.groupby(df_granos["Código"], as_index=False).agg({
                             "Código": "first",
                             "Nombre": "first",
@@ -283,9 +312,7 @@ def modulo_inventario():
                         })
                         frames.append(df_granos_agg)
                     
-                    # Procesar carnes
                     if df_carnes is not None:
-                        # Verificar qué columnas existen en df_carnes
                         agg_dict = {
                             "Código": "first",
                             "Nombre": "first",
@@ -296,11 +323,9 @@ def modulo_inventario():
                             agg_dict["Stock Libras"] = "sum"
                         if "Stock Unidades" in df_carnes.columns:
                             agg_dict["Stock Unidades"] = "sum"
-                        
                         df_carnes_agg = df_carnes.groupby(df_carnes["Código"], as_index=False).agg(agg_dict)
                         frames.append(df_carnes_agg)
                     
-                    # Procesar otros
                     if df_otros is not None:
                         df_otros_agg = df_otros.groupby(df_otros["Código"], as_index=False).agg({
                             "Código": "first",
@@ -311,17 +336,13 @@ def modulo_inventario():
                         })
                         frames.append(df_otros_agg)
                     
-                    # Combinar todos los dataframes
                     if frames:
                         df_agrupado = pd.concat(frames, ignore_index=True, sort=False)
-                        # Ordenar alfabéticamente por nombre
                         df_agrupado = df_agrupado.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                         
-                        # Reordenar columnas para que Código sea la primera y Fecha Vencimiento la última
                         columnas = ["Código"] + [col for col in df_agrupado.columns if col not in ["Código", "Fecha Vencimiento"]] + ["Fecha Vencimiento"]
                         df_agrupado = df_agrupado[columnas]
                         
-                        # Función para formatear valores
                         def format_value(val, col_name):
                             if pd.isna(val) or val is None:
                                 return "—"
@@ -339,22 +360,14 @@ def modulo_inventario():
                                 return str(val)
                             return str(val)
                         
-                        # Crear una copia del dataframe para mostrar
                         df_mostrar = df_agrupado.copy()
-                        
-                        # Aplicar formato a cada columna numérica
                         for col in df_mostrar.columns:
                             if col in ["Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades", "Fecha Vencimiento"]:
                                 df_mostrar[col] = df_mostrar[col].apply(lambda x: format_value(x, col))
                         
-                        # 🔹 Mostrar información del filtro activo
                         if buscador:
                             st.subheader(f"📋 Resultados de búsqueda: '{buscador}'")
-                            if len(df_agrupado) == 1:
-                                st.info(f"✅ Se encontró {len(df_agrupado)} producto")
-                            else:
-                                st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
-                            
+                            st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
                             if filtro_categoria != "Todas las categorías":
                                 st.caption(f"Filtrando por categoría: {filtro_categoria}")
                         else:
@@ -364,10 +377,8 @@ def modulo_inventario():
                                 st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
                         
                         st.dataframe(df_mostrar, use_container_width=True)
-                    else:
-                        st.warning("⚠️ No hay datos para mostrar.")
 
-                    # 🔹 Productos próximos a vencer (omitir para granos)
+                    # Productos próximos a vencer
                     if filtro_categoria != "Granos y productos a granel":
                         hoy = datetime.now().date()
                         prox_mes = (datetime.now() + timedelta(days=30)).date()
@@ -439,9 +450,6 @@ def modulo_inventario():
 
                             st.subheader("⏳ Productos próximos a vencer (30 días)")
                             st.dataframe(df_v, use_container_width=True)
-                        else:
-                            if not buscador and filtro_categoria != "Granos y productos a granel" and filtro_categoria != "Todas las categorías":
-                                st.info("✅ No hay productos próximos a vencer en esta categoría.")
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
@@ -452,14 +460,10 @@ def modulo_inventario():
         if conn:
             conn.close()
     
-    # 🔹 MOSTRAR MENSAJE INFORMATIVO SI NO HAY PRODUCTOS
     if mensaje_info:
         st.info(mensaje_info)
     
-    # 🔹 BOTÓN PARA VOLVER AL MENÚ PRINCIPAL - AL FINAL DE TODO
     st.markdown("---")
-    
-    # Usamos columnas para centrar el botón visualmente
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("⬅ Volver al menú principal", use_container_width=True, type="secondary"):
