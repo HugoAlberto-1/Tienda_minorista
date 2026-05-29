@@ -95,7 +95,7 @@ def modulo_gestion_admin():
         # Opción para elegir el tipo de usuario
         tipo_usuario = st.radio(
             "Tipo de usuario a crear:",
-            ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedor / Cajero (Asignado a una tienda)"],
+            ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"],
             horizontal=True
         )
         
