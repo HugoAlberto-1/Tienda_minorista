@@ -59,6 +59,9 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
+    COLOR_TABLE_HEADER = "#1e3a5f"
+    COLOR_TABLE_ROW_ODD = "#ffffff"
+    COLOR_TABLE_ROW_EVEN = "#f8f9fa"
     
     st.markdown(f"""
         <style>
@@ -174,13 +177,63 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Dataframe */
+        /* Estilos para la tabla (DataFrame) */
         .dataframe {{
             border-radius: 12px;
             overflow: hidden;
+            border: 1px solid {COLOR_BORDER};
+            background-color: {COLOR_CARD};
+        }}
+        
+        .dataframe th {{
+            background-color: {COLOR_TABLE_HEADER} !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            padding: 12px 8px !important;
+            border: none !important;
+        }}
+        
+        .dataframe td {{
+            color: {COLOR_TEXT} !important;
+            text-align: center !important;
+            padding: 10px 8px !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        .dataframe tr:nth-child(even) {{
+            background-color: {COLOR_TABLE_ROW_EVEN} !important;
+        }}
+        
+        .dataframe tr:nth-child(odd) {{
+            background-color: {COLOR_TABLE_ROW_ODD} !important;
+        }}
+        
+        .dataframe tr:hover {{
+            background-color: {COLOR_HOVER} !important;
+        }}
+        
+        /* Estilos específicos para Streamlit Dataframe */
+        .stDataFrame {{
+            background-color: {COLOR_CARD};
+        }}
+        
+        /* Para el contenedor del dataframe */
+        div[data-testid="stDataFrame"] {{
+            border-radius: 12px;
+            overflow: auto;
+        }}
+        
+        /* Columnas específicas */
+        .dataframe .blank {{
+            background-color: {COLOR_CARD};
         }}
         </style>
     """, unsafe_allow_html=True)
+
+    # También aplicar estilo al dataframe usando st.markdown con HTML para pandas
+    pd.set_option('display.max_colwidth', None)
+    pd.set_option('display.float_format', lambda x: f'{x:.2f}')
 
 
 def modulo_inventario():
@@ -505,6 +558,7 @@ def modulo_inventario():
                             else:
                                 st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
                         
+                        # Mostrar dataframe con estilos aplicados
                         st.dataframe(df_mostrar, use_container_width=True)
 
                     # Productos próximos a vencer
