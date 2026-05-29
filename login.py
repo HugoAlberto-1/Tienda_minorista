@@ -5,7 +5,7 @@ def configurar_pagina_login():
     """Configuración de la página con CSS personalizado para el login"""
     st.set_page_config(
         page_title="Sistema de Inventario - Login",
-        page_icon="🛒​",
+        page_icon="🛒",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
@@ -145,7 +145,7 @@ def configurar_pagina_login():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Lista de características - CENTRADA CON EL MISMO COLOR DE USUARIO/CONTRASEÑA */
+        /* Lista de características */
         .feature-list {{
             margin-top: 20px;
             width: 100%;
@@ -263,15 +263,17 @@ def verificar_usuario(usuario, contrasena):
 
     try:
         cursor = con.cursor()
+        # Tabla: tienda, columna: nombre
         query = """
-            SELECT Id_empleado, nombre, id_tienda, Nivel_usuario
-            FROM Empleado
-            WHERE Usuario = %s AND contrasena = %s
+            SELECT e.Id_empleado, e.nombre, e.id_tienda, e.Nivel_usuario, t.nombre
+            FROM Empleado e
+            JOIN tienda t ON e.id_tienda = t.id_tienda
+            WHERE e.Usuario = %s AND e.contrasena = %s
             LIMIT 1
         """
         cursor.execute(query, (usuario, contrasena))
         resultado = cursor.fetchone()
-        return resultado
+        return resultado  # Retorna (id_empleado, nombre, id_tienda, nivel_usuario, nombre_tienda)
     finally:
         con.close()
 
@@ -285,7 +287,7 @@ def login():
     # Columna izquierda - Formulario
     with col_form:
         # Logo y título
-        st.markdown('<div class="logo">🛒​</div>', unsafe_allow_html=True)
+        st.markdown('<div class="logo">🛒</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDAS MINORISTAS</div>', unsafe_allow_html=True)
         st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
         
@@ -304,7 +306,8 @@ def login():
                 resultado = verificar_usuario(usuario.strip(), contrasena.strip())
                 
                 if resultado:
-                    id_empleado, nombre_empleado, id_tienda, nivel_usuario = resultado
+                    # Ahora recibimos 5 valores
+                    id_empleado, nombre_empleado, id_tienda, nivel_usuario, nombre_tienda = resultado
                     
                     if id_tienda is None:
                         st.error("⚠️ Este usuario no tiene una tienda asignada. Contacta al administrador.")
@@ -316,6 +319,7 @@ def login():
                     st.session_state["id_empleado"] = id_empleado
                     st.session_state["id_tienda"] = int(id_tienda)
                     st.session_state["nivel_usuario"] = nivel_usuario
+                    st.session_state["nombre_tienda"] = nombre_tienda  # ← Guardar nombre de la tienda
                     
                     st.success(f"✔️ ¡Bienvenido, {nombre_empleado}!")
                     st.rerun()
