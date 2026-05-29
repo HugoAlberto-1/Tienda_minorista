@@ -78,17 +78,19 @@ def modulo_gestion_admin():
         conn = obtener_conexion()
         if conn:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT t.id_tienda, t.nombre, t.direccion, t.telefono, t.email, t.activo,
-                       COUNT(DISTINCT e.id_empleado) as total_empleados
-                FROM tienda t
-                LEFT JOIN Empleado e ON t.id_tienda = e.id_tienda
-                GROUP BY t.id_tienda
-                ORDER BY t.nombre
-            """)
-            tiendas = cursor.fetchall()
-            cursor.close()
-            conn.close()
+            try:
+                cursor.execute("""
+                    SELECT id_tienda, nombre, direccion, telefono, email, activo
+                    FROM tienda
+                    ORDER BY nombre
+                """)
+                tiendas = cursor.fetchall()
+            except Exception as e:
+                st.error(f"Error al cargar tiendas: {e}")
+                tiendas = []
+            finally:
+                cursor.close()
+                conn.close()
 
             if tiendas:
                 df = pd.DataFrame(tiendas)
@@ -98,8 +100,7 @@ def modulo_gestion_admin():
                     "direccion": "Dirección",
                     "telefono": "Teléfono",
                     "email": "Email",
-                    "activo": "Activa",
-                    "total_empleados": "Empleados"
+                    "activo": "Activa"
                 })
                 df["Activa"] = df["Activa"].apply(lambda x: "✅ Sí" if x == 1 else "❌ No")
                 st.dataframe(df, use_container_width=True)
@@ -118,10 +119,15 @@ def modulo_gestion_admin():
             st.error("❌ No se pudo conectar a la base de datos")
         else:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
-            tiendas_activas = cursor.fetchall()
-            cursor.close()
-            conn.close()
+            try:
+                cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
+                tiendas_activas = cursor.fetchall()
+            except Exception as e:
+                st.error(f"Error al cargar tiendas: {e}")
+                tiendas_activas = []
+            finally:
+                cursor.close()
+                conn.close()
 
             if not tiendas_activas:
                 st.warning("⚠️ No hay tiendas activas. Crea una tienda primero en la pestaña 'Gestionar Tiendas'.")
@@ -181,15 +187,20 @@ def modulo_gestion_admin():
     # TAB 3: LISTADOS COMPLETOS
     # ============================================================
     with tab3:
-        st.markdown("### 📊 Reportes de Usuarios por Tienda")
+        st.markdown("### 📊 Usuarios por Tienda")
 
         conn = obtener_conexion()
         if conn:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
-            tiendas_listado = cursor.fetchall()
-            cursor.close()
-            conn.close()
+            try:
+                cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
+                tiendas_listado = cursor.fetchall()
+            except Exception as e:
+                st.error(f"Error al cargar tiendas: {e}")
+                tiendas_listado = []
+            finally:
+                cursor.close()
+                conn.close()
 
             if tiendas_listado:
                 opciones_listado = {t["nombre"]: t["id_tienda"] for t in tiendas_listado}
@@ -199,15 +210,20 @@ def modulo_gestion_admin():
                 conn = obtener_conexion()
                 if conn:
                     cursor = conn.cursor(dictionary=True)
-                    cursor.execute("""
-                        SELECT id_empleado, Nombre, Usuario, DUI, Contacto, Nivel_usuario
-                        FROM Empleado
-                        WHERE id_tienda = %s
-                        ORDER BY Nombre
-                    """, (id_tienda_ver,))
-                    usuarios_lista = cursor.fetchall()
-                    cursor.close()
-                    conn.close()
+                    try:
+                        cursor.execute("""
+                            SELECT id_empleado, Nombre, Usuario, DUI, Contacto, Nivel_usuario
+                            FROM Empleado
+                            WHERE id_tienda = %s
+                            ORDER BY Nombre
+                        """, (id_tienda_ver,))
+                        usuarios_lista = cursor.fetchall()
+                    except Exception as e:
+                        st.error(f"Error al cargar usuarios: {e}")
+                        usuarios_lista = []
+                    finally:
+                        cursor.close()
+                        conn.close()
 
                     if usuarios_lista:
                         df = pd.DataFrame(usuarios_lista)
