@@ -5,7 +5,7 @@ def configurar_pagina_login():
     """Configuración de la página con CSS personalizado para el login"""
     st.set_page_config(
         page_title="Sistema de Inventario - Login",
-        page_icon="📦",
+        page_icon="🛒​",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
