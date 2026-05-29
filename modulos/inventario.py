@@ -46,9 +46,100 @@ def convertir_a_quintal(cantidad_libras):
 def convertir_a_arroba(cantidad_libras):
     return cantidad_libras / 25
 
+def configurar_estilo():
+    """Configuración de estilos CSS para el módulo de inventario"""
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_ACCENT = "#3a7ca5"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_LIGHT = "#666666"
+    COLOR_HOVER = "#e8f0fe"
+    COLOR_BORDER = "#e0e0e0"
+    
+    st.markdown(f"""
+        <style>
+        /* Fondo general */
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
+        
+        /* Títulos */
+        .inventory-title {{
+            text-align: center;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }}
+        
+        /* Subtítulos */
+        .inventory-subtitle {{
+            text-align: center;
+            color: {COLOR_SECONDARY};
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }}
+        
+        /* Info box */
+        .info-box {{
+            background: {COLOR_HOVER};
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid {COLOR_PRIMARY};
+            margin: 15px 0;
+        }}
+        
+        /* Tarjetas de métricas */
+        .metric-card {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        /* Botones */
+        .stButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
+        }}
+        
+        /* Selectores y inputs */
+        .stSelectbox > div > div, .stTextInput > div > div > input {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        /* Dataframe */
+        .dataframe {{
+            border-radius: 12px;
+            overflow: hidden;
+        }}
+        
+        /* Alertas */
+        .stAlert {{
+            border-radius: 8px;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
 
 def modulo_inventario():
-    st.title("📦 Inventario Actual")
+    configurar_estilo()
+    
+    st.markdown('<div class="inventory-title">📦 Inventario Actual</div>', unsafe_allow_html=True)
 
     if not st.session_state.get("logueado"):
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
@@ -60,12 +151,13 @@ def modulo_inventario():
 
     rol = st.session_state.get("nivel_usuario", "")
     id_tienda_sesion = st.session_state.get("id_tienda")
+    nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
 
     # ============================================================
     # 👑 ADMINISTRADOR: puede seleccionar cualquier tienda
     # ============================================================
     if rol == "Administrador":
-        st.subheader("👑 Inventario global - Administrador")
+        st.markdown(f'<div class="inventory-subtitle">👑 Inventario global - Administrador</div>', unsafe_allow_html=True)
 
         conn = obtener_conexion()
         if conn:
@@ -87,8 +179,9 @@ def modulo_inventario():
             opciones = {t["nombre"]: t["id_tienda"] for t in tiendas}
             tienda_nombre = st.selectbox("🏪 Seleccionar tienda", list(opciones.keys()))
             id_tienda = opciones[tienda_nombre]
+            nombre_tienda = tienda_nombre
 
-            st.info(f"📌 Mostrando inventario de: **{tienda_nombre}**")
+            st.markdown(f'<div class="info-box">📌 Mostrando inventario de: <strong>{tienda_nombre}</strong></div>', unsafe_allow_html=True)
         else:
             st.error("❌ No se pudo conectar a la base de datos.")
             return
@@ -99,21 +192,10 @@ def modulo_inventario():
             st.error("❌ No tienes una tienda asignada.")
             return
         
-        conn = obtener_conexion()
-        if conn:
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT nombre FROM tienda WHERE id_tienda = %s", (id_tienda,))
-            tienda = cursor.fetchone()
-            cursor.close()
-            conn.close()
-            if tienda:
-                st.info(f"🏪 Tienda: **{tienda['nombre']}**")
-        else:
-            st.error("❌ No se pudo conectar a la base de datos.")
-            return
+        st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>', unsafe_allow_html=True)
 
     # ============================================================
-    # Resto del código ORIGINAL (sin cambios abajo)
+    # Filtros de búsqueda
     # ============================================================
     
     # ✅ Cargar categorías desde la base de datos
@@ -366,15 +448,15 @@ def modulo_inventario():
                                 df_mostrar[col] = df_mostrar[col].apply(lambda x: format_value(x, col))
                         
                         if buscador:
-                            st.subheader(f"📋 Resultados de búsqueda: '{buscador}'")
+                            st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
                             st.info(f"✅ Se encontraron {len(df_agrupado)} productos")
                             if filtro_categoria != "Todas las categorías":
                                 st.caption(f"Filtrando por categoría: {filtro_categoria}")
                         else:
                             if filtro_categoria == "Todas las categorías":
-                                st.subheader(f"📋 Inventario completo - Todas las categorías")
+                                st.markdown('<div class="inventory-subtitle">📋 Inventario completo - Todas las categorías</div>', unsafe_allow_html=True)
                             else:
-                                st.subheader(f"📋 Inventario por categoría: {filtro_categoria}")
+                                st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
                         
                         st.dataframe(df_mostrar, use_container_width=True)
 
@@ -448,7 +530,7 @@ def modulo_inventario():
                                 )
                             df_v["Fecha vencimiento"] = pd.to_datetime(df_v["Fecha vencimiento"]).dt.date
 
-                            st.subheader("⏳ Productos próximos a vencer (30 días)")
+                            st.markdown('<div class="inventory-subtitle">⏳ Productos próximos a vencer (30 días)</div>', unsafe_allow_html=True)
                             st.dataframe(df_v, use_container_width=True)
 
     except Exception as e:
