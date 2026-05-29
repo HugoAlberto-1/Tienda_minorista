@@ -80,11 +80,9 @@ def modulo_gestion_admin():
             cursor = conn.cursor(dictionary=True)
             cursor.execute("""
                 SELECT t.id_tienda, t.nombre, t.direccion, t.telefono, t.email, t.activo,
-                       COUNT(DISTINCT e.id_empleado) as total_empleados,
-                       COUNT(DISTINCT p.id_producto) as total_productos
+                       COUNT(DISTINCT e.id_empleado) as total_empleados
                 FROM tienda t
                 LEFT JOIN Empleado e ON t.id_tienda = e.id_tienda
-                LEFT JOIN productos p ON t.id_tienda = p.id_tienda
                 GROUP BY t.id_tienda
                 ORDER BY t.nombre
             """)
@@ -101,8 +99,7 @@ def modulo_gestion_admin():
                     "telefono": "Teléfono",
                     "email": "Email",
                     "activo": "Activa",
-                    "total_empleados": "Empleados",
-                    "total_productos": "Productos"
+                    "total_empleados": "Empleados"
                 })
                 df["Activa"] = df["Activa"].apply(lambda x: "✅ Sí" if x == 1 else "❌ No")
                 st.dataframe(df, use_container_width=True)
