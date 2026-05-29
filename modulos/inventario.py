@@ -136,32 +136,6 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        /* Text area */
-        .stTextArea > div > textarea {{
-            background-color: {COLOR_BUTTON};
-            color: white !important;
-        }}
-        
-        /* Checkbox */
-        .stCheckbox label {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        /* Radio buttons */
-        .stRadio label {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        /* Métricas */
-        .stMetric label {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        /* Info, warning, error messages */
-        .stAlert {{
-            border-radius: 8px;
-        }}
-        
         /* Botón volver */
         .stButton > button {{
             border-radius: 8px;
@@ -177,63 +151,105 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Estilos para la tabla (DataFrame) */
-        .dataframe {{
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid {COLOR_BORDER};
-            background-color: {COLOR_CARD};
+        /* ============================================ */
+        /* ESTILOS FORZADOS PARA LA TABLA (DATAFRAME) */
+        /* ============================================ */
+        
+        /* Contenedor de la tabla */
+        [data-testid="stDataFrame"] {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            border: 1px solid {COLOR_BORDER} !important;
         }}
         
-        .dataframe th {{
+        /* Tabla completa */
+        [data-testid="stDataFrame"] table {{
+            width: 100% !important;
+            border-collapse: collapse !important;
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        /* Encabezados de la tabla */
+        [data-testid="stDataFrame"] th {{
             background-color: {COLOR_TABLE_HEADER} !important;
             color: white !important;
             font-weight: 600 !important;
             text-align: center !important;
             padding: 12px 8px !important;
             border: none !important;
+            font-size: 0.9em !important;
         }}
         
-        .dataframe td {{
+        /* Celdas de la tabla */
+        [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
             text-align: center !important;
             padding: 10px 8px !important;
             border-bottom: 1px solid {COLOR_BORDER} !important;
+            background-color: {COLOR_CARD} !important;
         }}
         
-        .dataframe tr:nth-child(even) {{
+        /* Filas pares */
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
             background-color: {COLOR_TABLE_ROW_EVEN} !important;
         }}
         
-        .dataframe tr:nth-child(odd) {{
+        /* Filas impares */
+        [data-testid="stDataFrame"] tr:nth-child(odd) td {{
             background-color: {COLOR_TABLE_ROW_ODD} !important;
         }}
         
-        .dataframe tr:hover {{
+        /* Hover sobre filas */
+        [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
         }}
         
-        /* Estilos específicos para Streamlit Dataframe */
-        .stDataFrame {{
-            background-color: {COLOR_CARD};
-        }}
-        
-        /* Para el contenedor del dataframe */
-        div[data-testid="stDataFrame"] {{
-            border-radius: 12px;
-            overflow: auto;
-        }}
-        
-        /* Columnas específicas */
-        .dataframe .blank {{
-            background-color: {COLOR_CARD};
+        /* Scrollbar */
+        [data-testid="stDataFrame"] .dataframe {{
+            scrollbar-width: thin;
         }}
         </style>
     """, unsafe_allow_html=True)
 
-    # También aplicar estilo al dataframe usando st.markdown con HTML para pandas
-    pd.set_option('display.max_colwidth', None)
-    pd.set_option('display.float_format', lambda x: f'{x:.2f}')
+
+def aplicar_estilo_tabla(df):
+    """Aplica estilo CSS directamente al DataFrame"""
+    # Estilo para el encabezado
+    styled = df.style.set_table_styles([
+        {'selector': 'thead tr th', 'props': [
+            ('background-color', '#1e3a5f'),
+            ('color', 'white'),
+            ('font-weight', '600'),
+            ('text-align', 'center'),
+            ('padding', '12px 8px'),
+            ('font-size', '0.9em')
+        ]},
+        {'selector': 'tbody tr td', 'props': [
+            ('text-align', 'center'),
+            ('padding', '10px 8px'),
+            ('color', '#333333'),
+            ('border-bottom', '1px solid #e0e0e0')
+        ]},
+        {'selector': 'tbody tr:nth-child(even)', 'props': [
+            ('background-color', '#f8f9fa')
+        ]},
+        {'selector': 'tbody tr:nth-child(odd)', 'props': [
+            ('background-color', '#ffffff')
+        ]},
+        {'selector': 'tbody tr:hover', 'props': [
+            ('background-color', '#e8f0fe')
+        ]}
+    ])
+    
+    # Formato numérico
+    for col in df.columns:
+        if col in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
+            styled = styled.format({col: "{:.2f}"})
+        elif col == "Stock Unidades":
+            styled = styled.format({col: "{:.0f}"})
+    
+    return styled
 
 
 def modulo_inventario():
@@ -525,27 +541,20 @@ def modulo_inventario():
                         columnas = ["Código"] + [col for col in df_agrupado.columns if col not in ["Código", "Fecha Vencimiento"]] + ["Fecha Vencimiento"]
                         df_agrupado = df_agrupado[columnas]
                         
-                        def format_value(val, col_name):
-                            if pd.isna(val) or val is None:
-                                return "—"
-                            if col_name in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
-                                if isinstance(val, (int, float)):
-                                    return f"{val:.2f}"
-                                return str(val)
-                            elif col_name == "Stock Unidades":
-                                if isinstance(val, (int, float)):
-                                    return f"{int(val)}"
-                                return str(val)
-                            elif col_name == "Fecha Vencimiento":
-                                if isinstance(val, (datetime, pd.Timestamp)):
-                                    return val.strftime("%Y-%m-%d")
-                                return str(val)
-                            return str(val)
+                        # Formatear valores
+                        for col in df_agrupado.columns:
+                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras"]:
+                                df_agrupado[col] = df_agrupado[col].apply(lambda x: f"{x:.2f}" if pd.notna(x) and x != 0 else "—" if pd.isna(x) or x == 0 else "—")
+                            elif col == "Stock Unidades":
+                                df_agrupado[col] = df_agrupado[col].apply(lambda x: f"{int(x)}" if pd.notna(x) and x > 0 else "—" if pd.isna(x) or x == 0 else "—")
+                            elif col == "Fecha Vencimiento":
+                                df_agrupado[col] = df_agrupado[col].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else "—")
                         
-                        df_mostrar = df_agrupado.copy()
-                        for col in df_mostrar.columns:
-                            if col in ["Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades", "Fecha Vencimiento"]:
-                                df_mostrar[col] = df_mostrar[col].apply(lambda x: format_value(x, col))
+                        # Rellenar NaN con "—"
+                        df_agrupado = df_agrupado.fillna("—")
+                        
+                        # Aplicar estilo a la tabla
+                        styled_df = aplicar_estilo_tabla(df_agrupado)
                         
                         if buscador:
                             st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
@@ -558,8 +567,8 @@ def modulo_inventario():
                             else:
                                 st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
                         
-                        # Mostrar dataframe con estilos aplicados
-                        st.dataframe(df_mostrar, use_container_width=True)
+                        # Mostrar dataframe con estilos
+                        st.dataframe(styled_df, use_container_width=True)
 
                     # Productos próximos a vencer
                     if filtro_categoria != "Granos y productos a granel":
