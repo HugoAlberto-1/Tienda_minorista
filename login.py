@@ -285,7 +285,7 @@ def login():
     # Columna izquierda - Formulario
     with col_form:
         # Logo y título
-        st.markdown('<div class="logo">📦</div>', unsafe_allow_html=True)
+        st.markdown('<div class="logo">🛒​</div>', unsafe_allow_html=True)
         st.markdown('<div class="company-name">TIENDAS MINORISTAS</div>', unsafe_allow_html=True)
         st.markdown('<div class="system-name">Sistema de Inventario</div>', unsafe_allow_html=True)
         
