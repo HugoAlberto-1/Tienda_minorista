@@ -213,7 +213,7 @@ def menu_principal():
         if rol_usuario == "Administrador":
             
             if st.session_state["macro_modulo"] is None:
-                st.info("👑 Panel de Administrador - Dueño de todas las tiendas")
+                st.info("👑 Panel de Administrador")
                 
                 # Primera fila: 3 columnas
                 col1, col2, col3 = st.columns(3, gap="large")
