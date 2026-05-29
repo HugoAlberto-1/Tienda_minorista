@@ -201,7 +201,7 @@ def menu_principal():
         st.markdown(f'<div class="main-title">🛒 {nombre_tienda}</div>', unsafe_allow_html=True)
         
         # Mensaje de bienvenida con el rol incluido
-        st.markdown(f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨<br><small style="font-size:0.8rem;">Rol: {rol_usuario}</small></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨</div>', unsafe_allow_html=True)
         st.markdown('<div class="subtitle">Gestiona tu negocio de manera eficiente</div>', unsafe_allow_html=True)
 
         if "macro_modulo" not in st.session_state:
