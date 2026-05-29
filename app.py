@@ -14,6 +14,7 @@ from modulos.empleado import modulo_empleado
 from modulos.inventario import modulo_inventario
 from modulos.reporte_ventas import reporte_ventas
 from modulos.categoria import modulo_categoria
+from modulos.gestion_admin import modulo_gestion_admin  # NUEVO IMPORT
 
 
 def configurar_pagina():
@@ -207,20 +208,22 @@ def menu_principal():
             st.session_state["macro_modulo"] = None
 
         # ============================================================
-        # 👑 MENÚ PARA ADMINISTRADOR (SOLO INVENTARIO Y REPORTES)
+        # 👑 MENÚ PARA ADMINISTRADOR
         # ============================================================
         if rol_usuario == "Administrador":
             
             if st.session_state["macro_modulo"] is None:
-                # Mostrar solo dos opciones: Inventario y Reportes
-                col1, col2 = st.columns(2, gap="large")
+                st.info("👑 Panel de Administrador - Dueño de todas las tiendas")
+                
+                # Primera fila: 3 columnas
+                col1, col2, col3 = st.columns(3, gap="large")
                 
                 with col1:
                     st.markdown(f"""
                         <div class="macro-card">
-                            <div class="macro-icon">📋</div>
-                            <div class="macro-title">Consulta tu inventario</div>
-                            <div class="macro-desc">Visualiza el stock actual de productos</div>
+                            <div class="macro-icon">📦</div>
+                            <div class="macro-title">Inventario Global</div>
+                            <div class="macro-desc">Ver inventario de todas las tiendas</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("📊 Ver inventario", key="btn_inventario_admin", use_container_width=True):
@@ -230,9 +233,21 @@ def menu_principal():
                 with col2:
                     st.markdown(f"""
                         <div class="macro-card">
+                            <div class="macro-icon">👑</div>
+                            <div class="macro-title">Administración</div>
+                            <div class="macro-desc">Gestionar tiendas y usuarios</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("⚙️ Gestionar", key="btn_gestion_admin", use_container_width=True):
+                        st.session_state.module = "GestionAdmin"
+                        st.rerun()
+                
+                with col3:
+                    st.markdown(f"""
+                        <div class="macro-card">
                             <div class="macro-icon">📊</div>
-                            <div class="macro-title">Consulta tus reportes</div>
-                            <div class="macro-desc">Analiza ventas y productos más vendidos</div>
+                            <div class="macro-title">Reportes Globales</div>
+                            <div class="macro-desc">Reportes de ventas de todas las tiendas</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("📈 Ver reportes", key="btn_reportes_admin", use_container_width=True):
@@ -484,7 +499,7 @@ def cargar_modulo():
     modulo_solicitado = st.session_state.get("module", "")
     
     # Módulos permitidos para Administrador
-    modulos_permitidos_admin = ["Inventario", "Reportes_Ventas", "productomasvendido"]
+    modulos_permitidos_admin = ["Inventario", "Reportes_Ventas", "productomasvendido", "GestionAdmin"]
     
     # 🔥 CORRECCIÓN: Si no hay módulo seleccionado, mostrar menú principal
     if modulo_solicitado == "" or modulo_solicitado is None:
@@ -519,6 +534,8 @@ def cargar_modulo():
         reporte_ventas()
     elif st.session_state.module == "Categoria":
         modulo_categoria()
+    elif st.session_state.module == "GestionAdmin":
+        modulo_gestion_admin()
     else:
         menu_principal()
 
