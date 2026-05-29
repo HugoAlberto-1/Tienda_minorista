@@ -54,9 +54,11 @@ def configurar_estilo():
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
+    COLOR_TEXT_DARK = "#1a1a1a"
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
+    COLOR_BUTTON = "#1e3a5f"
     
     st.markdown(f"""
         <style>
@@ -89,19 +91,75 @@ def configurar_estilo():
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
+            color: {COLOR_TEXT_DARK};
         }}
         
-        /* Tarjetas de métricas */
-        .metric-card {{
-            background: {COLOR_CARD};
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        /* Labels */
+        .stTextInput > label, .stSelectbox > label, .stDateInput > label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Inputs y selectores */
+        .stTextInput > div > div > input {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            background-color: {COLOR_BUTTON};
+            color: white !important;
+            padding: 10px 15px;
+        }}
+        
+        .stTextInput > div > div > input::placeholder {{
+            color: rgba(255,255,255,0.7) !important;
+        }}
+        
+        .stTextInput > div > div > input:focus {{
+            border-color: {COLOR_PRIMARY};
+            box-shadow: 0 0 0 2px rgba(30,58,95,0.1);
+        }}
+        
+        /* Selectbox */
+        .stSelectbox > div > div {{
+            background-color: {COLOR_BUTTON};
+            border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
         }}
         
-        /* Botones */
+        .stSelectbox > div > div > div {{
+            color: white !important;
+        }}
+        
+        .stSelectbox svg {{
+            fill: white !important;
+        }}
+        
+        /* Text area */
+        .stTextArea > div > textarea {{
+            background-color: {COLOR_BUTTON};
+            color: white !important;
+        }}
+        
+        /* Checkbox */
+        .stCheckbox label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Radio buttons */
+        .stRadio label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Métricas */
+        .stMetric label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Info, warning, error messages */
+        .stAlert {{
+            border-radius: 8px;
+        }}
+        
+        /* Botón volver */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -116,21 +174,10 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Selectores y inputs */
-        .stSelectbox > div > div, .stTextInput > div > div > input {{
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
         /* Dataframe */
         .dataframe {{
             border-radius: 12px;
             overflow: hidden;
-        }}
-        
-        /* Alertas */
-        .stAlert {{
-            border-radius: 8px;
         }}
         </style>
     """, unsafe_allow_html=True)
