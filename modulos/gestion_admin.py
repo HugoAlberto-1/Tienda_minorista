@@ -136,7 +136,7 @@ def modulo_gestion_admin():
                         id_tienda_seleccionada = None
                         st.info("👑 El Administrador será dueño de TODAS las tiendas (sin tienda asignada)")
                     else:
-                        nivel = st.selectbox("Nivel de usuario", ["Vendedor", "Cajero"])
+                        nivel = st.selectbox("Nivel de usuario", ["Vendedora"])
                         # Selector de tienda solo para vendedores/cajeros
                         if tiendas_activas:
                             opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas_activas}
