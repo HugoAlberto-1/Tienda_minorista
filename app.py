@@ -296,8 +296,8 @@ def menu_principal():
                     st.markdown(f"""
                         <div class="card">
                             <div class="card-icon">👩‍💼</div>
-                            <div class="card-title">Nueva Empleada</div>
-                            <div class="card-desc">Registra nuevas empleadas</div>
+                            <div class="card-title">Nueva Socia</div>
+                            <div class="card-desc">Registra nuevas usuarias</div>
                         </div>
                     """, unsafe_allow_html=True)
                     if st.button("Registrar", key="btn_empleado", use_container_width=True):
