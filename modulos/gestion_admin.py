@@ -123,7 +123,7 @@ def modulo_gestion_admin():
                     with col2:
                         contacto = st.text_input("Teléfono", placeholder="Ej: 1234-5678")
                         contrasena = st.text_input("Contraseña *", type="password", placeholder="******")
-                        nivel = st.selectbox("Nivel de usuario", ["Vendedor", "Cajero"])
+                        nivel = st.selectbox("Nivel de usuario", ["Vendedora", "Administrador"])
 
                     # Selector de tienda
                     opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas_activas}
