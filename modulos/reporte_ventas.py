@@ -41,7 +41,6 @@ def reporte_ventas():
 
         if not rows:
             st.info("No se encontraron ventas en el rango seleccionado.")
-            # Botón para volver
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -104,7 +103,7 @@ def reporte_ventas():
                 use_container_width=True
             )
 
-        # ➤ Exportar PDF
+        # ➤ Exportar PDF (CORREGIDO)
         with col2:
             try:
                 pdf = FPDF()
@@ -129,11 +128,14 @@ def reporte_ventas():
 
                 pdf.set_font("Arial", size=9)
                 for _, row in df.iterrows():
+                    # Convertir fecha a string si es necesario
+                    fecha_str = row["Fecha Venta"].strftime("%Y-%m-%d") if pd.notna(row["Fecha Venta"]) else ""
+                    
                     pdf.cell(widths[0], 8, str(row["Nombre"])[:35], 1)
                     pdf.cell(widths[1], 8, f"{row['Cantidad Vendida']:.2f}", 1, 0, "R")
                     pdf.cell(widths[2], 8, f"${row['Precio Venta']:.2f}", 1, 0, "R")
                     pdf.cell(widths[3], 8, f"${row['Total']:.2f}", 1, 0, "R")
-                    pdf.cell(widths[4], 8, row["Fecha Venta"].strftime("%Y-%m-%d"), 1, 0, "C")
+                    pdf.cell(widths[4], 8, fecha_str, 1, 0, "C")
                     pdf.ln(8)
 
                 # ➤ Agregar total general al PDF
@@ -141,7 +143,8 @@ def reporte_ventas():
                 pdf.ln(5)
                 pdf.cell(190, 10, f"TOTAL GENERAL: ${gran_total:,.2f}", 0, 1, "R")
 
-                pdf_bytes = pdf.output(dest="S").encode("latin-1")
+                # 🔧 CORRECCIÓN AQUÍ: Convertir correctamente a bytes
+                pdf_bytes = pdf.output(dest="S").encode("latin-1") if isinstance(pdf.output(dest="S"), str) else bytes(pdf.output(dest="S"))
 
                 st.download_button(
                     label="⬇️ Descargar PDF",
