@@ -106,13 +106,14 @@ def configurar_estilo():
             border-radius: 8px;
         }}
         
-        /* Estilos para expander - AZUL OSCURO CON TEXTO CLARO */
+        /* Estilos para expander - HEADER AZUL OSCURO CON TEXTO BLANCO */
         .streamlit-expanderHeader {{
             background-color: {COLOR_PRIMARY} !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER};
         }}
         
+        /* Forzar el color del texto del header a blanco */
         .streamlit-expanderHeader p {{
             color: {COLOR_TEXT_LIGHT} !important;
             font-weight: 600 !important;
@@ -123,7 +124,9 @@ def configurar_estilo():
             color: {COLOR_TEXT_LIGHT} !important;
         }}
         
+        /* Forzar el color del summary */
         details summary {{
+            background-color: {COLOR_PRIMARY} !important;
             color: {COLOR_TEXT_LIGHT} !important;
         }}
         
@@ -384,6 +387,7 @@ def mostrar_lista_categorias(id_tienda):
         
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
+            # El título del expander se muestra con el color del CSS
             with st.expander(f"📁 {nombre}"):
                 st.markdown(f"**ID:** {id_cat}")
                 st.markdown(f"**Descripción:** {descripcion if descripcion else 'Sin descripción'}")
