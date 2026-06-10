@@ -5,6 +5,7 @@ def configurar_estilo():
     """Configuración de estilos CSS para el módulo de categorías - MODO CLARO"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
+    COLOR_ACCENT = "#3a7ca5"  # Agregamos esta variable
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
@@ -105,7 +106,7 @@ def configurar_estilo():
             border-radius: 8px;
         }}
         
-        /* Estilos para tarjetas de categorías - Mismo estilo que el subtítulo */
+        /* Estilos para tarjetas de categorías */
         .category-card {{
             background: {COLOR_CARD};
             border-radius: 12px;
