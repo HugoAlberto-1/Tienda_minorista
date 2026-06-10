@@ -4,48 +4,52 @@ from config.conexion import obtener_conexion
 from datetime import datetime
 
 def configurar_estilo():
-    """Configuración de estilos CSS para el módulo"""
+    """Configuración de estilos CSS para el módulo - Mismo estilo que inventario"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
+    COLOR_TEXT_DARK = "#1a1a1a"
     COLOR_HOVER = "#e8f0fe"
+    COLOR_BORDER = "#e0e0e0"
+    COLOR_BUTTON = "#1e3a5f"
     
     st.markdown(f"""
         <style>
+        /* Fondo general */
         .stApp {{
             background-color: {COLOR_BG};
         }}
         
-        .stApp, .stApp p, .stApp div, .stApp span, .stApp label, .stMarkdown {{
-            color: {COLOR_TEXT} !important;
-        }}
-        
-        .main-title {{
+        /* Títulos */
+        .top-title {{
             text-align: center;
-            color: {COLOR_PRIMARY} !important;
-            font-size: 2em;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
             font-weight: bold;
             margin-bottom: 20px;
         }}
         
-        .subtitle {{
+        /* Subtítulos */
+        .top-subtitle {{
             text-align: center;
-            color: {COLOR_SECONDARY} !important;
+            color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 20px;
         }}
         
+        /* Info box */
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
-            color: {COLOR_TEXT} !important;
+            color: {COLOR_TEXT_DARK};
         }}
         
+        /* Metric cards */
         .metric-card {{
             background: {COLOR_CARD};
             padding: 15px;
@@ -60,6 +64,7 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
         
+        /* Tarjetas para Top 3 - Más ingresos */
         .top-card {{
             background: linear-gradient(135deg, {COLOR_PRIMARY} 0%, {COLOR_SECONDARY} 100%);
             padding: 20px;
@@ -107,6 +112,7 @@ def configurar_estilo():
             margin-top: 10px;
         }}
         
+        /* Tarjetas para Top 3 - Menos ingresos */
         .bottom-card {{
             background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
             padding: 20px;
@@ -154,46 +160,123 @@ def configurar_estilo():
             margin-top: 10px;
         }}
         
+        /* Botones */
         .stButton > button {{
-            background-color: {COLOR_PRIMARY};
-            color: white !important;
             border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
             border: none;
-            padding: 10px;
         }}
         
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
         }}
         
+        /* Botón volver - Color gris con texto blanco */
+        .volver-btn button {{
+            background-color: #6c757d !important;
+            background: #6c757d !important;
+            color: white !important;
+        }}
+        
+        .volver-btn button:hover {{
+            background-color: #5a6268 !important;
+            background: #5a6268 !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }}
+        
+        /* Labels */
+        .stTextInput > label, .stSelectbox > label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Selectores */
+        .stSelectbox > div > div {{
+            background-color: {COLOR_BUTTON};
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        .stSelectbox > div > div > div {{
+            color: white !important;
+        }}
+        
+        .stSelectbox svg {{
+            fill: white !important;
+        }}
+        
+        /* Inputs de fecha */
+        .stDateInput > div > div > input {{
+            background-color: {COLOR_BUTTON};
+            color: white !important;
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        /* Headers */
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
         
+        /* Dataframe */
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
-            border-radius: 10px !important;
+        }}
+        
+        [data-testid="stDataFrame"] {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 12px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] table {{
+            background-color: {COLOR_CARD} !important;
         }}
         
         [data-testid="stDataFrame"] th {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            padding: 12px 8px !important;
         }}
         
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
+            text-align: center !important;
+            padding: 10px 8px !important;
             background-color: {COLOR_CARD} !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
+            background-color: #f8f9fa !important;
         }}
         
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] td div {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Alertas */
+        .stAlert {{
+            background-color: {COLOR_CARD} !important;
+            border: 1px solid {COLOR_BORDER} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
 
 
 def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
-    """Obtiene todos los productos con sus ingresos totales (sin importar unidad)"""
+    """Obtiene todos los productos con sus ingresos totales"""
     conn = obtener_conexion()
     if not conn:
         return pd.DataFrame()
@@ -245,10 +328,8 @@ def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         df = pd.DataFrame(resultados, columns=["id_producto", "Producto", "Categoria", "Cantidad_Total", "Total_Ingresos"])
         
         if not df.empty:
-            # Redondear valores
             df["Total_Ingresos"] = df["Total_Ingresos"].round(2)
             df["Cantidad_Total"] = df["Cantidad_Total"].round(2)
-            df["Cantidad con Unidad"] = df["Cantidad_Total"].apply(lambda x: f"{x:.2f} unidades (convertidas)")
         
         return df
         
@@ -333,8 +414,8 @@ def mostrar_top_card_ingresos(producto, ingresos, posicion, color="blue"):
 def modulo_productos_mas_menos_vendidos():
     configurar_estilo()
     
-    st.markdown('<div class="main-title">📊 Productos que Más y Menos Ingresos Generan</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">Análisis de ingresos por producto</div>', unsafe_allow_html=True)
+    st.markdown('<div class="top-title">💰 Productos que Más y Menos Ingresos Generan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="top-subtitle">Análisis de ingresos por producto</div>', unsafe_allow_html=True)
     
     rol_usuario = st.session_state.get("nivel_usuario", "")
     nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
@@ -615,6 +696,8 @@ def modulo_productos_mas_menos_vendidos():
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
         if st.button("🔙 Volver al menú principal", use_container_width=True):
             st.session_state["module"] = None
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
