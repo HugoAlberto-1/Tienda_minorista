@@ -127,11 +127,6 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
-        /* Estilo específico para el título del expander */
-        details summary {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
         hr {{
             border-color: {COLOR_BORDER};
         }}
@@ -367,8 +362,8 @@ def mostrar_lista_categorias(id_tienda):
         
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
-            # Usamos HTML para forzar color oscuro en el título del expander
-            with st.expander(f"<span style='color: #1a1a1a; font-weight: 600;'>📁 {nombre}</span>", unsafe_allow_html=True):
+            # st.expander no acepta HTML en el título, usamos markdown dentro
+            with st.expander(f"📁 {nombre}"):
                 st.markdown(f"**ID:** `{id_cat}`")
                 st.markdown(f"**Descripción:** {descripcion if descripcion else '*Sin descripción*'}")
                 st.markdown(f"**Fecha de creación:** {fecha}")
