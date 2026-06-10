@@ -62,30 +62,37 @@ def configurar_estilo():
             color: #721c24;
         }}
         
+        /* Estilo para mensajes de advertencia (warning de Streamlit) */
+        .stAlert {{
+            border-radius: 8px;
+        }}
+        
+        .stAlert > div {{
+            color: #856404 !important;
+        }}
+        
+        /* Estilo específico para mensajes de error */
+        .stAlert[data-testid="stAlert"] {{
+            background-color: #fff3cd !important;
+        }}
+        
+        .stAlert[data-testid="stAlert"] p {{
+            color: #856404 !important;
+            font-weight: 500 !important;
+        }}
+        
         .stTextInput > label, .stSelectbox > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
         
-        /* Estilos para CHECKBOX - Mismo color que el nombre de la tienda */
+        /* Estilos para CHECKBOX */
         .stCheckbox label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
         
         .stCheckbox label span {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        .stCheckbox label div {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        .stCheckbox label p {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        div[data-testid="stCheckbox"] label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
@@ -401,7 +408,17 @@ def modulo_editar_producto():
                                     cursor.close()
                                     conn.close()
             else:
-                st.warning("⚠️ Producto no encontrado. Verifica el código de barras.")
+                # Mensaje de producto no encontrado con estilo personalizado
+                st.markdown("""
+                    <div style="background-color: #fff3cd; 
+                                padding: 12px; 
+                                border-radius: 8px; 
+                                border-left: 4px solid #ffc107;
+                                color: #856404;
+                                font-weight: 500;">
+                        ⚠️ Producto no encontrado. Verifica el código de barras.
+                    </div>
+                """, unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"❌ Error al buscar el producto: {e}")
