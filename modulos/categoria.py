@@ -113,7 +113,6 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
-        /* Forzar el color del texto del header a blanco */
         .streamlit-expanderHeader p {{
             color: {COLOR_TEXT_LIGHT} !important;
             font-weight: 600 !important;
@@ -124,7 +123,6 @@ def configurar_estilo():
             color: {COLOR_TEXT_LIGHT} !important;
         }}
         
-        /* Forzar el color del summary */
         details summary {{
             background-color: {COLOR_PRIMARY} !important;
             color: {COLOR_TEXT_LIGHT} !important;
@@ -143,13 +141,22 @@ def configurar_estilo():
             padding: 10px !important;
         }}
         
+        /* Forzar texto oscuro en todo el contenido */
         .streamlit-expanderContent p {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
-        /* Estilo para el texto dentro del contenido */
+        .streamlit-expanderContent div {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
         .streamlit-expanderContent strong {{
             color: {COLOR_PRIMARY} !important;
+        }}
+        
+        /* Forzar color de texto en markdown dentro del expander */
+        .streamlit-expanderContent .stMarkdown {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         
         hr {{
@@ -387,11 +394,11 @@ def mostrar_lista_categorias(id_tienda):
         
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
-            # El título del expander se muestra con el color del CSS
             with st.expander(f"📁 {nombre}"):
-                st.markdown(f"**ID:** {id_cat}")
-                st.markdown(f"**Descripción:** {descripcion if descripcion else 'Sin descripción'}")
-                st.markdown(f"**Fecha de creación:** {fecha}")
+                # Usar HTML para forzar color oscuro
+                st.markdown(f'<p style="color: #1a1a1a;"><strong>ID:</strong> {id_cat}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p style="color: #1a1a1a;"><strong>Descripción:</strong> {descripcion if descripcion else "Sin descripción"}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p style="color: #1a1a1a;"><strong>Fecha de creación:</strong> {fecha}</p>', unsafe_allow_html=True)
 
 
 def mostrar_formulario_crear(id_tienda):
