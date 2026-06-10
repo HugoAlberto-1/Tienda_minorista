@@ -34,13 +34,13 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # 🔧 Consulta según el rol del usuario (SIN usar p.id_tienda)
+        # 🔧 Consulta según el rol del usuario (incluyendo la unidad)
         if rol_usuario == "Administrador":
-            # Administrador: ve todas las ventas de todas las tiendas
             query = """
                 SELECT
                     p.Nombre,
-                    pv.Cantidad_Vendida,
+                    pv.Cantidad_vendida,
+                    pv.unidad,
                     pv.Precio_Venta,
                     v.Fecha,
                     t.nombre as Tienda
@@ -55,15 +55,15 @@ def reporte_ventas():
             rows = cursor.fetchall()
             
             if rows:
-                columns = ["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta", "Tienda"]
+                columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"]
             else:
                 columns = []
         else:
-            # Vendedor: solo ve ventas de su tienda (usando id_tienda de Venta)
             query = """
                 SELECT
                     p.Nombre,
-                    pv.Cantidad_Vendida,
+                    pv.Cantidad_vendida,
+                    pv.unidad,
                     pv.Precio_Venta,
                     v.Fecha
                 FROM Venta v
@@ -75,15 +75,10 @@ def reporte_ventas():
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda))
             rows = cursor.fetchall()
-            columns = ["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta"]
+            columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
 
         if not rows:
             st.warning("⚠️ No se encontraron ventas en el rango seleccionado.")
-            # Mostrar fechas para depuración
-            st.info(f"Buscando ventas entre {fecha_inicio} y {fecha_fin}")
-            if rol_usuario != "Administrador":
-                st.info(f"ID Tienda: {id_tienda}")
-            
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -98,6 +93,9 @@ def reporte_ventas():
         df["Cantidad Vendida"] = pd.to_numeric(df["Cantidad Vendida"], errors="coerce").fillna(0)
         df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
         df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
+        
+        # Formatear unidad (minúscula)
+        df["unidad"] = df["unidad"].fillna("").astype(str)
 
         # ➤ CALCULAR TOTAL
         df["Total"] = (df["Cantidad Vendida"] * df["Precio Venta"]).round(2)
@@ -111,9 +109,18 @@ def reporte_ventas():
         
         # Formatear para mostrar
         df_mostrar = df.copy()
+        df_mostrar["Cantidad Vendida"] = df_mostrar.apply(
+            lambda x: f"{x['Cantidad Vendida']:.2f} {x['unidad']}" if x['unidad'] else f"{x['Cantidad Vendida']:.2f}", axis=1
+        )
         df_mostrar["Precio Venta"] = df_mostrar["Precio Venta"].apply(lambda x: f"${x:.2f}")
         df_mostrar["Total"] = df_mostrar["Total"].apply(lambda x: f"${x:.2f}")
         df_mostrar["Fecha Venta"] = df_mostrar["Fecha Venta"].dt.strftime("%Y-%m-%d")
+        
+        # Seleccionar columnas a mostrar
+        if rol_usuario == "Administrador":
+            df_mostrar = df_mostrar[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta", "Tienda"]]
+        else:
+            df_mostrar = df_mostrar[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta"]]
         
         st.dataframe(df_mostrar, use_container_width=True)
 
@@ -134,9 +141,14 @@ def reporte_ventas():
         col1, col2 = st.columns(2)
 
         with col1:
+            # Para Excel, exportar con unidad separada
+            df_excel = df.copy()
+            df_excel["Fecha Venta"] = df_excel["Fecha Venta"].dt.strftime("%Y-%m-%d")
+            df_excel["Total"] = df_excel["Total"].round(2)
+            
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df.to_excel(writer, index=False, sheet_name="ReporteVentas")
+                df_excel.to_excel(writer, index=False, sheet_name="ReporteVentas")
 
             st.download_button(
                 label="⬇️ Descargar Excel",
@@ -146,7 +158,7 @@ def reporte_ventas():
                 use_container_width=True
             )
 
-        # ➤ Exportar PDF con nombre de tienda
+        # ➤ Exportar PDF
         with col2:
             try:
                 pdf = FPDF()
@@ -158,7 +170,7 @@ def reporte_ventas():
                 pdf.cell(190, 10, txt="Reporte de Ventas", ln=True, align="C")
                 pdf.ln(5)
                 
-                # Nombre de la tienda (para vendedor) o mensaje para admin
+                # Nombre de la tienda
                 pdf.set_font("Arial", "I", 10)
                 if rol_usuario == "Administrador":
                     pdf.cell(190, 8, txt="Reporte Global - Todas las tiendas", ln=True, align="C")
@@ -169,12 +181,12 @@ def reporte_ventas():
                 pdf.ln(5)
 
                 # Definir columnas
-                if rol_usuario == "Administrador" and "Tienda" in df.columns:
-                    headers = ["Producto", "Cantidad", "Precio", "Total", "Fecha", "Tienda"]
-                    widths = [55, 20, 20, 20, 30, 45]
+                if rol_usuario == "Administrador":
+                    headers = ["Producto", "Cantidad (Unidad)", "Precio", "Total", "Fecha", "Tienda"]
+                    widths = [55, 25, 20, 20, 30, 40]
                 else:
-                    headers = ["Producto", "Cantidad", "Precio", "Total", "Fecha"]
-                    widths = [70, 25, 25, 25, 45]
+                    headers = ["Producto", "Cantidad (Unidad)", "Precio", "Total", "Fecha"]
+                    widths = [70, 30, 25, 25, 40]
 
                 pdf.set_font("Arial", "B", 9)
                 for w, h in zip(widths, headers):
@@ -183,26 +195,25 @@ def reporte_ventas():
 
                 pdf.set_font("Arial", size=8)
                 for _, row in df.iterrows():
-                    # Convertir fecha a string si es necesario
                     fecha_str = row["Fecha Venta"].strftime("%Y-%m-%d") if pd.notna(row["Fecha Venta"]) else ""
+                    cantidad_con_unidad = f"{row['Cantidad Vendida']:.2f} {row['unidad']}" if row['unidad'] else f"{row['Cantidad Vendida']:.2f}"
                     
                     pdf.cell(widths[0], 8, str(row["Nombre"])[:30], 1)
-                    pdf.cell(widths[1], 8, f"{row['Cantidad Vendida']:.2f}", 1, 0, "R")
+                    pdf.cell(widths[1], 8, cantidad_con_unidad[:25], 1, 0, "R")
                     pdf.cell(widths[2], 8, f"${row['Precio Venta']:.2f}", 1, 0, "R")
                     pdf.cell(widths[3], 8, f"${row['Total']:.2f}", 1, 0, "R")
                     pdf.cell(widths[4], 8, fecha_str, 1, 0, "C")
                     
-                    if rol_usuario == "Administrador" and "Tienda" in df.columns:
+                    if rol_usuario == "Administrador":
                         pdf.cell(widths[5], 8, str(row["Tienda"])[:25], 1, 0, "C")
                     
                     pdf.ln(6)
 
-                # ➤ Agregar total general al PDF
+                # Total general
                 pdf.set_font("Arial", "B", 12)
                 pdf.ln(5)
                 pdf.cell(190, 10, f"TOTAL GENERAL: ${gran_total:,.2f}", 0, 1, "R")
 
-                # Convertir correctamente a bytes
                 pdf_output = pdf.output(dest="S")
                 if isinstance(pdf_output, str):
                     pdf_bytes = pdf_output.encode("latin-1")
