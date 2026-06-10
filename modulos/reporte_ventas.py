@@ -34,9 +34,9 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # 🔧 Consulta según el rol del usuario
+        # 🔧 Consulta según el rol del usuario (SIN usar p.id_tienda)
         if rol_usuario == "Administrador":
-            # Administrador: ve todas las ventas
+            # Administrador: ve todas las ventas de todas las tiendas
             query = """
                 SELECT
                     p.Nombre,
@@ -47,14 +47,19 @@ def reporte_ventas():
                 FROM Venta v
                 JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                 JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                JOIN tienda t ON p.id_tienda = t.id_tienda
-                WHERE v.Fecha BETWEEN %s AND %s
+                LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
                 ORDER BY v.Fecha DESC, p.Nombre ASC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin))
-            columns = ["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta", "Tienda"]
+            rows = cursor.fetchall()
+            
+            if rows:
+                columns = ["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta", "Tienda"]
+            else:
+                columns = []
         else:
-            # Vendedor: solo ve ventas de su tienda
+            # Vendedor: solo ve ventas de su tienda (usando id_tienda de Venta)
             query = """
                 SELECT
                     p.Nombre,
@@ -64,17 +69,21 @@ def reporte_ventas():
                 FROM Venta v
                 JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                 JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                WHERE v.Fecha BETWEEN %s AND %s
-                  AND p.id_tienda = %s
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                  AND v.id_tienda = %s
                 ORDER BY v.Fecha DESC, p.Nombre ASC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda))
+            rows = cursor.fetchall()
             columns = ["Nombre", "Cantidad Vendida", "Precio Venta", "Fecha Venta"]
 
-        rows = cursor.fetchall()
-
         if not rows:
-            st.info("No se encontraron ventas en el rango seleccionado.")
+            st.warning("⚠️ No se encontraron ventas en el rango seleccionado.")
+            # Mostrar fechas para depuración
+            st.info(f"Buscando ventas entre {fecha_inicio} y {fecha_fin}")
+            if rol_usuario != "Administrador":
+                st.info(f"ID Tienda: {id_tienda}")
+            
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -160,7 +169,7 @@ def reporte_ventas():
                 pdf.ln(5)
 
                 # Definir columnas
-                if rol_usuario == "Administrador":
+                if rol_usuario == "Administrador" and "Tienda" in df.columns:
                     headers = ["Producto", "Cantidad", "Precio", "Total", "Fecha", "Tienda"]
                     widths = [55, 20, 20, 20, 30, 45]
                 else:
@@ -183,7 +192,7 @@ def reporte_ventas():
                     pdf.cell(widths[3], 8, f"${row['Total']:.2f}", 1, 0, "R")
                     pdf.cell(widths[4], 8, fecha_str, 1, 0, "C")
                     
-                    if rol_usuario == "Administrador":
+                    if rol_usuario == "Administrador" and "Tienda" in df.columns:
                         pdf.cell(widths[5], 8, str(row["Tienda"])[:25], 1, 0, "C")
                     
                     pdf.ln(6)
@@ -228,6 +237,5 @@ def reporte_ventas():
             con.close()
 
 
-# ✅ Esta es la función principal que se llama desde app.py
 def modulo_reporte_ventas():
     reporte_ventas()
