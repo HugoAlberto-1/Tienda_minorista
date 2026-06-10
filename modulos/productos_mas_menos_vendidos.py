@@ -222,16 +222,6 @@ def configurar_estilo():
             background-color: white !important;
         }}
         
-        /* Expander - texto en color oscuro CORREGIDO */
-        .stExpander summary {{
-            color: #333333 !important;
-            font-weight: 500 !important;
-        }}
-        
-        .stExpander summary:hover {{
-            color: #1e3a5f !important;
-        }}
-        
         /* Headers */
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
@@ -486,7 +476,7 @@ def modulo_productos_mas_menos_vendidos():
         total_ventas, total_productos, total_ingresos = obtener_resumen_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
         df_completo = obtener_datos_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
     
-    # Mostrar resumen - CON TEXTO OSCURO VISIBLE
+    # Mostrar resumen
     st.markdown("### 📈 Resumen del Período")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -679,31 +669,6 @@ def modulo_productos_mas_menos_vendidos():
             )
         else:
             st.info("No hay productos con ingresos en el período seleccionado.")
-        
-        # ============================================================
-        # PRODUCTOS SIN INGRESOS (QUE NO SE VENDIERON)
-        # ============================================================
-        productos_con_ingresos = set(df_completo["Producto"].tolist())
-        
-        # Obtener todos los productos
-        conn = obtener_conexion()
-        if conn:
-            cursor = conn.cursor()
-            if es_admin:
-                cursor.execute("SELECT Nombre, categoria FROM Producto")
-            else:
-                cursor.execute("SELECT Nombre, categoria FROM Producto WHERE id_tienda = %s", (id_tienda_usar,))
-            todos_productos = cursor.fetchall()
-            cursor.close()
-            conn.close()
-            
-            productos_sin_ingresos = [p for p in todos_productos if p[0] not in productos_con_ingresos]
-            
-            if productos_sin_ingresos:
-                st.markdown("---")
-                st.markdown(f"## 🚫 Productos Sin Ingresos (No se vendieron) ({len(productos_sin_ingresos)})")
-                with st.expander("📋 Ver productos sin ingresos"):
-                    st.dataframe(pd.DataFrame(productos_sin_ingresos, columns=["Producto", "Categoria"]), use_container_width=True)
     
     # Botón para volver
     st.markdown("---")
