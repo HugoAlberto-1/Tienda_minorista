@@ -226,16 +226,29 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         return None, None, None
 
 
-def graficar_productos(df, titulo, color_gradiente):
-    """Crea gráfico de barras atractivo con gradiente y tooltips mejorados"""
+def graficar_productos(df, titulo, color):
+    """Crea gráfico de barras atractivo para productos"""
     if df.empty:
         return None
     
     # Limitar a top 15 para mejor visualización
     df_plot = df.head(15).copy()
     
-    # Crear colores gradiente
-    colors = [color_gradiente] * len(df_plot)
+    # Crear colores gradiente manualmente
+    colors = []
+    max_val = df_plot["Cantidad_Vendida"].max() if len(df_plot) > 0 else 1
+    for val in df_plot["Cantidad_Vendida"]:
+        intensity = val / max_val if max_val > 0 else 0.5
+        if color == "#2ecc71":  # Verde para más vendidos
+            r, g, b = 46, 204, 113
+        else:  # Rojo para menos vendidos
+            r, g, b = 231, 76, 60
+        
+        # Hacer más claro o más oscuro según la intensidad
+        new_r = int(r * (0.5 + intensity * 0.5))
+        new_g = int(g * (0.5 + intensity * 0.5))
+        new_b = int(b * (0.5 + intensity * 0.5))
+        colors.append(f'rgb({new_r}, {new_g}, {new_b})')
     
     fig = go.Figure()
     
@@ -246,13 +259,11 @@ def graficar_productos(df, titulo, color_gradiente):
         textposition='outside',
         textfont=dict(size=10, color="#333333"),
         marker=dict(
-            color=df_plot["Cantidad_Vendida"],
-            colorscale=[[0, color_gradiente], [1, color_gradiente.replace("1e3a5f", "2c5f8a")]],
-            showscale=False,
+            color=colors,
             line=dict(width=1, color='white')
         ),
         hovertemplate='<b>%{x}</b><br>' +
-                      'Cantidad Vendida: %{y:.2f}<br>' +
+                      '📦 Cantidad: %{y:.2f}<br>' +
                       '<extra></extra>'
     ))
     
@@ -278,21 +289,8 @@ def graficar_productos(df, titulo, color_gradiente):
         paper_bgcolor='white',
         height=500,
         margin=dict(t=50, b=100, l=50, r=30),
-        bargap=0.3,
-        bargroupgap=0.1
+        bargap=0.3
     )
-    
-    # Agregar línea de tendencia suave
-    if len(df_plot) > 2:
-        fig.add_trace(go.Scatter(
-            x=df_plot["Producto"],
-            y=df_plot["Cantidad_Vendida"].rolling(window=3, min_periods=1).mean(),
-            mode='lines+markers',
-            name='Tendencia',
-            line=dict(color='#ff6b6b', width=2, dash='dot'),
-            marker=dict(size=6, color='#ff6b6b'),
-            hovertemplate='Tendencia: %{y:.2f}<extra></extra>'
-        ))
     
     return fig
 
@@ -310,7 +308,7 @@ def graficar_torta_categorias(df, titulo):
         return None
     
     # Colores profesionales
-    colores = ['#1e3a5f', '#2c5f8a', '#3a7ca5', '#4a9ac0', '#5ab8db', '#6ad6f6', '#7af4ff']
+    colores = ['#1e3a5f', '#2c5f8a', '#3a7ca5', '#4a9ac0', '#5ab8db', '#6ad6f6']
     
     fig = go.Figure(data=[go.Pie(
         labels=df_categoria["Categoria"],
@@ -320,8 +318,8 @@ def graficar_torta_categorias(df, titulo):
         textinfo='label+percent',
         textposition='auto',
         hovertemplate='<b>%{label}</b><br>' +
-                      'Cantidad: %{value:.2f}<br>' +
-                      'Porcentaje: %{percent}<br>' +
+                      '📦 Cantidad: %{value:.2f}<br>' +
+                      '📊 Porcentaje: %{percent}<br>' +
                       '<extra></extra>'
     )])
     
