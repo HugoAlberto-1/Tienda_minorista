@@ -14,6 +14,8 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
+    COLOR_ERROR = "#dc3545"  # Rojo para errores (se mantiene para mensajes de error)
+    COLOR_SUCCESS = "#28a745"  # Verde para éxito
     
     st.markdown(f"""
         <style>
@@ -43,6 +45,13 @@ def configurar_estilo():
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
             color: {COLOR_TEXT_DARK};
+        }}
+        
+        /* Estilo para texto de total de categorías */
+        .total-categorias {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+            font-size: 1em !important;
         }}
         
         .stTextInput > label, .stSelectbox > label, .stTextArea > label {{
@@ -88,6 +97,7 @@ def configurar_estilo():
             fill: white !important;
         }}
         
+        /* Estilos para botones - usando paleta corporativa */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -102,11 +112,16 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
+        /* Estilo para botón de eliminar (opcional, si quieres mantenerlo diferenciado) */
+        .stButton > button[kind="secondary"] {{
+            background-color: {COLOR_SECONDARY};
+        }}
+        
         .stAlert {{
             border-radius: 8px;
         }}
         
-        /* Estilos para expander - HEADER AZUL OSCURO CON TEXTO BLANCO */
+        /* Estilos para expander */
         .streamlit-expanderHeader {{
             background-color: {COLOR_PRIMARY} !important;
             border-radius: 8px !important;
@@ -132,31 +147,12 @@ def configurar_estilo():
             color: {COLOR_TEXT_LIGHT} !important;
         }}
         
-        /* Contenido del expander - fondo blanco con texto oscuro */
         .streamlit-expanderContent {{
             background-color: {COLOR_CARD} !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
             border-top: none !important;
             padding: 10px !important;
-        }}
-        
-        /* Forzar texto oscuro en todo el contenido */
-        .streamlit-expanderContent p {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        .streamlit-expanderContent div {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        .streamlit-expanderContent strong {{
-            color: {COLOR_PRIMARY} !important;
-        }}
-        
-        /* Forzar color de texto en markdown dentro del expander */
-        .streamlit-expanderContent .stMarkdown {{
-            color: {COLOR_TEXT_DARK} !important;
         }}
         
         hr {{
@@ -389,13 +385,13 @@ def mostrar_lista_categorias(id_tienda):
     if not categorias:
         st.info("ℹ️ No hay categorías registradas. Crea una en la pestaña 'Crear nueva categoría'.")
     else:
-        st.write(f"**Total de categorías:** {len(categorias)}")
+        # Texto de total de categorías en color oscuro usando markdown normal
+        st.markdown(f'<p class="total-categorias"><strong>Total de categorías:</strong> {len(categorias)}</p>', unsafe_allow_html=True)
         st.markdown("---")
         
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
             with st.expander(f"📁 {nombre}"):
-                # Usar HTML para forzar color oscuro
                 st.markdown(f'<p style="color: #1a1a1a;"><strong>ID:</strong> {id_cat}</p>', unsafe_allow_html=True)
                 st.markdown(f'<p style="color: #1a1a1a;"><strong>Descripción:</strong> {descripcion if descripcion else "Sin descripción"}</p>', unsafe_allow_html=True)
                 st.markdown(f'<p style="color: #1a1a1a;"><strong>Fecha de creación:</strong> {fecha}</p>', unsafe_allow_html=True)
