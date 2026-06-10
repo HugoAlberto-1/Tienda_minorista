@@ -60,9 +60,19 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
+        /* Estilo para inputs deshabilitados - TEXTO OSCURO */
         .stTextInput > div > div > input:disabled {{
-            background-color: #e8f0fe;
-            color: #666666 !important;
+            background-color: #e8f0fe !important;
+            color: {COLOR_TEXT_DARK} !important;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        /* Para asegurar que el texto del input deshabilitado sea visible */
+        input:disabled {{
+            background-color: #e8f0fe !important;
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            opacity: 1 !important;
         }}
         
         .stButton > button {{
