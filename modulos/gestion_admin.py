@@ -78,7 +78,7 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
-        /* Checkbox label */
+        /* Checkbox label - color oscuro */
         .stCheckbox label {{
             color: {COLOR_TEXT} !important;
         }}
@@ -238,7 +238,6 @@ def modulo_gestion_admin():
     with tab2:
         st.markdown("### 📝 Crear Nuevo Usuario")
         
-        # Cambiado de radio a selectbox
         tipo_usuario = st.selectbox(
             "Tipo de usuario a crear:",
             ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"]
@@ -335,7 +334,6 @@ def modulo_gestion_admin():
         st.markdown("### 📊 Usuarios por Tienda")
         st.markdown('<div class="info-box">👑 Los Administradores (Dueños) aparecen en "Todas las tiendas" porque no pertenecen a una específica</div>', unsafe_allow_html=True)
         
-        # Cambiado de radio a selectbox
         vista = st.selectbox(
             "Ver:",
             ["👑 Administradores (Dueños)", "🏪 Usuarios por tienda", "📋 Todos los usuarios"]
