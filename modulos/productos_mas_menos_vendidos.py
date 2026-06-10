@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
 from datetime import datetime
-import plotly.express as px
 import plotly.graph_objects as go
 
 def configurar_estilo():
@@ -13,7 +12,6 @@ def configurar_estilo():
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
     COLOR_HOVER = "#e8f0fe"
-    COLOR_BORDER = "#e0e0e0"
     
     st.markdown(f"""
         <style>
@@ -50,40 +48,29 @@ def configurar_estilo():
         }}
         
         .metric-card {{
-            background: linear-gradient(135deg, {COLOR_CARD} 0%, {COLOR_HOVER} 100%);
+            background: {COLOR_CARD};
             padding: 15px;
             border-radius: 10px;
             text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }}
-        
-        .metric-card:hover {{
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }}
         
         .metric-value {{
             font-size: 2em;
             font-weight: bold;
-            background: linear-gradient(135deg, {COLOR_PRIMARY} 0%, {COLOR_SECONDARY} 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: {COLOR_PRIMARY} !important;
         }}
         
         .stButton > button {{
-            background: linear-gradient(135deg, {COLOR_PRIMARY} 0%, {COLOR_SECONDARY} 100%);
+            background-color: {COLOR_PRIMARY};
             color: white !important;
             border-radius: 8px;
             border: none;
             padding: 10px;
-            transition: all 0.3s ease;
         }}
         
         .stButton > button:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            background-color: {COLOR_SECONDARY};
         }}
         
         h1, h2, h3, h4, h5, h6 {{
@@ -93,13 +80,11 @@ def configurar_estilo():
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
             border-radius: 10px !important;
-            overflow: hidden !important;
         }}
         
         [data-testid="stDataFrame"] th {{
-            background: linear-gradient(135deg, {COLOR_PRIMARY} 0%, {COLOR_SECONDARY} 100%) !important;
+            background-color: {COLOR_PRIMARY} !important;
             color: white !important;
-            font-weight: 600 !important;
         }}
         
         [data-testid="stDataFrame"] td {{
@@ -165,12 +150,10 @@ def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         
         if resultados:
             df = pd.DataFrame(resultados, columns=["Producto", "Codigo", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas", "Unidad"])
-            # Formatear cantidad con unidad
             df["Cantidad con Unidad"] = df.apply(
                 lambda x: f"{x['Cantidad_Vendida']:.2f} {x['Unidad']}" if x['Unidad'] and x['Cantidad_Vendida'] > 0 else f"{x['Cantidad_Vendida']:.2f}", 
                 axis=1
             )
-            # Redondear Total_Vendido
             df["Total_Vendido"] = df["Total_Vendido"].round(2)
             return df
         return pd.DataFrame()
@@ -216,7 +199,6 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         resultado = cursor.fetchone()
         cursor.close()
         conn.close()
-        
         return resultado
         
     except Exception as e:
@@ -227,28 +209,12 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
 
 
 def graficar_productos(df, titulo, color):
-    """Crea gráfico de barras atractivo para productos"""
+    """Crea gráfico de barras para productos"""
     if df.empty:
         return None
     
-    # Limitar a top 15 para mejor visualización
+    # Limitar a top 15
     df_plot = df.head(15).copy()
-    
-    # Crear colores gradiente manualmente
-    colors = []
-    max_val = df_plot["Cantidad_Vendida"].max() if len(df_plot) > 0 else 1
-    for val in df_plot["Cantidad_Vendida"]:
-        intensity = val / max_val if max_val > 0 else 0.5
-        if color == "#2ecc71":  # Verde para más vendidos
-            r, g, b = 46, 204, 113
-        else:  # Rojo para menos vendidos
-            r, g, b = 231, 76, 60
-        
-        # Hacer más claro o más oscuro según la intensidad
-        new_r = int(r * (0.5 + intensity * 0.5))
-        new_g = int(g * (0.5 + intensity * 0.5))
-        new_b = int(b * (0.5 + intensity * 0.5))
-        colors.append(f'rgb({new_r}, {new_g}, {new_b})')
     
     fig = go.Figure()
     
@@ -258,88 +224,18 @@ def graficar_productos(df, titulo, color):
         text=df_plot["Cantidad con Unidad"],
         textposition='outside',
         textfont=dict(size=10, color="#333333"),
-        marker=dict(
-            color=colors,
-            line=dict(width=1, color='white')
-        ),
-        hovertemplate='<b>%{x}</b><br>' +
-                      '📦 Cantidad: %{y:.2f}<br>' +
-                      '<extra></extra>'
+        marker=dict(color=color, line=dict(width=1, color='white'), opacity=0.85),
+        hovertemplate='<b>%{x}</b><br>📦 Cantidad: %{y:.2f}<extra></extra>'
     ))
     
     fig.update_layout(
-        title=dict(
-            text=f"<b>{titulo}</b>",
-            font=dict(size=18, color="#1e3a5f"),
-            x=0.5
-        ),
-        xaxis=dict(
-            title="Producto",
-            titlefont=dict(size=12, color="#666666"),
-            tickangle=-45,
-            tickfont=dict(size=10)
-        ),
-        yaxis=dict(
-            title="Cantidad Vendida",
-            titlefont=dict(size=12, color="#666666"),
-            gridcolor='#e0e0e0',
-            gridwidth=0.5
-        ),
+        title=dict(text=f"<b>{titulo}</b>", font=dict(size=18, color="#1e3a5f"), x=0.5),
+        xaxis=dict(title="Producto", titlefont=dict(size=12), tickangle=-45),
+        yaxis=dict(title="Cantidad Vendida", titlefont=dict(size=12), gridcolor='#e0e0e0'),
         plot_bgcolor='white',
         paper_bgcolor='white',
         height=500,
-        margin=dict(t=50, b=100, l=50, r=30),
         bargap=0.3
-    )
-    
-    return fig
-
-
-def graficar_torta_categorias(df, titulo):
-    """Crea gráfico de torta para distribución por categoría"""
-    if df.empty:
-        return None
-    
-    # Agrupar por categoría
-    df_categoria = df.groupby("Categoria")["Cantidad_Vendida"].sum().reset_index()
-    df_categoria = df_categoria[df_categoria["Cantidad_Vendida"] > 0]
-    
-    if df_categoria.empty:
-        return None
-    
-    # Colores profesionales
-    colores = ['#1e3a5f', '#2c5f8a', '#3a7ca5', '#4a9ac0', '#5ab8db', '#6ad6f6']
-    
-    fig = go.Figure(data=[go.Pie(
-        labels=df_categoria["Categoria"],
-        values=df_categoria["Cantidad_Vendida"],
-        hole=0.4,
-        marker=dict(colors=colores, line=dict(color='white', width=2)),
-        textinfo='label+percent',
-        textposition='auto',
-        hovertemplate='<b>%{label}</b><br>' +
-                      '📦 Cantidad: %{value:.2f}<br>' +
-                      '📊 Porcentaje: %{percent}<br>' +
-                      '<extra></extra>'
-    )])
-    
-    fig.update_layout(
-        title=dict(
-            text=f"<b>{titulo}</b>",
-            font=dict(size=16, color="#1e3a5f"),
-            x=0.5
-        ),
-        height=450,
-        paper_bgcolor='white',
-        showlegend=True,
-        legend=dict(
-            orientation="v",
-            yanchor="top",
-            y=0.5,
-            xanchor="left",
-            x=1.05,
-            font=dict(size=10)
-        )
     )
     
     return fig
@@ -394,28 +290,20 @@ def modulo_productos_mas_menos_vendidos():
     col1, col2 = st.columns(2)
     
     with col1:
-        fecha_inicio = st.date_input(
-            "📅 Fecha inicio",
-            value=datetime.today().replace(day=1),
-            key="inicio"
-        )
+        fecha_inicio = st.date_input("📅 Fecha inicio", value=datetime.today().replace(day=1))
     with col2:
-        fecha_fin = st.date_input(
-            "📅 Fecha fin",
-            value=datetime.today(),
-            key="fin"
-        )
+        fecha_fin = st.date_input("📅 Fecha fin", value=datetime.today())
     
     if fecha_inicio > fecha_fin:
         st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
         return
     
-    # Obtener resumen de ventas
+    # Obtener datos
     with st.spinner("Cargando datos..."):
         total_ventas, total_productos, total_ingresos = obtener_resumen_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
         df_completo = obtener_datos_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
     
-    # Mostrar resumen en métricas
+    # Mostrar resumen
     st.markdown("### 📈 Resumen del Período")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -445,76 +333,40 @@ def modulo_productos_mas_menos_vendidos():
     if df_completo.empty:
         st.warning("⚠️ No hay datos de ventas en el período seleccionado.")
     else:
-        # Separar productos con ventas y sin ventas
         df_con_ventas = df_completo[df_completo["Cantidad_Vendida"] > 0].copy()
         df_sin_ventas = df_completo[df_completo["Cantidad_Vendida"] == 0].copy()
-        
-        # Ordenar más vendidos (mayor a menor)
         df_mas_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=False)
-        
-        # Ordenar menos vendidos (menor a mayor, solo los que tienen ventas > 0)
         df_menos_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=True)
         
-        # ============================================================
-        # GRÁFICO DE TORTA POR CATEGORÍA
-        # ============================================================
-        if not df_con_ventas.empty:
-            fig_torta = graficar_torta_categorias(df_con_ventas, "Distribución de Ventas por Categoría")
-            if fig_torta:
-                st.plotly_chart(fig_torta, use_container_width=True)
-                st.markdown("---")
-        
-        # ============================================================
-        # GRÁFICO Y TABLA DE MÁS VENDIDOS
-        # ============================================================
+        # Más Vendidos
         st.markdown("## 🏆 Productos Más Vendidos")
-        
         if not df_mas_vendidos.empty:
-            fig_mas = graficar_productos(df_mas_vendidos, "Top Productos Más Vendidos", "#2ecc71")
+            fig_mas = graficar_productos(df_mas_vendidos, "Productos Más Vendidos", "#2ecc71")
             if fig_mas:
                 st.plotly_chart(fig_mas, use_container_width=True)
-            
-            # Tabla completa de más vendidos
-            st.dataframe(
-                df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
-                use_container_width=True
-            )
+            st.dataframe(df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]], use_container_width=True)
         else:
             st.info("No hay productos con ventas en el período seleccionado.")
         
         st.markdown("---")
         
-        # ============================================================
-        # GRÁFICO Y TABLA DE MENOS VENDIDOS
-        # ============================================================
+        # Menos Vendidos
         st.markdown("## 📉 Productos Menos Vendidos")
-        
         if not df_menos_vendidos.empty:
             fig_menos = graficar_productos(df_menos_vendidos, "Productos Menos Vendidos", "#e74c3c")
             if fig_menos:
                 st.plotly_chart(fig_menos, use_container_width=True)
-            
-            # Tabla completa de menos vendidos
-            st.dataframe(
-                df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
-                use_container_width=True
-            )
+            st.dataframe(df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]], use_container_width=True)
         else:
             st.info("No hay productos con ventas en el período seleccionado.")
         
-        # ============================================================
-        # PRODUCTOS SIN VENTAS
-        # ============================================================
+        # Productos sin ventas
         if not df_sin_ventas.empty:
             st.markdown("---")
             st.markdown("## 🚫 Productos Sin Ventas")
-            st.info(f"Hay {len(df_sin_ventas)} productos que no tuvieron ventas en el período seleccionado.")
-            
+            st.info(f"Hay {len(df_sin_ventas)} productos sin ventas en el período.")
             with st.expander("📋 Ver productos sin ventas"):
-                st.dataframe(
-                    df_sin_ventas[["Producto", "Categoria"]],
-                    use_container_width=True
-                )
+                st.dataframe(df_sin_ventas[["Producto", "Categoria"]], use_container_width=True)
     
     # Botón para volver
     st.markdown("---")
