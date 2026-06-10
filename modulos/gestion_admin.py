@@ -62,33 +62,23 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Botón volver - Color gris con texto blanco */
+        /* Botón volver */
         .volver-btn button {{
             background-color: #6c757d !important;
-            background: #6c757d !important;
             color: white !important;
         }}
         
         .volver-btn button:hover {{
             background-color: #5a6268 !important;
-            background: #5a6268 !important;
-            color: white !important;
-            transform: translateY(-2px);
-        }}
-        
-        /* Labels generales */
-        .stTextInput > label, .stSelectbox > label, .stRadio > label, .stCheckbox label {{
-            color: {COLOR_TEXT} !important;
-            font-weight: 500 !important;
-        }}
-        
-        /* Radio buttons - opciones individuales */
-        .stRadio div[role="radiogroup"] label {{
-            color: {COLOR_TEXT} !important;
         }}
         
         /* Checkbox label */
         .stCheckbox label {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Radio buttons labels */
+        .stRadio label {{
             color: {COLOR_TEXT} !important;
         }}
         
@@ -103,20 +93,12 @@ def configurar_estilo():
             color: white !important;
         }}
         
-        .stSelectbox svg {{
-            fill: white !important;
-        }}
-        
         /* Headers */
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
         
         /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {{
-            gap: 8px;
-        }}
-        
         .stTabs [data-baseweb="tab"] {{
             background-color: {COLOR_BUTTON};
             border-radius: 8px;
@@ -130,7 +112,6 @@ def configurar_estilo():
         
         .stTabs [aria-selected="true"] {{
             background-color: {COLOR_PRIMARY} !important;
-            color: white !important;
         }}
         
         /* Dataframe */
@@ -139,60 +120,22 @@ def configurar_estilo():
         }}
         
         [data-testid="stDataFrame"] {{
-            background-color: {COLOR_CARD} !important;
             border-radius: 12px !important;
             border: 1px solid {COLOR_BORDER} !important;
-        }}
-        
-        [data-testid="stDataFrame"] table {{
-            background-color: {COLOR_CARD} !important;
         }}
         
         [data-testid="stDataFrame"] th {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
-            font-weight: 600 !important;
-            text-align: center !important;
-            padding: 12px 8px !important;
         }}
         
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
-            text-align: center !important;
-            padding: 10px 8px !important;
             background-color: {COLOR_CARD} !important;
-            border-bottom: 1px solid {COLOR_BORDER} !important;
-        }}
-        
-        [data-testid="stDataFrame"] tr:nth-child(even) td {{
-            background-color: #f8f9fa !important;
         }}
         
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
-        }}
-        
-        [data-testid="stDataFrame"] td div {{
-            color: {COLOR_TEXT} !important;
-        }}
-        
-        /* Alertas */
-        .stAlert {{
-            background-color: {COLOR_CARD} !important;
-            border: 1px solid {COLOR_BORDER} !important;
-        }}
-        
-        /* Formularios */
-        .stForm {{
-            background-color: {COLOR_CARD};
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
-        /* Dividers */
-        hr {{
-            border-color: {COLOR_BORDER};
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -223,7 +166,9 @@ def modulo_gestion_admin():
                 "Nombre de la tienda *",
                 placeholder="Ej: Tienda Centro Histórico"
             )
-            activo = st.checkbox("Tienda activa", value=True)
+            # Checkbox con texto en color oscuro usando HTML
+            st.markdown('<label style="color: #333333;">Tienda activa</label>', unsafe_allow_html=True)
+            activo = st.checkbox("", value=True, label_visibility="collapsed")
 
             submitted = st.form_submit_button("🏪 Crear Tienda", use_container_width=True)
 
@@ -290,11 +235,13 @@ def modulo_gestion_admin():
     with tab2:
         st.markdown("### 📝 Crear Nuevo Usuario")
         
-        # Opción para elegir el tipo de usuario
+        # Radio buttons con texto en color oscuro usando HTML
+        st.markdown('<label style="color: #333333; font-weight: 500;">Tipo de usuario a crear:</label>', unsafe_allow_html=True)
         tipo_usuario = st.radio(
-            "Tipo de usuario a crear:",
+            "",
             ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"],
-            horizontal=True
+            horizontal=True,
+            label_visibility="collapsed"
         )
         
         st.divider()
@@ -334,11 +281,14 @@ def modulo_gestion_admin():
                         id_tienda_seleccionada = None
                         st.markdown('<div class="info-box">👑 El Administrador será dueño de TODAS las tiendas (sin tienda asignada)</div>', unsafe_allow_html=True)
                     else:
-                        nivel = st.selectbox("Nivel de usuario", ["Vendedora"])
-                        # Selector de tienda solo para vendedores/cajeros
+                        # Selector de nivel con texto en color oscuro
+                        st.markdown('<label style="color: #333333;">Nivel de usuario</label>', unsafe_allow_html=True)
+                        nivel = st.selectbox("", ["Vendedora"], label_visibility="collapsed")
+                        # Selector de tienda con texto en color oscuro
+                        st.markdown('<label style="color: #333333;">Tienda donde trabajará *</label>', unsafe_allow_html=True)
                         if tiendas_activas:
                             opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas_activas}
-                            tienda_seleccionada = st.selectbox("Tienda donde trabajará *", list(opciones_tienda.keys()))
+                            tienda_seleccionada = st.selectbox("", list(opciones_tienda.keys()), label_visibility="collapsed")
                             id_tienda_seleccionada = opciones_tienda[tienda_seleccionada]
                         else:
                             st.warning("⚠️ No hay tiendas activas. Crea una tienda primero en la pestaña 'Gestionar Tiendas'.")
@@ -393,14 +343,16 @@ def modulo_gestion_admin():
     with tab3:
         st.markdown("### 📊 Usuarios por Tienda")
         
-        # Mostrar también los Administradores (Dueños) que tienen id_tienda = NULL
+        # Info box con texto en color oscuro
         st.markdown('<div class="info-box">👑 Los Administradores (Dueños) aparecen en "Todas las tiendas" porque no pertenecen a una específica</div>', unsafe_allow_html=True)
         
-        # Opción para ver todos los usuarios o por tienda
+        # Radio buttons con texto en color oscuro
+        st.markdown('<label style="color: #333333; font-weight: 500;">Ver:</label>', unsafe_allow_html=True)
         vista = st.radio(
-            "Ver:",
+            "",
             ["👑 Administradores (Dueños)", "🏪 Usuarios por tienda", "📋 Todos los usuarios"],
-            horizontal=True
+            horizontal=True,
+            label_visibility="collapsed"
         )
         
         conn = obtener_conexion()
@@ -411,7 +363,6 @@ def modulo_gestion_admin():
             
             try:
                 if vista == "👑 Administradores (Dueños)":
-                    # Mostrar solo usuarios con id_tienda = NULL (dueños)
                     cursor.execute("""
                         SELECT id_empleado, Nombre, Usuario, DUI, Contacto, Nivel_usuario
                         FROM Empleado
@@ -435,13 +386,13 @@ def modulo_gestion_admin():
                         st.info("No hay administradores (dueños) registrados aún.")
                 
                 elif vista == "🏪 Usuarios por tienda":
-                    # Mostrar selector de tienda para usuarios normales
                     cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
                     tiendas_listado = cursor.fetchall()
                     
                     if tiendas_listado:
                         opciones_listado = {t["nombre"]: t["id_tienda"] for t in tiendas_listado}
-                        tienda_ver = st.selectbox("Ver usuarios de:", list(opciones_listado.keys()), key="ver_usuarios")
+                        st.markdown('<label style="color: #333333;">Ver usuarios de:</label>', unsafe_allow_html=True)
+                        tienda_ver = st.selectbox("", list(opciones_listado.keys()), key="ver_usuarios", label_visibility="collapsed")
                         id_tienda_ver = opciones_listado[tienda_ver]
                         
                         cursor.execute("""
@@ -503,16 +454,14 @@ def modulo_gestion_admin():
                 cursor.close()
                 conn.close()
 
-    # Botón para volver al menú principal (fuera de las tabs)
+    # Botón para volver al menú principal
     st.divider()
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
         if st.button("🔙 Volver al menú principal", use_container_width=True):
-            # Limpiar el módulo actual
             if "module" in st.session_state:
                 del st.session_state["module"]
-            # Limpiar macro_modulo si existe
             if "macro_modulo" in st.session_state:
                 st.session_state["macro_modulo"] = None
             st.rerun()
