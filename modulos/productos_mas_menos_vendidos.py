@@ -210,7 +210,7 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        /* Fecha inputs - labels en color oscuro CORREGIDO */
+        /* Fecha inputs - labels en color oscuro */
         .stDateInput label {{
             color: #333333 !important;
             font-weight: 500 !important;
@@ -220,6 +220,16 @@ def configurar_estilo():
         .stDateInput input {{
             color: #333333 !important;
             background-color: white !important;
+        }}
+        
+        /* Expander - texto en color oscuro CORREGIDO */
+        .stExpander summary {{
+            color: #333333 !important;
+            font-weight: 500 !important;
+        }}
+        
+        .stExpander summary:hover {{
+            color: #1e3a5f !important;
         }}
         
         /* Headers */
@@ -463,11 +473,9 @@ def modulo_productos_mas_menos_vendidos():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown('<label style="color: #333333; font-weight: 500;">📅 Fecha inicio</label>', unsafe_allow_html=True)
-        fecha_inicio = st.date_input("", value=datetime.today().replace(day=1), key="fecha_inicio", label_visibility="collapsed")
+        fecha_inicio = st.date_input("📅 Fecha inicio", value=datetime.today().replace(day=1))
     with col2:
-        st.markdown('<label style="color: #333333; font-weight: 500;">📅 Fecha fin</label>', unsafe_allow_html=True)
-        fecha_fin = st.date_input("", value=datetime.today(), key="fecha_fin", label_visibility="collapsed")
+        fecha_fin = st.date_input("📅 Fecha fin", value=datetime.today())
     
     if fecha_inicio > fecha_fin:
         st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
@@ -694,9 +702,8 @@ def modulo_productos_mas_menos_vendidos():
             if productos_sin_ingresos:
                 st.markdown("---")
                 st.markdown(f"## 🚫 Productos Sin Ingresos (No se vendieron) ({len(productos_sin_ingresos)})")
-                df_sin_ingresos = pd.DataFrame(productos_sin_ingresos, columns=["Producto", "Categoria"])
                 with st.expander("📋 Ver productos sin ingresos"):
-                    st.dataframe(df_sin_ingresos, use_container_width=True)
+                    st.dataframe(pd.DataFrame(productos_sin_ingresos, columns=["Producto", "Categoria"]), use_container_width=True)
     
     # Botón para volver
     st.markdown("---")
