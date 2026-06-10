@@ -510,6 +510,17 @@ def modulo_productos_mas_menos_vendidos():
         st.markdown("---")
         
         # ============================================================
+        # TABLA DE MÁS VENDIDOS (COMPLETA)
+        # ============================================================
+        st.markdown("### 📋 Lista completa de productos más vendidos")
+        st.dataframe(
+            df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+            use_container_width=True
+        )
+        
+        st.markdown("---")
+        
+        # ============================================================
         # TOP 3 MENOS VENDIDOS - TARJETAS
         # ============================================================
         st.markdown("## 📉 Top 3 Productos Menos Vendidos")
@@ -593,19 +604,21 @@ def modulo_productos_mas_menos_vendidos():
         st.markdown("---")
         
         # ============================================================
-        # LISTA COMPLETA (opcional)
+        # TABLA DE MENOS VENDIDOS (COMPLETA)
         # ============================================================
-        with st.expander("📋 Ver lista completa de productos vendidos"):
-            st.dataframe(
-                df_con_ventas[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
-                use_container_width=True
-            )
+        st.markdown("### 📋 Lista completa de productos menos vendidos")
+        st.dataframe(
+            df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+            use_container_width=True
+        )
         
         # ============================================================
         # PRODUCTOS SIN VENTAS
         # ============================================================
         if not df_sin_ventas.empty:
-            with st.expander(f"🚫 Productos sin ventas ({len(df_sin_ventas)})"):
+            st.markdown("---")
+            st.markdown(f"## 🚫 Productos Sin Ventas ({len(df_sin_ventas)})")
+            with st.expander("📋 Ver productos sin ventas"):
                 st.dataframe(df_sin_ventas[["Producto", "Categoria"]], use_container_width=True)
     
     # Botón para volver
