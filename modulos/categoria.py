@@ -1,6 +1,152 @@
 import streamlit as st
 from config.conexion import obtener_conexion
 
+def configurar_estilo():
+    """Configuración de estilos CSS para el módulo de categorías - MODO CLARO"""
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_DARK = "#1a1a1a"
+    COLOR_HOVER = "#e8f0fe"
+    COLOR_BORDER = "#e0e0e0"
+    COLOR_BUTTON = "#1e3a5f"
+    
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
+        
+        .module-title {{
+            text-align: center;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }}
+        
+        .module-subtitle {{
+            text-align: center;
+            color: {COLOR_SECONDARY};
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }}
+        
+        .info-box {{
+            background: {COLOR_HOVER};
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid {COLOR_PRIMARY};
+            margin: 15px 0;
+            color: {COLOR_TEXT_DARK};
+        }}
+        
+        .stTextInput > label, .stSelectbox > label, .stTextArea > label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        .stTextInput > div > div > input {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            background-color: {COLOR_BUTTON};
+            color: white !important;
+            padding: 10px 15px;
+        }}
+        
+        .stTextInput > div > div > input::placeholder {{
+            color: rgba(255,255,255,0.7) !important;
+        }}
+        
+        .stTextArea > div > textarea {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            background-color: {COLOR_BUTTON};
+            color: white !important;
+            padding: 10px 15px;
+        }}
+        
+        .stTextArea > div > textarea::placeholder {{
+            color: rgba(255,255,255,0.7) !important;
+        }}
+        
+        .stSelectbox > div > div {{
+            background-color: {COLOR_BUTTON};
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        .stSelectbox > div > div > div {{
+            color: white !important;
+        }}
+        
+        .stSelectbox svg {{
+            fill: white !important;
+        }}
+        
+        .stButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
+        }}
+        
+        .stAlert {{
+            border-radius: 8px;
+        }}
+        
+        /* Estilos para expander */
+        .streamlit-expanderHeader {{
+            background-color: {COLOR_HOVER};
+            border-radius: 8px;
+            font-weight: 500;
+            color: {COLOR_TEXT_DARK};
+        }}
+        
+        .streamlit-expanderContent {{
+            background-color: {COLOR_CARD};
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        hr {{
+            border-color: {COLOR_BORDER};
+        }}
+        
+        /* Estilos para tabs */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+        }}
+        
+        .stTabs [data-baseweb="tab"] {{
+            background-color: {COLOR_CARD};
+            border-radius: 8px 8px 0 0;
+            padding: 10px 20px;
+            font-weight: 500;
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+        }}
+        
+        .stTabs [aria-selected="false"] {{
+            background-color: {COLOR_BORDER};
+            color: {COLOR_TEXT_DARK};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+
 # ==================== FUNCIONES DE BASE DE DATOS ====================
 
 def obtener_categorias(id_tienda):
@@ -26,6 +172,7 @@ def obtener_categorias(id_tienda):
         cursor.close()
         conn.close()
 
+
 def obtener_categorias_solo_nombres(id_tienda):
     """Obtiene solo los nombres de las categorías (para los selectbox)"""
     conn = obtener_conexion()
@@ -48,6 +195,7 @@ def obtener_categorias_solo_nombres(id_tienda):
     finally:
         cursor.close()
         conn.close()
+
 
 def crear_categoria(id_tienda, nombre, descripcion):
     """Crea una nueva categoría"""
@@ -79,6 +227,7 @@ def crear_categoria(id_tienda, nombre, descripcion):
     finally:
         cursor.close()
         conn.close()
+
 
 def actualizar_categoria(id_categoria, nombre, descripcion, id_tienda):
     """Actualiza una categoría existente"""
@@ -113,6 +262,7 @@ def actualizar_categoria(id_categoria, nombre, descripcion, id_tienda):
         cursor.close()
         conn.close()
 
+
 def eliminar_categoria(id_categoria, id_tienda):
     """Elimina (soft delete) una categoría"""
     conn = obtener_conexion()
@@ -122,7 +272,9 @@ def eliminar_categoria(id_categoria, id_tienda):
     try:
         # Verificar si hay productos usando esta categoría
         cursor.execute(
-            "SELECT COUNT(*) FROM Producto WHERE categoria = (SELECT nombre FROM Categoria WHERE id_categoria = %s) AND id_tienda = %s",
+            """SELECT COUNT(*) FROM Producto 
+               WHERE categoria = (SELECT nombre FROM Categoria WHERE id_categoria = %s) 
+               AND id_tienda = %s""",
             (id_categoria, id_tienda)
         )
         productos_asociados = cursor.fetchone()[0]
@@ -143,17 +295,28 @@ def eliminar_categoria(id_categoria, id_tienda):
         cursor.close()
         conn.close()
 
+
 # ==================== INTERFAZ DE USUARIO ====================
 
 def modulo_categoria():
-    st.title("📁 Gestión de Categorías")
+    configurar_estilo()
+    
+    st.markdown('<div class="module-title">📁 Gestión de Categorías</div>', unsafe_allow_html=True)
     
     # Validación de sesión
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
-        st.stop()
+        st.markdown("---")
+        if st.button("⬅ Volver al menú principal"):
+            st.session_state["module"] = None
+            st.rerun()
+        return
     
     id_tienda = st.session_state["id_tienda"]
+    nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
+    
+    # Mostrar tienda actual
+    st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>', unsafe_allow_html=True)
     
     # Pestañas para las diferentes acciones
     tab1, tab2, tab3 = st.tabs(["📋 Lista de categorías", "➕ Crear nueva categoría", "✏️ Editar/Eliminar"])
@@ -175,8 +338,11 @@ def modulo_categoria():
             st.session_state["module"] = None
             st.rerun()
 
+
 def mostrar_lista_categorias(id_tienda):
     """Muestra la lista de categorías activas"""
+    st.markdown('<div class="module-subtitle">📋 Categorías registradas</div>', unsafe_allow_html=True)
+    
     categorias = obtener_categorias(id_tienda)
     
     if not categorias:
@@ -188,12 +354,15 @@ def mostrar_lista_categorias(id_tienda):
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
             with st.expander(f"📁 {nombre}"):
-                st.write(f"**ID:** {id_cat}")
-                st.write(f"**Descripción:** {descripcion if descripcion else 'Sin descripción'}")
-                st.write(f"**Fecha de creación:** {fecha}")
+                st.markdown(f"**ID:** `{id_cat}`")
+                st.markdown(f"**Descripción:** {descripcion if descripcion else '*Sin descripción*'}")
+                st.markdown(f"**Fecha de creación:** {fecha}")
+
 
 def mostrar_formulario_crear(id_tienda):
     """Formulario para crear nueva categoría"""
+    st.markdown('<div class="module-subtitle">➕ Crear nueva categoría</div>', unsafe_allow_html=True)
+    
     with st.form("form_crear_categoria"):
         nombre = st.text_input(
             "📝 Nombre de la categoría", 
@@ -206,8 +375,8 @@ def mostrar_formulario_crear(id_tienda):
             help="Una breve descripción de la categoría"
         )
         
-        col1, col2 = st.columns([1, 4])
-        with col1:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
             submitted = st.form_submit_button("✅ Crear categoría", type="primary", use_container_width=True)
         
         if submitted:
@@ -222,8 +391,11 @@ def mostrar_formulario_crear(id_tienda):
                 else:
                     st.error(mensaje)
 
+
 def mostrar_formulario_editar_eliminar(id_tienda):
     """Formulario para editar o eliminar categorías existentes"""
+    st.markdown('<div class="module-subtitle">✏️ Editar o eliminar categoría</div>', unsafe_allow_html=True)
+    
     categorias = obtener_categorias(id_tienda)
     
     if not categorias:
@@ -249,9 +421,9 @@ def mostrar_formulario_editar_eliminar(id_tienda):
                 nuevo_nombre = st.text_input("📝 Nombre", value=cat_seleccionada[1])
                 nueva_descripcion = st.text_area("📄 Descripción", value=cat_seleccionada[2] if cat_seleccionada[2] else "")
                 
-                st.warning("⚠️ **Nota:** Si cambias el nombre de la categoría, los productos existentes mantendrán el nombre anterior. Deberás actualizarlos manualmente.")
+                st.info("ℹ️ **Nota:** Si cambias el nombre de la categoría, deberás actualizar manualmente los productos existentes.")
                 
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2, gap="large")
                 with col1:
                     if st.form_submit_button("💾 Guardar cambios", type="primary", use_container_width=True):
                         if not nuevo_nombre.strip():
@@ -270,7 +442,7 @@ def mostrar_formulario_editar_eliminar(id_tienda):
                                 st.error(mensaje)
                 
                 with col2:
-                    if st.form_submit_button("🗑️ Eliminar categoría", type="secondary", use_container_width=True):
+                    if st.form_submit_button("🗑️ Eliminar categoría", use_container_width=True):
                         exito, mensaje = eliminar_categoria(id_categoria, id_tienda)
                         if exito:
                             st.success(mensaje)
