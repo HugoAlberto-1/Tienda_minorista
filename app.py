@@ -15,7 +15,7 @@ from modulos.inventario import modulo_inventario
 from modulos.reporte_ventas import reporte_ventas
 from modulos.categoria import modulo_categoria
 from modulos.gestion_admin import modulo_gestion_admin
-from modulos.top_productos import modulo_top_30_mas_vendidos  # ✅ NUEVO IMPORT
+from modulos.productos_mas_menos_vendidos import modulo_productos_mas_menos_vendidos  # ✅ IMPORT CORREGIDO
 
 
 def configurar_pagina():
@@ -538,7 +538,7 @@ def cargar_modulo():
     elif st.session_state.module == "GestionAdmin":
         modulo_gestion_admin()
     elif st.session_state.module == "productomasvendido":  # ✅ NUEVA RUTA
-        modulo_top_30_mas_vendidos()
+        modulo_productos_mas_menos_vendidos()  # ✅ FUNCIÓN CORREGIDA
     else:
         menu_principal()
 
