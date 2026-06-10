@@ -46,6 +46,15 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
         
+        .metric-container {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
         .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
@@ -102,24 +111,22 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
-        .stRadio label span {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        .stRadio label p {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
         .stRadio div[role="radiogroup"] label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
+        /* Estilos para texto de precio y otros textos */
         .price-text {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 600 !important;
             font-size: 1.1em !important;
         }}
         
+        .info-text {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilos para botones */
         .stButton > button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -142,6 +149,7 @@ def configurar_estilo():
             border-color: {COLOR_BORDER};
         }}
         
+        /* Estilos para métricas */
         [data-testid="stMetric"] {{
             background-color: {COLOR_HOVER};
             border-radius: 10px;
@@ -158,11 +166,18 @@ def configurar_estilo():
             font-weight: bold !important;
         }}
         
+        /* Estilos para captions y textos informativos */
         .stCaption {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
+        /* Estilos para markdown */
         .stMarkdown p {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilo específico para el precio de venta */
+        div:has(> strong:contains("💰 Precio de venta")) {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         </style>
@@ -176,6 +191,7 @@ CONVERSIONES_A_LIBRAS = {
     "quintal": 100,
 }
 
+# 📁 Categorías que se consideran "granos"
 CATEGORIAS_GRANOS = [
     "Granos y productos a granel",
     "Abarrotes",
@@ -266,6 +282,7 @@ def modulo_ventas():
             
             st.markdown(f'<div class="info-box">✅ Producto encontrado: <strong>{nombre_producto}</strong><br>📁 Categoría: <strong>{categoria}</strong><br>🆔 ID: <strong>{id_producto}</strong></div>', unsafe_allow_html=True)
             
+            # Obtener compras
             cursor.execute("""
                 SELECT unidad, cantidad_comprada
                 FROM ProductoxCompra
@@ -273,6 +290,7 @@ def modulo_ventas():
             """, (cod_barra_real, id_tienda))
             compras = cursor.fetchall()
             
+            # Obtener ventas
             cursor.execute("""
                 SELECT unidad, Cantidad_vendida
                 FROM ProductoxVenta
@@ -281,6 +299,7 @@ def modulo_ventas():
             ventas = cursor.fetchall()
             
             if categoria in CATEGORIAS_GRANOS:
+                # Calcular total en libras
                 total_comprado_libras = 0
                 for unidad, cantidad in compras:
                     if unidad == "libras":
@@ -301,6 +320,7 @@ def modulo_ventas():
                 
                 existencia_libras = total_comprado_libras - total_vendido_libras
                 
+                # Mostrar existencia con 2 decimales
                 st.markdown('<div class="module-subtitle">📦 Existencia actual</div>', unsafe_allow_html=True)
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -313,6 +333,7 @@ def modulo_ventas():
                 if existencia_libras <= 0:
                     st.error("❌ Producto sin stock.")
                 else:
+                    # Obtener precios
                     cursor.execute("""
                         SELECT Precio_minorista, Precio_mayorista1, Precio_mayorista2
                         FROM ProductoxCompra
@@ -333,6 +354,7 @@ def modulo_ventas():
                         precio_por_libra_mayorista1 = 0
                         precio_por_libra_mayorista2 = 0
                     
+                    # Mostrar precios
                     st.markdown('<div class="module-subtitle">💰 Precios configurados</div>', unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -345,7 +367,7 @@ def modulo_ventas():
                     unidades_disponibles = ["libras", "quintal", "arroba"]
                     
                     # Radio buttons con texto oscuro
-                    st.markdown('<label style="color: #1a1a1a; font-weight: 500; margin-bottom: 10px; display: block;">🧾 Seleccione el tipo de cliente</label>', unsafe_allow_html=True)
+                    st.markdown('<label style="color: #1a1a1a; font-weight: 500;">🧾 Seleccione el tipo de cliente</label>', unsafe_allow_html=True)
                     tipo_cliente = st.radio(
                         "",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
@@ -376,22 +398,47 @@ def modulo_ventas():
                         if unidad_venta == "libras":
                             stock_disponible = existencia_libras
                             st.caption(f"📦 Stock disponible: {stock_disponible:.2f} libras")
-                            cantidad = st.number_input("📦 Cantidad vendida (libras)", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
+                            
+                            cantidad = st.number_input(
+                                "📦 Cantidad vendida (libras)",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
                             cantidad_en_libras = cantidad
                             cantidad_original = cantidad
+                            
                         elif unidad_venta == "quintal":
                             stock_disponible = existencia_libras / 100
                             st.caption(f"📦 Stock disponible: {stock_disponible:.2f} quintales")
-                            cantidad = st.number_input("📦 Cantidad vendida (quintales)", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
+                            
+                            cantidad = st.number_input(
+                                "📦 Cantidad vendida (quintales)",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
                             cantidad_en_libras = cantidad * 100
                             cantidad_original = cantidad
+                            
                             st.caption(f"🔄 {cantidad:.2f} quintal(es) = {cantidad_en_libras:.2f} libras")
-                        else:
+                            
+                        else:  # arroba
                             stock_disponible = existencia_libras / 25
                             st.caption(f"📦 Stock disponible: {stock_disponible:.2f} arrobas")
-                            cantidad = st.number_input("📦 Cantidad vendida (arrobas)", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
+                            
+                            cantidad = st.number_input(
+                                "📦 Cantidad vendida (arrobas)",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
                             cantidad_en_libras = cantidad * 25
                             cantidad_original = cantidad
+                            
                             st.caption(f"🔄 {cantidad:.2f} arroba(s) = {cantidad_en_libras:.2f} libras")
                         
                         subtotal = round(precio_por_libra * cantidad_en_libras, 2)
@@ -419,6 +466,7 @@ def modulo_ventas():
                                     st.rerun()
             
             else:
+                # Productos no granos - código existente
                 existencias = {}
                 for unidad, cantidad in compras:
                     existencias[unidad] = existencias.get(unidad, 0) + cantidad
@@ -472,7 +520,7 @@ def modulo_ventas():
                     else:
                         unidades_disponibles = ["unidad"]
                     
-                    st.markdown('<label style="color: #1a1a1a; font-weight: 500; margin-bottom: 10px; display: block;">🧾 Seleccione el tipo de cliente</label>', unsafe_allow_html=True)
+                    st.markdown('<label style="color: #1a1a1a; font-weight: 500;">🧾 Seleccione el tipo de cliente</label>', unsafe_allow_html=True)
                     tipo_cliente = st.radio(
                         "",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
@@ -496,9 +544,21 @@ def modulo_ventas():
                         st.caption(f"📦 Stock disponible: {stock_disponible:.2f} {unidad_venta}")
                         
                         if unidad_venta == "unidad":
-                            cantidad = st.number_input(f"📦 Cantidad vendida ({unidad_venta})", min_value=1, step=1, format="%d", key="venta_cantidad")
+                            cantidad = st.number_input(
+                                f"📦 Cantidad vendida ({unidad_venta})",
+                                min_value=1,
+                                step=1,
+                                format="%d",
+                                key="venta_cantidad"
+                            )
                         else:
-                            cantidad = st.number_input(f"📦 Cantidad vendida ({unidad_venta})", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
+                            cantidad = st.number_input(
+                                f"📦 Cantidad vendida ({unidad_venta})",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
                         
                         if cantidad > stock_disponible:
                             st.error(f"❌ Stock insuficiente. Disponible: {stock_disponible:.2f} {unidad_venta}")
