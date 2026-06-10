@@ -87,6 +87,7 @@ def modulo_ventas():
             cod_barra_real, nombre_producto, categoria, id_producto = producto_base
             st.success(f"✅ Producto encontrado: **{nombre_producto}**")
             st.info(f"📁 Categoría: **{categoria}**")
+            st.info(f"🆔 ID Producto: **{id_producto}**")
             
             # Obtener compras
             cursor.execute("""
@@ -253,7 +254,7 @@ def modulo_ventas():
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
                                 producto_venta = {
                                     "cod_barra": cod_barra_real,
-                                    "id_producto": id_producto,
+                                    "id_producto": id_producto,  # ✅ Agregado
                                     "nombre": nombre_producto,
                                     "precio_venta": precio_por_libra,
                                     "cantidad": cantidad_original,
@@ -362,7 +363,7 @@ def modulo_ventas():
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
                                 producto_venta = {
                                     "cod_barra": cod_barra_real,
-                                    "id_producto": id_producto,
+                                    "id_producto": id_producto,  # ✅ Agregado
                                     "nombre": nombre_producto,
                                     "precio_venta": precio_base,
                                     "cantidad": cantidad,
@@ -404,6 +405,11 @@ def modulo_ventas():
                     (nuevo_id, fecha_venta, id_empleado, id_tienda)
                 )
                 for prod in st.session_state["productos_vendidos"]:
+                    # Verificar que prod tenga id_producto
+                    if "id_producto" not in prod:
+                        st.error(f"❌ Error: El producto {prod.get('nombre', 'desconocido')} no tiene id_producto")
+                        continue
+                    
                     cursor.execute(
                         """
                         INSERT INTO ProductoxVenta
