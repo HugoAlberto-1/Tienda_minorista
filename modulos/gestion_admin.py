@@ -243,7 +243,6 @@ def modulo_gestion_admin():
     with tab2:
         st.markdown("### 📝 Crear Nuevo Usuario")
         
-        # Radio buttons - ahora el CSS hará que el texto sea oscuro
         tipo_usuario = st.radio(
             "Tipo de usuario a crear:",
             ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"],
@@ -252,7 +251,6 @@ def modulo_gestion_admin():
         
         st.divider()
 
-        # Obtener lista de tiendas disponibles (solo se necesita si no es administrador)
         conn = obtener_conexion()
         if not conn:
             st.error("❌ No se pudo conectar a la base de datos")
@@ -280,7 +278,6 @@ def modulo_gestion_admin():
                     contacto = st.text_input("Teléfono", placeholder="Ej: 1234-5678")
                     contrasena = st.text_input("Contraseña *", type="password", placeholder="******")
                     
-                    # Si es Administrador (Dueño), no se muestra selector de tienda
                     if "Administrador" in tipo_usuario:
                         nivel = "Administrador"
                         tienda_seleccionada = "Ninguna (Dueño de todas las tiendas)"
@@ -288,7 +285,6 @@ def modulo_gestion_admin():
                         st.markdown('<div class="info-box">👑 El Administrador será dueño de TODAS las tiendas (sin tienda asignada)</div>', unsafe_allow_html=True)
                     else:
                         nivel = st.selectbox("Nivel de usuario", ["Vendedora"])
-                        # Selector de tienda solo para vendedores/cajeros
                         if tiendas_activas:
                             opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas_activas}
                             tienda_seleccionada = st.selectbox("Tienda donde trabajará *", list(opciones_tienda.keys()))
@@ -311,7 +307,6 @@ def modulo_gestion_admin():
                         if conn:
                             cursor = conn.cursor()
                             try:
-                                # Verificar si el usuario ya existe
                                 cursor.execute(
                                     "SELECT id_empleado FROM Empleado WHERE Usuario = %s",
                                     (usuario,)
@@ -319,8 +314,6 @@ def modulo_gestion_admin():
                                 if cursor.fetchone():
                                     st.error(f"❌ El usuario '{usuario}' ya existe")
                                 else:
-                                    # Si es Administrador, id_tienda = NULL
-                                    # Si es Vendedor/Cajero, id_tienda = tienda seleccionada
                                     cursor.execute("""
                                         INSERT INTO Empleado (Nombre, Usuario, DUI, Contacto, Contrasena, Nivel_usuario, id_tienda)
                                         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -345,11 +338,8 @@ def modulo_gestion_admin():
     # ============================================================
     with tab3:
         st.markdown("### 📊 Usuarios por Tienda")
-        
-        # Mostrar también los Administradores (Dueños) que tienen id_tienda = NULL
         st.markdown('<div class="info-box">👑 Los Administradores (Dueños) aparecen en "Todas las tiendas" porque no pertenecen a una específica</div>', unsafe_allow_html=True)
         
-        # Radio buttons para seleccionar vista
         vista = st.radio(
             "Ver:",
             ["👑 Administradores (Dueños)", "🏪 Usuarios por tienda", "📋 Todos los usuarios"],
@@ -419,17 +409,15 @@ def modulo_gestion_admin():
                     else:
                         st.info("No hay tiendas activas para mostrar usuarios")
                 
-                else:  # Todos los usuarios
+                else:  # Todos los usuarios - CORREGIDO con LEFT JOIN
                     cursor.execute("""
-                        SELECT id_empleado, Nombre, Usuario, DUI, Contacto, Nivel_usuario, 
-                               CASE 
-                                   WHEN id_tienda IS NULL THEN '👑 Dueño (Todas las tiendas)'
-                                   ELSE (SELECT nombre FROM tienda WHERE id_tienda = e.id_tienda)
-                               END as Tienda
+                        SELECT e.id_empleado, e.Nombre, e.Usuario, e.DUI, e.Contacto, e.Nivel_usuario, 
+                               COALESCE(t.nombre, '👑 Dueño (Todas las tiendas)') as Tienda
                         FROM Empleado e
+                        LEFT JOIN tienda t ON e.id_tienda = t.id_tienda
                         ORDER BY 
-                            CASE WHEN id_tienda IS NULL THEN 0 ELSE 1 END,
-                            Nombre
+                            CASE WHEN e.id_tienda IS NULL THEN 0 ELSE 1 END,
+                            e.Nombre
                     """)
                     usuarios_lista = cursor.fetchall()
                     
