@@ -1,20 +1,114 @@
 import streamlit as st
 from config.conexion import obtener_conexion
 
+def configurar_estilo():
+    """Configuración de estilos CSS para el módulo de empleado - MODO CLARO"""
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_DARK = "#1a1a1a"
+    COLOR_HOVER = "#e8f0fe"
+    COLOR_BORDER = "#e0e0e0"
+    COLOR_BUTTON = "#1e3a5f"
+    
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
+        
+        .module-title {{
+            text-align: center;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }}
+        
+        .module-subtitle {{
+            text-align: center;
+            color: {COLOR_SECONDARY};
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }}
+        
+        .info-box {{
+            background: {COLOR_HOVER};
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid {COLOR_PRIMARY};
+            margin: 15px 0;
+            color: {COLOR_TEXT_DARK};
+        }}
+        
+        .stTextInput > label, .stSelectbox > label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        .stTextInput > div > div > input {{
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            background-color: {COLOR_BUTTON};
+            color: white !important;
+            padding: 10px 15px;
+        }}
+        
+        .stTextInput > div > div > input::placeholder {{
+            color: rgba(255,255,255,0.7) !important;
+        }}
+        
+        .stTextInput > div > div > input:disabled {{
+            background-color: #e8f0fe;
+            color: #666666 !important;
+        }}
+        
+        .stButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
+        }}
+        
+        .stAlert {{
+            border-radius: 8px;
+        }}
+        
+        hr {{
+            border-color: {COLOR_BORDER};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+
 def modulo_empleado():
-    st.title("👥 Registrar Asociada")
+    configurar_estilo()
+    
+    st.markdown('<div class="module-title">👥 Registrar Asociada</div>', unsafe_allow_html=True)
 
     # ✅ Validación multi-tienda
     if not st.session_state.get("logueado") or "id_tienda" not in st.session_state:
         st.error("❌ No has iniciado sesión. Inicia sesión primero.")
-        st.stop()
+        st.markdown("---")
+        if st.button("⬅ Volver al menú principal"):
+            st.session_state.module = None
+            st.rerun()
+        return
 
     id_tienda = st.session_state["id_tienda"]
-
-    # (Opcional) Restringir por rol
-    # if st.session_state.get("nivel_usuario") != "Admin":
-    #     st.error("⛔ No tienes permisos para registrar asociada.")
-    #     st.stop()
+    nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
+    
+    # Mostrar tienda actual
+    st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>', unsafe_allow_html=True)
 
     # Limpiar campos si se acaba de guardar
     if st.session_state.get("reiniciar_empleado"):
@@ -28,58 +122,105 @@ def modulo_empleado():
         st.success("✅ Empleado guardado correctamente.")
         st.session_state.pop("empleado_guardado", None)
 
+    st.markdown('<div class="module-subtitle">➕ Agregar nueva asociada</div>', unsafe_allow_html=True)
+
     # Campos del formulario
-    Usuario = st.text_input("Ingrese un usuario", value=st.session_state.get("usuario_input", ""), key="usuario_input")
-    Contrasena = st.text_input("Ingrese una contraseña", type="password", value=st.session_state.get("contrasena_input", ""), key="contrasena_input")
-    Nombre = st.text_input("Nombre de la asociada", value=st.session_state.get("nombre_input", ""), key="nombre_input")
-    DUI = st.text_input("Ingrese su DUI (sin guión)", value=st.session_state.get("dui_input", ""), key="dui_input")
-    Contacto = st.text_input("Número de teléfono", value=st.session_state.get("contacto_input", ""), key="contacto_input")
-    Nivel_usuario = st.text_input("Nivel de usuario", value="Usuaria", disabled=True, key="nivel_input")
+    col1, col2 = st.columns(2, gap="large")
+    
+    with col1:
+        Usuario = st.text_input(
+            "👤 Usuario",
+            value=st.session_state.get("usuario_input", ""),
+            key="usuario_input",
+            placeholder="Ej: maria_lopez"
+        )
+        
+        Nombre = st.text_input(
+            "📝 Nombre completo",
+            value=st.session_state.get("nombre_input", ""),
+            key="nombre_input",
+            placeholder="Ej: María López García"
+        )
+        
+        DUI = st.text_input(
+            "🆔 DUI (sin guión)",
+            value=st.session_state.get("dui_input", ""),
+            key="dui_input",
+            placeholder="Ej: 123456789"
+        )
+    
+    with col2:
+        Contacto = st.text_input(
+            "📞 Teléfono",
+            value=st.session_state.get("contacto_input", ""),
+            key="contacto_input",
+            placeholder="Ej: 61234567"
+        )
+        
+        Contrasena = st.text_input(
+            "🔒 Contraseña",
+            type="password",
+            value=st.session_state.get("contrasena_input", ""),
+            key="contrasena_input",
+            placeholder="Ingrese una contraseña segura"
+        )
+        
+        Nivel_usuario = st.text_input(
+            "⭐ Nivel de usuario",
+            value="Usuaria",
+            disabled=True,
+            key="nivel_input"
+        )
 
-    if st.button("Guardar asociada"):
-        if not Usuario.strip() or not Nombre.strip() or not DUI.strip() or not Contacto.strip() or not Contrasena.strip():
-            st.warning("⚠️ Por favor, completa todos los campos.")
-        else:
-            conn = obtener_conexion()
-            if not conn:
-                st.error("❌ No se pudo conectar a la base de datos.")
-                st.stop()
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("💾 Guardar asociada", use_container_width=True, type="primary"):
+            if not Usuario.strip() or not Nombre.strip() or not DUI.strip() or not Contacto.strip() or not Contrasena.strip():
+                st.warning("⚠️ Por favor, completa todos los campos.")
+            else:
+                conn = obtener_conexion()
+                if not conn:
+                    st.error("❌ No se pudo conectar a la base de datos.")
+                    st.stop()
 
-            cursor = conn.cursor()
-            try:
-                # ✅ Validación de usuario por tienda (recomendado)
-                cursor.execute(
-                    "SELECT COUNT(*) FROM Empleado WHERE Usuario = %s AND id_tienda = %s",
-                    (Usuario.strip(), id_tienda)
-                )
-                existe = cursor.fetchone()[0]
-
-                if existe:
-                    st.error("❌ Ya existe una asociada con ese usuario en esta tienda.")
-                else:
-                    # ✅ Insertar empleado con la tienda de quien está logueado
+                cursor = conn.cursor()
+                try:
+                    # ✅ Validación de usuario por tienda
                     cursor.execute(
-                        """
-                        INSERT INTO Empleado (Usuario, Contrasena,Nombre, Dui, Contacto,  Nivel_usuario, id_tienda)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (Usuario.strip(),Contrasena.strip(), Nombre.strip(), DUI.strip(), Contacto.strip(),  Nivel_usuario, id_tienda)
+                        "SELECT COUNT(*) FROM Empleado WHERE Usuario = %s AND id_tienda = %s",
+                        (Usuario.strip(), id_tienda)
                     )
-                    conn.commit()
+                    existe = cursor.fetchone()[0]
 
-                    st.session_state["empleado_guardado"] = True
-                    st.session_state["reiniciar_empleado"] = True
-                    st.rerun()
+                    if existe:
+                        st.error("❌ Ya existe una asociada con ese usuario en esta tienda.")
+                    else:
+                        # ✅ Insertar empleado con la tienda de quien está logueado
+                        cursor.execute(
+                            """
+                            INSERT INTO Empleado (Usuario, Contrasena, Nombre, Dui, Contacto, Nivel_usuario, id_tienda)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (Usuario.strip(), Contrasena.strip(), Nombre.strip(), DUI.strip(), Contacto.strip(), Nivel_usuario, id_tienda)
+                        )
+                        conn.commit()
 
-            except Exception as e:
-                conn.rollback()
-                st.error(f"❌ Error al guardar el empleado: {e}")
+                        st.session_state["empleado_guardado"] = True
+                        st.session_state["reiniciar_empleado"] = True
+                        st.success(f"✅ Asociada '{Nombre}' registrada correctamente.")
+                        st.rerun()
 
-            finally:
-                cursor.close()
-                conn.close()
+                except Exception as e:
+                    conn.rollback()
+                    st.error(f"❌ Error al guardar el empleado: {e}")
+
+                finally:
+                    cursor.close()
+                    conn.close()
 
     st.markdown("---")
-    if st.button("⬅ Volver al menú principal"):
-        st.session_state.module = None
-        st.rerun()
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("⬅ Volver al menú principal", use_container_width=True):
+            st.session_state.module = None
+            st.rerun()
