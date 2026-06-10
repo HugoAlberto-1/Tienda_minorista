@@ -74,7 +74,7 @@ def modulo_ventas():
 
     if cod_barra:
         cursor.execute("""
-            SELECT Cod_barra, Nombre, categoria 
+            SELECT Cod_barra, Nombre, categoria, id_producto
             FROM Producto 
             WHERE Cod_barra = %s AND id_tienda = %s
         """, (cod_barra, id_tienda))
@@ -84,7 +84,7 @@ def modulo_ventas():
         if not producto_base:
             st.error("❌ Producto no encontrado en el catálogo de esta tienda.")
         else:
-            cod_barra_real, nombre_producto, categoria = producto_base
+            cod_barra_real, nombre_producto, categoria, id_producto = producto_base
             st.success(f"✅ Producto encontrado: **{nombre_producto}**")
             st.info(f"📁 Categoría: **{categoria}**")
             
@@ -253,10 +253,11 @@ def modulo_ventas():
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
                                 producto_venta = {
                                     "cod_barra": cod_barra_real,
+                                    "id_producto": id_producto,
                                     "nombre": nombre_producto,
                                     "precio_venta": precio_por_libra,
-                                    "cantidad": cantidad_original,  # La cantidad en la unidad de venta (ej: 1 quintal)
-                                    "unidad": unidad_venta,  # La unidad real de venta (ej: "quintal")
+                                    "cantidad": cantidad_original,
+                                    "unidad": unidad_venta,
                                     "subtotal": subtotal,
                                     "tipo_cliente": tipo_cliente,
                                 }
@@ -361,6 +362,7 @@ def modulo_ventas():
                             if st.button("🛒 Agregar producto a la venta", type="primary"):
                                 producto_venta = {
                                     "cod_barra": cod_barra_real,
+                                    "id_producto": id_producto,
                                     "nombre": nombre_producto,
                                     "precio_venta": precio_base,
                                     "cantidad": cantidad,
@@ -405,17 +407,18 @@ def modulo_ventas():
                     cursor.execute(
                         """
                         INSERT INTO ProductoxVenta
-                        (Id_venta, Cod_barra, Cantidad_vendida, Tipo_de_cliente, Precio_Venta, id_tienda, unidad)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        (Id_venta, Cod_barra, id_producto, Cantidad_vendida, Tipo_de_cliente, Precio_Venta, id_tienda, unidad)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             nuevo_id,
                             prod["cod_barra"],
-                            prod["cantidad"],  # Ahora guardamos la cantidad en la unidad real (ej: 1 quintal)
+                            prod["id_producto"],
+                            prod["cantidad"],
                             prod["tipo_cliente"],
                             round(prod["precio_venta"], 2),
                             id_tienda,
-                            prod["unidad"],  # La unidad real (ej: "quintal")
+                            prod["unidad"],
                         ),
                     )
                 conn.commit()
