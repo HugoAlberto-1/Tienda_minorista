@@ -7,6 +7,7 @@ def configurar_estilo():
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_ACCENT = "#3a7ca5"
+    COLOR_LIGHT_BLUE = "#e8f0fe"  # Azul muy claro para el fondo del total
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
@@ -35,6 +36,16 @@ def configurar_estilo():
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 30px;
+        }}
+        
+        /* Título de Productos en esta venta - MÁS GRANDE */
+        .product-section-title {{
+            text-align: center;
+            color: {COLOR_PRIMARY};
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 25px;
+            margin-top: 20px;
         }}
         
         .info-box {{
@@ -80,15 +91,17 @@ def configurar_estilo():
             color: {COLOR_PRIMARY};
         }}
         
+        /* Total de venta - fondo azul más claro */
         .total-venta {{
-            background: {COLOR_PRIMARY};
-            color: white;
+            background: {COLOR_LIGHT_BLUE};
+            color: {COLOR_PRIMARY};
             padding: 15px;
             border-radius: 12px;
             text-align: center;
             margin: 20px 0;
             font-size: 1.3em;
             font-weight: bold;
+            border: 1px solid {COLOR_BORDER};
         }}
         
         .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
@@ -548,7 +561,8 @@ def modulo_ventas():
     # SECCIÓN DE PRODUCTOS EN ESTA VENTA CON ESTILO CORPORATIVO
     # ============================================
     if st.session_state["productos_vendidos"]:
-        st.markdown('<div class="module-subtitle">🧾 Productos en esta venta</div>', unsafe_allow_html=True)
+        # Título más grande
+        st.markdown('<div class="product-section-title">🧾 Productos en esta venta</div>', unsafe_allow_html=True)
         total_venta = 0.0
         
         for i, prod in enumerate(st.session_state["productos_vendidos"]):
@@ -572,7 +586,7 @@ def modulo_ventas():
                     st.session_state["productos_vendidos"].pop(i)
                     st.rerun()
         
-        # Total de la venta con estilo destacado
+        # Total de la venta con fondo azul más claro
         st.markdown(f"""
             <div class="total-venta">
                 💵 Total de la venta: ${total_venta:.2f}
