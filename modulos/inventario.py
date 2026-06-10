@@ -28,9 +28,7 @@ def obtener_categorias_db(id_tienda):
 def convertir_a_libras(cantidad, unidad):
     if not unidad:
         return 0
-
     unidad = unidad.lower()
-
     if unidad in ["quintal", "qq"]:
         return cantidad * 100
     elif unidad in ["arroba"]:
@@ -140,9 +138,7 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* ============================================ */
-        /* ESTILOS PARA TABLA EN MODO CLARO */
-        /* ============================================ */
+        /* Estilos para tabla en modo claro */
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
         }}
@@ -157,7 +153,6 @@ def configurar_estilo():
             background-color: {COLOR_CARD} !important;
         }}
         
-        /* Encabezados - Azul oscuro con texto blanco */
         [data-testid="stDataFrame"] th {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -166,7 +161,6 @@ def configurar_estilo():
             padding: 12px 8px !important;
         }}
         
-        /* Celdas - Fondo blanco, texto oscuro */
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
             text-align: center !important;
@@ -175,17 +169,14 @@ def configurar_estilo():
             border-bottom: 1px solid {COLOR_BORDER} !important;
         }}
         
-        /* Filas pares - Gris muy claro */
         [data-testid="stDataFrame"] tr:nth-child(even) td {{
             background-color: #f8f9fa !important;
         }}
         
-        /* Hover - Azul muy claro */
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
         }}
         
-        /* Texto dentro de las celdas - Asegurar que sea oscuro */
         [data-testid="stDataFrame"] td div {{
             color: {COLOR_TEXT} !important;
         }}
@@ -255,17 +246,14 @@ def modulo_inventario():
     # Filtros de búsqueda
     # ============================================================
     
-    # ✅ Cargar categorías desde la base de datos
     categorias_db = obtener_categorias_db(id_tienda)
 
-    # 🔹 Buscador de productos por nombre
     buscador = st.text_input(
         "🔎 Buscar producto por nombre:",
         placeholder="Escribe el nombre del producto...",
         help="Puedes buscar cualquier producto por su nombre sin importar la categoría"
     )
 
-    # 🔹 Filtro por categoría
     if categorias_db:
         filtro_categoria = st.selectbox(
             "🔍 Filtrar por categoría:",
@@ -337,7 +325,10 @@ def modulo_inventario():
                     else:
                         mensaje_info = f"ℹ️ No hay productos registrados en la categoría '{filtro_categoria}' para esta tienda."
             else:
-                inventario_detalle = []
+                # Separar productos por categoría para mostrar diferentes columnas
+                df_granos = []
+                df_carnes = []
+                df_otros = []
 
                 for cod_barra, nombre, categoria in productos:
                     # Compras
@@ -346,7 +337,6 @@ def modulo_inventario():
                         FROM ProductoxCompra
                         WHERE Cod_barra = %s AND id_tienda = %s
                     """, (cod_barra, id_tienda))
-
                     compras = cursor.fetchall()
 
                     # Determinar unidad principal para carnes y congelados
@@ -376,7 +366,6 @@ def modulo_inventario():
                         FROM ProductoxVenta
                         WHERE Cod_barra = %s AND id_tienda = %s
                     """, (cod_barra, id_tienda))
-
                     ventas = cursor.fetchall()
 
                     total_vendido_lb = sum(convertir_a_libras(v[0], v[1]) for v in ventas)
@@ -384,79 +373,81 @@ def modulo_inventario():
 
                     stock_libras = total_comprado_lb - total_vendido_lb
                     stock_unidades = total_comprado_unidades - total_vendido_unidades
+                    
+                    fecha_str = fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
 
-                    # Agregar según categoría
+                    # Clasificar según categoría
                     if categoria == "Granos y productos a granel":
-                        inventario_detalle.append({
+                        df_granos.append({
                             "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
-                            "Stock Quintal": round(convertir_a_quintal(stock_libras), 2),
-                            "Stock Arroba": round(convertir_a_arroba(stock_libras), 2),
-                            "Stock Libras": round(stock_libras, 2),
-                            "Stock Unidades": "—",
-                            "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
+                            "Stock (Quintales)": round(convertir_a_quintal(stock_libras), 2),
+                            "Stock (Arrobas)": round(convertir_a_arroba(stock_libras), 2),
+                            "Stock (Libras)": round(stock_libras, 2),
+                            "Fecha Vencimiento": fecha_str
                         })
                     elif categoria == "Carnes y congelados":
                         if unidad_principal == "libras":
-                            inventario_detalle.append({
+                            df_carnes.append({
                                 "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
-                                "Stock Libras": round(stock_libras, 2),
-                                "Stock Unidades": "—",
-                                "Stock Quintal": "—",
-                                "Stock Arroba": "—",
-                                "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
+                                "Stock (Libras)": round(stock_libras, 2),
+                                "Fecha Vencimiento": fecha_str
                             })
                         else:
-                            inventario_detalle.append({
+                            df_carnes.append({
                                 "Código": cod_barra,
                                 "Nombre": nombre,
                                 "Categoría": categoria,
-                                "Stock Libras": "—",
-                                "Stock Unidades": int(stock_unidades) if stock_unidades > 0 else 0,
-                                "Stock Quintal": "—",
-                                "Stock Arroba": "—",
-                                "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
+                                "Stock (Unidades)": int(stock_unidades) if stock_unidades > 0 else 0,
+                                "Fecha Vencimiento": fecha_str
                             })
                     else:
-                        inventario_detalle.append({
+                        df_otros.append({
                             "Código": cod_barra,
                             "Nombre": nombre,
                             "Categoría": categoria,
-                            "Stock Unidades": int(stock_unidades) if stock_unidades > 0 else 0,
-                            "Stock Libras": "—",
-                            "Stock Quintal": "—",
-                            "Stock Arroba": "—",
-                            "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
+                            "Stock (Unidades)": int(stock_unidades) if stock_unidades > 0 else 0,
+                            "Fecha Vencimiento": fecha_str
                         })
 
-                df = pd.DataFrame(inventario_detalle)
-
-                if df.empty:
-                    st.warning(f"⚠️ No hay productos para mostrar.")
+                # Mostrar resultados por separado según la categoría
+                if buscador:
+                    st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
+                    total_productos = len(df_granos) + len(df_carnes) + len(df_otros)
+                    st.info(f"✅ Se encontraron {total_productos} productos")
+                    if filtro_categoria != "Todas las categorías":
+                        st.caption(f"Filtrando por categoría: {filtro_categoria}")
                 else:
-                    # Definir orden de columnas
-                    columnas_orden = ["Código", "Nombre", "Categoría", "Stock Quintal", "Stock Arroba", "Stock Libras", "Stock Unidades", "Fecha Vencimiento"]
-                    df = df[columnas_orden]
-                    
-                    # Ordenar por nombre
-                    df = df.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
-                    
-                    if buscador:
-                        st.markdown(f'<div class="inventory-subtitle">📋 Resultados de búsqueda: "{buscador}"</div>', unsafe_allow_html=True)
-                        st.info(f"✅ Se encontraron {len(df)} productos")
-                        if filtro_categoria != "Todas las categorías":
-                            st.caption(f"Filtrando por categoría: {filtro_categoria}")
+                    if filtro_categoria == "Todas las categorías":
+                        st.markdown('<div class="inventory-subtitle">📋 Inventario completo - Todas las categorías</div>', unsafe_allow_html=True)
                     else:
-                        if filtro_categoria == "Todas las categorías":
-                            st.markdown('<div class="inventory-subtitle">📋 Inventario completo - Todas las categorías</div>', unsafe_allow_html=True)
-                        else:
-                            st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
-                    
-                    # Mostrar dataframe con estilo claro
-                    st.dataframe(df, use_container_width=True)
+                        st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
+                
+                # Mostrar Granos
+                if df_granos and (filtro_categoria == "Todas las categorías" or filtro_categoria == "Granos y productos a granel"):
+                    st.markdown("#### 🌾 Granos y productos a granel")
+                    df_granos_df = pd.DataFrame(df_granos)
+                    df_granos_df = df_granos_df.sort_values("Nombre", key=lambda x: x.str.lower())
+                    st.dataframe(df_granos_df, use_container_width=True)
+                    st.markdown("---")
+                
+                # Mostrar Carnes
+                if df_carnes and (filtro_categoria == "Todas las categorías" or filtro_categoria == "Carnes y congelados"):
+                    st.markdown("#### 🥩 Carnes y congelados")
+                    df_carnes_df = pd.DataFrame(df_carnes)
+                    df_carnes_df = df_carnes_df.sort_values("Nombre", key=lambda x: x.str.lower())
+                    st.dataframe(df_carnes_df, use_container_width=True)
+                    st.markdown("---")
+                
+                # Mostrar Otras categorías
+                if df_otros and filtro_categoria == "Todas las categorías":
+                    st.markdown("#### 📦 Otras categorías")
+                    df_otros_df = pd.DataFrame(df_otros)
+                    df_otros_df = df_otros_df.sort_values("Nombre", key=lambda x: x.str.lower())
+                    st.dataframe(df_otros_df, use_container_width=True)
 
     except Exception as e:
         st.error(f"❌ Error al cargar inventario: {e}")
