@@ -46,13 +46,49 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
         
-        .metric-container {{
+        /* Estilos para la sección de productos en venta */
+        .product-card {{
             background: {COLOR_CARD};
             border-radius: 12px;
             padding: 15px;
-            text-align: center;
+            margin: 10px 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             border: 1px solid {COLOR_BORDER};
+            transition: all 0.3s ease;
+        }}
+        
+        .product-card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: {COLOR_ACCENT};
+        }}
+        
+        .product-name {{
+            font-size: 1.1em;
+            font-weight: 600;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 8px;
+        }}
+        
+        .product-details {{
+            color: {COLOR_TEXT};
+            font-size: 0.9em;
+            margin: 5px 0;
+        }}
+        
+        .product-details strong {{
+            color: {COLOR_PRIMARY};
+        }}
+        
+        .total-venta {{
+            background: {COLOR_PRIMARY};
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.3em;
+            font-weight: bold;
         }}
         
         .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
@@ -101,15 +137,10 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
-        /* Estilos para texto de precio */
         .price-text {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 600 !important;
             font-size: 1.1em !important;
-        }}
-        
-        .info-text {{
-            color: {COLOR_TEXT_DARK} !important;
         }}
         
         .stButton > button {{
@@ -336,7 +367,6 @@ def modulo_ventas():
                     
                     unidades_disponibles = ["libras", "quintal", "arroba"]
                     
-                    # Selectbox para tipo de cliente (lista desplegable)
                     tipo_cliente = st.selectbox(
                         "🧾 Seleccione el tipo de cliente",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
@@ -462,7 +492,6 @@ def modulo_ventas():
                     else:
                         unidades_disponibles = ["unidad"]
                     
-                    # Selectbox para tipo de cliente (lista desplegable)
                     tipo_cliente = st.selectbox(
                         "🧾 Seleccione el tipo de cliente",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
@@ -515,25 +544,42 @@ def modulo_ventas():
 
     st.markdown("---")
 
+    # ============================================
+    # SECCIÓN DE PRODUCTOS EN ESTA VENTA CON ESTILO CORPORATIVO
+    # ============================================
     if st.session_state["productos_vendidos"]:
         st.markdown('<div class="module-subtitle">🧾 Productos en esta venta</div>', unsafe_allow_html=True)
         total_venta = 0.0
+        
         for i, prod in enumerate(st.session_state["productos_vendidos"]):
             total_venta += prod["subtotal"]
-            st.markdown(
-                f"**{prod['nombre']}** — {prod['cantidad']:.2f} {prod['unidad']} — "
-                f"Precio: ${prod['precio_venta']:.2f} — "
-                f"Subtotal: ${prod['subtotal']:.2f} — "
-                f"**Cliente:** {prod['tipo_cliente']}"
-            )
-            col1, col2, col3 = st.columns([1, 2, 1])
+            
+            # Tarjeta de producto con estilo corporativo
+            st.markdown(f"""
+                <div class="product-card">
+                    <div class="product-name">📦 {prod['nombre']}</div>
+                    <div class="product-details"><strong>Cantidad:</strong> {prod['cantidad']:.2f} {prod['unidad']}</div>
+                    <div class="product-details"><strong>Precio unitario:</strong> ${prod['precio_venta']:.2f}</div>
+                    <div class="product-details"><strong>Subtotal:</strong> ${prod['subtotal']:.2f}</div>
+                    <div class="product-details"><strong>Cliente:</strong> {prod['tipo_cliente']}</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Botón de eliminar centrado
+            col1, col2, col3 = st.columns([1, 3, 1])
             with col2:
-                if st.button(f"❌ Eliminar", key=f"eliminar_venta_{i}", use_container_width=True):
+                if st.button(f"🗑️ Eliminar", key=f"eliminar_venta_{i}", use_container_width=True):
                     st.session_state["productos_vendidos"].pop(i)
                     st.rerun()
         
-        st.markdown(f"### 💵 Total de la venta: **${total_venta:.2f}**")
+        # Total de la venta con estilo destacado
+        st.markdown(f"""
+            <div class="total-venta">
+                💵 Total de la venta: ${total_venta:.2f}
+            </div>
+        """, unsafe_allow_html=True)
         
+        # Botón de registrar venta centrado
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("✅ Registrar venta", use_container_width=True, type="primary"):
