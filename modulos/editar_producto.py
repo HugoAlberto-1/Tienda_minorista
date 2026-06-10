@@ -62,11 +62,30 @@ def configurar_estilo():
             color: #721c24;
         }}
         
+        /* Estilos para labels */
         .stTextInput > label, .stSelectbox > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
         
+        /* ============================================ */
+        /* ESTILOS PARA CHECKBOX - TEXTO OSCuro Y VISIBLE */
+        /* ============================================ */
+        .stCheckbox label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        .stCheckbox label span {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilo para el texto del checkbox cuando está marcado */
+        .stCheckbox label[data-testid="stMarkdownContainer"] p {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Inputs y selectores */
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
