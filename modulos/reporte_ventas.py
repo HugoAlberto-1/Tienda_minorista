@@ -5,8 +5,191 @@ from datetime import datetime
 from io import BytesIO
 from fpdf import FPDF
 
+def configurar_estilo():
+    """Configuración de estilos CSS para el módulo - Mismo estilo que inventario"""
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_DARK = "#1a1a1a"
+    COLOR_HOVER = "#e8f0fe"
+    COLOR_BORDER = "#e0e0e0"
+    COLOR_BUTTON = "#1e3a5f"
+    
+    st.markdown(f"""
+        <style>
+        /* Fondo general */
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
+        
+        /* Títulos */
+        .report-title {{
+            text-align: center;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }}
+        
+        /* Subtítulos */
+        .report-subtitle {{
+            text-align: center;
+            color: {COLOR_SECONDARY};
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }}
+        
+        /* Info box */
+        .info-box {{
+            background: {COLOR_HOVER};
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid {COLOR_PRIMARY};
+            margin: 15px 0;
+            color: {COLOR_TEXT_DARK};
+        }}
+        
+        /* Metric cards */
+        .metric-card {{
+            background: {COLOR_CARD};
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }}
+        
+        .metric-value {{
+            font-size: 2em;
+            font-weight: bold;
+            color: {COLOR_PRIMARY} !important;
+        }}
+        
+        /* Botones */
+        .stButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
+        }}
+        
+        /* Botón volver - Color gris con texto blanco */
+        .volver-btn button {{
+            background-color: #6c757d !important;
+            background: #6c757d !important;
+            color: white !important;
+        }}
+        
+        .volver-btn button:hover {{
+            background-color: #5a6268 !important;
+            background: #5a6268 !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }}
+        
+        /* Labels */
+        .stTextInput > label, .stSelectbox > label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Selectores */
+        .stSelectbox > div > div {{
+            background-color: {COLOR_BUTTON};
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        .stSelectbox > div > div > div {{
+            color: white !important;
+        }}
+        
+        .stSelectbox svg {{
+            fill: white !important;
+        }}
+        
+        /* Fecha inputs - labels en color oscuro */
+        .stDateInput label {{
+            color: #333333 !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Fecha inputs - texto dentro del input */
+        .stDateInput input {{
+            color: #333333 !important;
+            background-color: white !important;
+        }}
+        
+        /* Dataframe */
+        .stDataFrame {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 12px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] table {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] th {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            padding: 12px 8px !important;
+        }}
+        
+        [data-testid="stDataFrame"] td {{
+            color: {COLOR_TEXT} !important;
+            text-align: center !important;
+            padding: 10px 8px !important;
+            background-color: {COLOR_CARD} !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
+            background-color: #f8f9fa !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:hover td {{
+            background-color: {COLOR_HOVER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] td div {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Alertas */
+        .stAlert {{
+            background-color: {COLOR_CARD} !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {COLOR_PRIMARY} !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+
 def reporte_ventas():
-    st.header("📊 Reporte de Ventas por Producto")
+    configurar_estilo()
+    
+    st.markdown('<div class="report-title">📊 Reporte de Ventas por Producto</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-subtitle">Análisis detallado de ventas</div>', unsafe_allow_html=True)
 
     # 🔐 Obtener información de la tienda desde la sesión
     rol_usuario = st.session_state.get("nivel_usuario", "")
@@ -15,19 +198,19 @@ def reporte_ventas():
 
     # Mostrar nombre de la tienda en la interfaz
     if rol_usuario == "Administrador":
-        st.info(f"👑 **Administrador** - Reporte de todas las tiendas")
+        st.markdown('<div class="info-box">👑 <strong>Administrador</strong> - Reporte de todas las tiendas</div>', unsafe_allow_html=True)
     else:
-        st.info(f"🏪 **Tienda:** {nombre_tienda}")
+        st.markdown(f'<div class="info-box">🏪 <strong>Tienda:</strong> {nombre_tienda}</div>', unsafe_allow_html=True)
 
     # Filtros de fecha
     col1, col2 = st.columns(2)
     with col1:
-        fecha_inicio = st.date_input("Desde", value=datetime.today().replace(day=1))
+        fecha_inicio = st.date_input("📅 Fecha inicio", value=datetime.today().replace(day=1))
     with col2:
-        fecha_fin = st.date_input("Hasta", value=datetime.today())
+        fecha_fin = st.date_input("📅 Fecha fin", value=datetime.today())
 
     if fecha_inicio > fecha_fin:
-        st.warning("⚠️ La fecha de inicio no puede ser mayor que la de fin.")
+        st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
         return
 
     try:
@@ -82,9 +265,11 @@ def reporte_ventas():
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
+                st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
                 if st.button("🔙 Volver al Menú Principal", use_container_width=True):
                     st.session_state["module"] = None
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
             return
 
         # ---- DataFrame ----
@@ -94,7 +279,7 @@ def reporte_ventas():
         df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
         df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
         
-        # Formatear unidad (minúscula)
+        # Formatear unidad
         df["unidad"] = df["unidad"].fillna("").astype(str)
 
         # ➤ CALCULAR TOTAL
@@ -128,7 +313,7 @@ def reporte_ventas():
         st.markdown("---")
         st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
         st.markdown(f"""
-        <div style='font-size:30px; font-weight:bold; color:green; text-align:center;'>
+        <div style='font-size:30px; font-weight:bold; color:#2ecc71; text-align:center;'>
             ${gran_total:,.2f}
         </div>
         """, unsafe_allow_html=True)
@@ -234,9 +419,11 @@ def reporte_ventas():
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🔙 Volver al Menú Principal", use_container_width=True, type="secondary"):
+            st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
+            if st.button("🔙 Volver al Menú Principal", use_container_width=True):
                 st.session_state["module"] = None
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"❌ Error al generar el reporte: {e}")
