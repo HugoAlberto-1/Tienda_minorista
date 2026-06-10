@@ -100,6 +100,42 @@ def configurar_estilo():
     """, unsafe_allow_html=True)
 
 
+def validar_dui(dui):
+    """Valida y formatea el DUI (elimina guiones y verifica longitud)"""
+    # Eliminar guiones y espacios
+    dui_limpio = dui.strip().replace("-", "").replace(" ", "")
+    
+    # Verificar que solo contenga números
+    if not dui_limpio.isdigit():
+        return None, "El DUI debe contener solo números (sin guiones)"
+    
+    # Verificar longitud (DUI de El Salvador tiene 9 dígitos)
+    if len(dui_limpio) != 9:
+        return None, f"El DUI debe tener 9 dígitos (ingresaste {len(dui_limpio)})"
+    
+    return dui_limpio, None
+
+
+def validar_telefono(telefono):
+    """Valida el número de teléfono (solo números)"""
+    # Eliminar espacios y guiones
+    telefono_limpio = telefono.strip().replace("-", "").replace(" ", "")
+    
+    # Verificar que solo contenga números
+    if not telefono_limpio.isdigit():
+        return None, "El teléfono debe contener solo números"
+    
+    # Verificar longitud mínima (teléfono de El Salvador: 8 dígitos)
+    if len(telefono_limpio) < 8:
+        return None, f"El teléfono debe tener al menos 8 dígitos (ingresaste {len(telefono_limpio)})"
+    
+    # Verificar longitud máxima
+    if len(telefono_limpio) > 15:
+        return None, f"El teléfono es demasiado largo (máximo 15 dígitos)"
+    
+    return telefono_limpio, None
+
+
 def modulo_empleado():
     configurar_estilo()
     
@@ -153,18 +189,20 @@ def modulo_empleado():
         )
         
         DUI = st.text_input(
-            "🆔 DUI (sin guión)",
+            "🆔 DUI (9 dígitos, sin guión)",
             value=st.session_state.get("dui_input", ""),
             key="dui_input",
-            placeholder="Ej: 123456789"
+            placeholder="Ej: 123456789",
+            help="Ingresa los 9 dígitos del DUI sin guiones"
         )
     
     with col2:
         Contacto = st.text_input(
-            "📞 Teléfono",
+            "📞 Teléfono (solo números)",
             value=st.session_state.get("contacto_input", ""),
             key="contacto_input",
-            placeholder="Ej: 61234567"
+            placeholder="Ej: 61234567",
+            help="Ingresa solo números, sin guiones ni espacios"
         )
         
         Contrasena = st.text_input(
@@ -188,45 +226,65 @@ def modulo_empleado():
             if not Usuario.strip() or not Nombre.strip() or not DUI.strip() or not Contacto.strip() or not Contrasena.strip():
                 st.warning("⚠️ Por favor, completa todos los campos.")
             else:
-                conn = obtener_conexion()
-                if not conn:
-                    st.error("❌ No se pudo conectar a la base de datos.")
-                    st.stop()
-
-                cursor = conn.cursor()
-                try:
-                    # ✅ Validación de usuario por tienda
-                    cursor.execute(
-                        "SELECT COUNT(*) FROM Empleado WHERE Usuario = %s AND id_tienda = %s",
-                        (Usuario.strip(), id_tienda)
-                    )
-                    existe = cursor.fetchone()[0]
-
-                    if existe:
-                        st.error("❌ Ya existe una asociada con ese usuario en esta tienda.")
+                # Validar DUI
+                dui_validado, error_dui = validar_dui(DUI)
+                if error_dui:
+                    st.error(f"❌ {error_dui}")
+                else:
+                    # Validar teléfono
+                    telefono_validado, error_telefono = validar_telefono(Contacto)
+                    if error_telefono:
+                        st.error(f"❌ {error_telefono}")
                     else:
-                        # ✅ Insertar empleado con la tienda de quien está logueado
-                        cursor.execute(
-                            """
-                            INSERT INTO Empleado (Usuario, Contrasena, Nombre, Dui, Contacto, Nivel_usuario, id_tienda)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            """,
-                            (Usuario.strip(), Contrasena.strip(), Nombre.strip(), DUI.strip(), Contacto.strip(), Nivel_usuario, id_tienda)
-                        )
-                        conn.commit()
+                        conn = obtener_conexion()
+                        if not conn:
+                            st.error("❌ No se pudo conectar a la base de datos.")
+                            st.stop()
 
-                        st.session_state["empleado_guardado"] = True
-                        st.session_state["reiniciar_empleado"] = True
-                        st.success(f"✅ Asociada '{Nombre}' registrada correctamente.")
-                        st.rerun()
+                        cursor = conn.cursor()
+                        try:
+                            # ✅ Validación de usuario por tienda
+                            cursor.execute(
+                                "SELECT COUNT(*) FROM Empleado WHERE Usuario = %s AND id_tienda = %s",
+                                (Usuario.strip(), id_tienda)
+                            )
+                            existe = cursor.fetchone()[0]
 
-                except Exception as e:
-                    conn.rollback()
-                    st.error(f"❌ Error al guardar el empleado: {e}")
+                            if existe:
+                                st.error("❌ Ya existe una asociada con ese usuario en esta tienda.")
+                            else:
+                                # ✅ Validar si el DUI ya existe en la tienda
+                                cursor.execute(
+                                    "SELECT COUNT(*) FROM Empleado WHERE Dui = %s AND id_tienda = %s",
+                                    (dui_validado, id_tienda)
+                                )
+                                dui_existe = cursor.fetchone()[0]
+                                
+                                if dui_existe:
+                                    st.error("❌ Ya existe una asociada con ese DUI en esta tienda.")
+                                else:
+                                    # ✅ Insertar empleado
+                                    cursor.execute(
+                                        """
+                                        INSERT INTO Empleado (Usuario, Contrasena, Nombre, Dui, Contacto, Nivel_usuario, id_tienda)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                        """,
+                                        (Usuario.strip(), Contrasena.strip(), Nombre.strip(), dui_validado, telefono_validado, Nivel_usuario, id_tienda)
+                                    )
+                                    conn.commit()
 
-                finally:
-                    cursor.close()
-                    conn.close()
+                                    st.session_state["empleado_guardado"] = True
+                                    st.session_state["reiniciar_empleado"] = True
+                                    st.success(f"✅ Asociada '{Nombre}' registrada correctamente.")
+                                    st.rerun()
+
+                        except Exception as e:
+                            conn.rollback()
+                            st.error(f"❌ Error al guardar el empleado: {e}")
+
+                        finally:
+                            cursor.close()
+                            conn.close()
 
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
