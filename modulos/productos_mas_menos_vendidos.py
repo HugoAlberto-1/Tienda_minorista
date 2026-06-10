@@ -166,6 +166,18 @@ def configurar_estilo():
             background-color: {COLOR_SECONDARY};
         }}
         
+        /* Botón volver - Color gris */
+        .volver-btn button {{
+            background-color: #6c757d !important;
+            background: #6c757d !important;
+        }}
+        
+        .volver-btn button:hover {{
+            background-color: #5a6268 !important;
+            background: #5a6268 !important;
+            transform: translateY(-2px);
+        }}
+        
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
@@ -621,10 +633,12 @@ def modulo_productos_mas_menos_vendidos():
             with st.expander("📋 Ver productos sin ventas"):
                 st.dataframe(df_sin_ventas[["Producto", "Categoria"]], use_container_width=True)
     
-    # Botón para volver
+    # Botón para volver (color gris)
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
         if st.button("🔙 Volver al menú principal", use_container_width=True):
             st.session_state["module"] = None
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
