@@ -78,15 +78,6 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
-        /* Radio buttons - opciones individuales en color oscuro */
-        .stRadio div[role="radiogroup"] label {{
-            color: {COLOR_TEXT} !important;
-        }}
-        
-        .stRadio div[role="radiogroup"] div {{
-            color: {COLOR_TEXT} !important;
-        }}
-        
         /* Checkbox label */
         .stCheckbox label {{
             color: {COLOR_TEXT} !important;
@@ -101,6 +92,10 @@ def configurar_estilo():
         
         .stSelectbox > div > div > div {{
             color: white !important;
+        }}
+        
+        .stSelectbox svg {{
+            fill: white !important;
         }}
         
         /* Headers */
@@ -243,10 +238,10 @@ def modulo_gestion_admin():
     with tab2:
         st.markdown("### 📝 Crear Nuevo Usuario")
         
-        tipo_usuario = st.radio(
+        # Cambiado de radio a selectbox
+        tipo_usuario = st.selectbox(
             "Tipo de usuario a crear:",
-            ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"],
-            horizontal=True
+            ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"]
         )
         
         st.divider()
@@ -340,10 +335,10 @@ def modulo_gestion_admin():
         st.markdown("### 📊 Usuarios por Tienda")
         st.markdown('<div class="info-box">👑 Los Administradores (Dueños) aparecen en "Todas las tiendas" porque no pertenecen a una específica</div>', unsafe_allow_html=True)
         
-        vista = st.radio(
+        # Cambiado de radio a selectbox
+        vista = st.selectbox(
             "Ver:",
-            ["👑 Administradores (Dueños)", "🏪 Usuarios por tienda", "📋 Todos los usuarios"],
-            horizontal=True
+            ["👑 Administradores (Dueños)", "🏪 Usuarios por tienda", "📋 Todos los usuarios"]
         )
         
         conn = obtener_conexion()
@@ -409,7 +404,7 @@ def modulo_gestion_admin():
                     else:
                         st.info("No hay tiendas activas para mostrar usuarios")
                 
-                else:  # Todos los usuarios - CORREGIDO CON CONVERT
+                else:  # Todos los usuarios
                     cursor.execute("""
                         SELECT e.id_empleado, e.Nombre, e.Usuario, e.DUI, e.Contacto, e.Nivel_usuario, 
                                COALESCE(CONVERT(t.nombre USING utf8mb4), '👑 Dueño (Todas las tiendas)') as Tienda
