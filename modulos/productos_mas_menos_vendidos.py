@@ -210,12 +210,16 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        /* Inputs de fecha */
-        .stDateInput > div > div > input {{
-            background-color: {COLOR_BUTTON};
-            color: white !important;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
+        /* Fecha inputs - labels en color oscuro CORREGIDO */
+        .stDateInput label {{
+            color: #333333 !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Fecha inputs - texto dentro del input */
+        .stDateInput input {{
+            color: #333333 !important;
+            background-color: white !important;
         }}
         
         /* Headers */
@@ -459,9 +463,11 @@ def modulo_productos_mas_menos_vendidos():
     col1, col2 = st.columns(2)
     
     with col1:
-        fecha_inicio = st.date_input("📅 Fecha inicio", value=datetime.today().replace(day=1))
+        st.markdown('<label style="color: #333333; font-weight: 500;">📅 Fecha inicio</label>', unsafe_allow_html=True)
+        fecha_inicio = st.date_input("", value=datetime.today().replace(day=1), key="fecha_inicio", label_visibility="collapsed")
     with col2:
-        fecha_fin = st.date_input("📅 Fecha fin", value=datetime.today())
+        st.markdown('<label style="color: #333333; font-weight: 500;">📅 Fecha fin</label>', unsafe_allow_html=True)
+        fecha_fin = st.date_input("", value=datetime.today(), key="fecha_fin", label_visibility="collapsed")
     
     if fecha_inicio > fecha_fin:
         st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
@@ -472,7 +478,7 @@ def modulo_productos_mas_menos_vendidos():
         total_ventas, total_productos, total_ingresos = obtener_resumen_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
         df_completo = obtener_datos_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
     
-    # Mostrar resumen - CON TEXTO OSCuro VISIBLE
+    # Mostrar resumen - CON TEXTO OSCURO VISIBLE
     st.markdown("### 📈 Resumen del Período")
     col1, col2, col3 = st.columns(3)
     with col1:
