@@ -11,18 +11,26 @@ def configurar_estilo_top():
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     
     st.markdown(f"""
         <style>
+        /* Fondo general */
         .stApp {{
             background-color: {COLOR_BG};
         }}
         
+        /* Forzar color de texto en toda la app */
+        .stApp, .stApp p, .stApp div, .stApp span, .stApp label, .stMarkdown {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Títulos principales */
         .top-title {{
             text-align: center;
-            color: {COLOR_PRIMARY};
+            color: {COLOR_PRIMARY} !important;
             font-size: 2em;
             font-weight: bold;
             margin-bottom: 20px;
@@ -30,19 +38,22 @@ def configurar_estilo_top():
         
         .top-subtitle {{
             text-align: center;
-            color: {COLOR_SECONDARY};
+            color: {COLOR_SECONDARY} !important;
             font-size: 1.1em;
             margin-bottom: 20px;
         }}
         
+        /* Info box */
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
+            color: {COLOR_TEXT} !important;
         }}
         
+        /* Metric cards */
         .metric-card {{
             background: {COLOR_CARD};
             padding: 15px;
@@ -51,15 +62,20 @@ def configurar_estilo_top():
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }}
         
+        .metric-card div {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
         .metric-value {{
             font-size: 2em;
             font-weight: bold;
-            color: {COLOR_PRIMARY};
+            color: {COLOR_PRIMARY} !important;
         }}
         
+        /* Botones */
         .stButton > button {{
             background-color: {COLOR_PRIMARY};
-            color: white;
+            color: white !important;
             border-radius: 8px;
             border: none;
             padding: 10px;
@@ -67,6 +83,41 @@ def configurar_estilo_top():
         
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
+        }}
+        
+        /* Selectbox, date inputs y labels */
+        .stSelectbox label, .stDateInput label, .stMarkdown h3 {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {COLOR_PRIMARY} !important;
+        }}
+        
+        /* Dataframe */
+        .stDataFrame {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] th {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+        }}
+        
+        [data-testid="stDataFrame"] td {{
+            color: {COLOR_TEXT} !important;
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        /* Streamlit info/warning/success boxes */
+        .stAlert {{
+            background-color: {COLOR_CARD} !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        .stAlert div {{
+            color: {COLOR_TEXT} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -389,7 +440,7 @@ def modulo_top_30():
                 use_container_width=True
             )
         else:
-            st.info("No hay datos de productos más vendidos en el período seleccionado.")
+            st.warning("⚠️ No hay datos de productos más vendidos en el período seleccionado.")
     
     with col2:
         st.markdown("### 📉 TOP 30 MENOS VENDIDOS")
@@ -404,7 +455,7 @@ def modulo_top_30():
                 use_container_width=True
             )
         else:
-            st.info("No hay datos de productos menos vendidos en el período seleccionado.")
+            st.warning("⚠️ No hay datos de productos menos vendidos en el período seleccionado.")
     
     # Botón para volver
     st.markdown("---")
