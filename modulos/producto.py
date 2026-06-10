@@ -207,17 +207,17 @@ def modulo_producto():
 
                 cursor = conn.cursor()
                 try:
-                    # Verificar duplicado por tienda
+                    # Verificar duplicado por tienda usando el índice único
                     cursor.execute(
                         "SELECT COUNT(*) FROM Producto WHERE Cod_barra = %s AND id_tienda = %s",
                         (Cod_barra.strip(), id_tienda)
                     )
                     existe = cursor.fetchone()[0]
 
-                    if existe:
-                        st.error("❌ Ya existe un producto con ese código de barras en esta tienda.")
+                    if existe > 0:
+                        st.error(f"❌ Ya existe un producto con el código de barras '{Cod_barra}' en esta tienda.")
                     else:
-                        # Insertar producto con la categoría seleccionada
+                        # Insertar producto (id_producto se genera automáticamente)
                         cursor.execute(
                             """
                             INSERT INTO Producto (Cod_barra, Nombre, categoria, id_tienda)
@@ -234,7 +234,11 @@ def modulo_producto():
 
                 except Exception as e:
                     conn.rollback()
-                    st.error(f"❌ Error al guardar el producto: {e}")
+                    # Verificar si es error de duplicado (por si acaso)
+                    if "Duplicate entry" in str(e):
+                        st.error(f"❌ El código de barras '{Cod_barra}' ya existe en esta tienda.")
+                    else:
+                        st.error(f"❌ Error al guardar el producto: {e}")
 
                 finally:
                     cursor.close()
