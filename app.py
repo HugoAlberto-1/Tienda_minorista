@@ -277,7 +277,7 @@ def menu_principal():
                         st.markdown(f"""
                             <div class="card" style="padding: 30px;">
                                 <div class="card-icon">🏆</div>
-                                <div class="card-title">Top 30 más vendidos</div>
+                                <div class="card-title">Productos más y menos vendidos</div>
                                 <div class="card-desc">Productos más populares</div>
                             </div>
                         """, unsafe_allow_html=True)
@@ -462,7 +462,7 @@ def menu_principal():
                         st.markdown(f"""
                             <div class="card" style="padding: 30px;">
                                 <div class="card-icon">🏆</div>
-                                <div class="card-title">Top 30 más vendidos</div>
+                                <div class="card-title">Productos más y menos vendidos</div>
                                 <div class="card-desc">Productos más populares</div>
                             </div>
                         """, unsafe_allow_html=True)
