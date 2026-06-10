@@ -60,6 +60,100 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
         
+        /* Tarjetas para Top 3 */
+        .top-card {{
+            background: linear-gradient(135deg, {COLOR_PRIMARY} 0%, {COLOR_SECONDARY} 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }}
+        
+        .top-card:hover {{
+            transform: translateY(-5px);
+        }}
+        
+        .top-card .position {{
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }}
+        
+        .top-card .product-name {{
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }}
+        
+        .top-card .quantity {{
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }}
+        
+        .top-card .unit {{
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+        }}
+        
+        .top-card .total {{
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+            margin-top: 10px;
+        }}
+        
+        /* Tarjetas para menos vendidos */
+        .bottom-card {{
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }}
+        
+        .bottom-card:hover {{
+            transform: translateY(-5px);
+        }}
+        
+        .bottom-card .position {{
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }}
+        
+        .bottom-card .product-name {{
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }}
+        
+        .bottom-card .quantity {{
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }}
+        
+        .bottom-card .unit {{
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+        }}
+        
+        .bottom-card .total {{
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+            margin-top: 10px;
+        }}
+        
         .stButton > button {{
             background-color: {COLOR_PRIMARY};
             color: white !important;
@@ -207,6 +301,34 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         return None, None, None
 
 
+def mostrar_top_card(producto, cantidad, unidad, total, posicion, color="blue"):
+    """Muestra una tarjeta con la información del producto"""
+    if color == "blue":
+        card_class = "top-card"
+    else:
+        card_class = "bottom-card"
+    
+    # Medalla según posición
+    if posicion == 1:
+        medalla = "🥇"
+    elif posicion == 2:
+        medalla = "🥈"
+    elif posicion == 3:
+        medalla = "🥉"
+    else:
+        medalla = f"#{posicion}"
+    
+    st.markdown(f"""
+        <div class="{card_class}">
+            <div class="position">{medalla}</div>
+            <div class="product-name">{producto}</div>
+            <div class="quantity">{cantidad:.2f}</div>
+            <div class="unit">{unidad}</div>
+            <div class="total">💰 ${total:,.2f}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+
 def modulo_productos_mas_menos_vendidos():
     configurar_estilo()
     
@@ -305,52 +427,185 @@ def modulo_productos_mas_menos_vendidos():
         df_menos_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=True)
         
         # ============================================================
-        # MÁS VENDIDOS
+        # TOP 3 MÁS VENDIDOS - TARJETAS
         # ============================================================
-        st.markdown("## 🏆 Productos Más Vendidos")
+        st.markdown("## 🏆 Top 3 Productos Más Vendidos")
         
-        if not df_mas_vendidos.empty:
-            # Gráfico de barras con st.bar_chart
-            chart_data = df_mas_vendidos.head(15).set_index("Producto")[["Cantidad_Vendida"]]
-            st.bar_chart(chart_data, use_container_width=True)
+        if len(df_mas_vendidos) >= 3:
+            top3_mas = df_mas_vendidos.head(3)
             
-            # Tabla completa
-            st.dataframe(
-                df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
-                use_container_width=True
-            )
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                row = top3_mas.iloc[0]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=1,
+                    color="blue"
+                )
+            
+            with col2:
+                row = top3_mas.iloc[1]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=2,
+                    color="blue"
+                )
+            
+            with col3:
+                row = top3_mas.iloc[2]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=3,
+                    color="blue"
+                )
+        elif len(df_mas_vendidos) == 2:
+            st.info("Solo hay 2 productos con ventas en el período.")
+            col1, col2 = st.columns(2)
+            with col1:
+                row = df_mas_vendidos.iloc[0]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=1,
+                    color="blue"
+                )
+            with col2:
+                row = df_mas_vendidos.iloc[1]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=2,
+                    color="blue"
+                )
+        elif len(df_mas_vendidos) == 1:
+            st.info("Solo hay 1 producto con ventas en el período.")
+            row = df_mas_vendidos.iloc[0]
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=1,
+                    color="blue"
+                )
         else:
             st.info("No hay productos con ventas en el período seleccionado.")
         
         st.markdown("---")
         
         # ============================================================
-        # MENOS VENDIDOS
+        # TOP 3 MENOS VENDIDOS - TARJETAS
         # ============================================================
-        st.markdown("## 📉 Productos Menos Vendidos")
+        st.markdown("## 📉 Top 3 Productos Menos Vendidos")
         
-        if not df_menos_vendidos.empty:
-            # Gráfico de barras con st.bar_chart
-            chart_data_menos = df_menos_vendidos.head(15).set_index("Producto")[["Cantidad_Vendida"]]
-            st.bar_chart(chart_data_menos, use_container_width=True)
+        if len(df_menos_vendidos) >= 3:
+            top3_menos = df_menos_vendidos.head(3)
             
-            # Tabla completa
-            st.dataframe(
-                df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
-                use_container_width=True
-            )
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                row = top3_menos.iloc[0]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=1,
+                    color="red"
+                )
+            
+            with col2:
+                row = top3_menos.iloc[1]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=2,
+                    color="red"
+                )
+            
+            with col3:
+                row = top3_menos.iloc[2]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=3,
+                    color="red"
+                )
+        elif len(df_menos_vendidos) == 2:
+            st.info("Solo hay 2 productos con ventas en el período.")
+            col1, col2 = st.columns(2)
+            with col1:
+                row = df_menos_vendidos.iloc[0]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=1,
+                    color="red"
+                )
+            with col2:
+                row = df_menos_vendidos.iloc[1]
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=2,
+                    color="red"
+                )
+        elif len(df_menos_vendidos) == 1:
+            st.info("Solo hay 1 producto con ventas en el período.")
+            row = df_menos_vendidos.iloc[0]
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                mostrar_top_card(
+                    producto=row["Producto"],
+                    cantidad=row["Cantidad_Vendida"],
+                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    total=row["Total_Vendido"],
+                    posicion=1,
+                    color="red"
+                )
         else:
             st.info("No hay productos con ventas en el período seleccionado.")
+        
+        st.markdown("---")
+        
+        # ============================================================
+        # LISTA COMPLETA (opcional)
+        # ============================================================
+        with st.expander("📋 Ver lista completa de productos vendidos"):
+            st.dataframe(
+                df_con_ventas[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+                use_container_width=True
+            )
         
         # ============================================================
         # PRODUCTOS SIN VENTAS
         # ============================================================
         if not df_sin_ventas.empty:
-            st.markdown("---")
-            st.markdown("## 🚫 Productos Sin Ventas")
-            st.info(f"Hay {len(df_sin_ventas)} productos que no tuvieron ventas en el período seleccionado.")
-            
-            with st.expander("📋 Ver productos sin ventas"):
+            with st.expander(f"🚫 Productos sin ventas ({len(df_sin_ventas)})"):
                 st.dataframe(df_sin_ventas[["Producto", "Categoria"]], use_container_width=True)
     
     # Botón para volver
