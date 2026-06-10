@@ -5,7 +5,7 @@ def configurar_estilo():
     """Configuración de estilos CSS para el módulo de categorías - MODO CLARO"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
-    COLOR_ACCENT = "#3a7ca5"  # Agregamos esta variable
+    COLOR_ACCENT = "#3a7ca5"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
@@ -106,42 +106,47 @@ def configurar_estilo():
             border-radius: 8px;
         }}
         
-        /* Estilos para tarjetas de categorías */
-        .category-card {{
-            background: {COLOR_CARD};
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        /* Estilos para expander - AZUL OSCURO CON TEXTO CLARO */
+        .streamlit-expanderHeader {{
+            background-color: {COLOR_PRIMARY} !important;
+            border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER};
-            transition: all 0.3s ease;
         }}
         
-        .category-card:hover {{
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            border-color: {COLOR_ACCENT};
+        .streamlit-expanderHeader p {{
+            color: {COLOR_TEXT_LIGHT} !important;
+            font-weight: 600 !important;
+            font-size: 1em !important;
         }}
         
-        .category-name {{
-            font-size: 1.2em;
-            font-weight: 600;
-            color: {COLOR_PRIMARY};
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid {COLOR_ACCENT};
-            display: inline-block;
+        .streamlit-expanderHeader span {{
+            color: {COLOR_TEXT_LIGHT} !important;
         }}
         
-        .category-detail {{
-            color: {COLOR_TEXT};
-            margin: 8px 0;
-            font-size: 0.9em;
+        details summary {{
+            color: {COLOR_TEXT_LIGHT} !important;
         }}
         
-        .category-detail strong {{
-            color: {COLOR_PRIMARY};
-            font-weight: 600;
+        details summary p {{
+            color: {COLOR_TEXT_LIGHT} !important;
+        }}
+        
+        /* Contenido del expander - fondo blanco con texto oscuro */
+        .streamlit-expanderContent {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+            border-top: none !important;
+            padding: 10px !important;
+        }}
+        
+        .streamlit-expanderContent p {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilo para el texto dentro del contenido */
+        .streamlit-expanderContent strong {{
+            color: {COLOR_PRIMARY} !important;
         }}
         
         hr {{
@@ -366,7 +371,7 @@ def modulo_categoria():
 
 
 def mostrar_lista_categorias(id_tienda):
-    """Muestra la lista de categorías activas con tarjetas estilo subtítulo"""
+    """Muestra la lista de categorías activas con expanders desplegables"""
     st.markdown('<div class="module-subtitle">📋 Categorías registradas</div>', unsafe_allow_html=True)
     
     categorias = obtener_categorias(id_tienda)
@@ -377,17 +382,12 @@ def mostrar_lista_categorias(id_tienda):
         st.write(f"**Total de categorías:** {len(categorias)}")
         st.markdown("---")
         
-        # Mostrar categorías en formato de tarjetas
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
-            st.markdown(f"""
-                <div class="category-card">
-                    <div class="category-name">📁 {nombre}</div>
-                    <div class="category-detail"><strong>ID:</strong> {id_cat}</div>
-                    <div class="category-detail"><strong>Descripción:</strong> {descripcion if descripcion else 'Sin descripción'}</div>
-                    <div class="category-detail"><strong>Fecha de creación:</strong> {fecha}</div>
-                </div>
-            """, unsafe_allow_html=True)
+            with st.expander(f"📁 {nombre}"):
+                st.markdown(f"**ID:** {id_cat}")
+                st.markdown(f"**Descripción:** {descripcion if descripcion else 'Sin descripción'}")
+                st.markdown(f"**Fecha de creación:** {fecha}")
 
 
 def mostrar_formulario_crear(id_tienda):
