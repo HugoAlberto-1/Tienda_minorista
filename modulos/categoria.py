@@ -14,12 +14,6 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
-    COLOR_ERROR_BG = "#f8d7da"
-    COLOR_ERROR_TEXT = "#721c24"
-    COLOR_WARNING_BG = "#fff3cd"
-    COLOR_WARNING_TEXT = "#856404"
-    COLOR_SUCCESS_BG = "#d4edda"
-    COLOR_SUCCESS_TEXT = "#155724"
     
     st.markdown(f"""
         <style>
@@ -100,44 +94,51 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        /* Estilos para todos los botones - Mismo color azul */
+        /* ============================================ */
+        /* ESTILOS FORZADOS PARA TODOS LOS BOTONES */
+        /* ============================================ */
+        
+        /* Botones normales de Streamlit */
         .stButton > button {{
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            background-color: {COLOR_PRIMARY};
-            color: white;
-            border: none;
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
         }}
         
         .stButton > button:hover {{
-            background-color: {COLOR_SECONDARY};
-            transform: translateY(-1px);
+            background-color: {COLOR_SECONDARY} !important;
+            transform: translateY(-1px) !important;
+            color: white !important;
         }}
         
-        /* Estilos para botones de formulario */
+        /* Botones de formulario (form_submit_button) */
         .stForm button[type="submit"] {{
-            background-color: {COLOR_PRIMARY};
-            color: white;
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 500 !important;
+            padding: 0.5rem 1rem !important;
+            transition: all 0.3s ease !important;
         }}
         
         .stForm button[type="submit"]:hover {{
-            background-color: {COLOR_SECONDARY};
+            background-color: {COLOR_SECONDARY} !important;
+            transform: translateY(-1px) !important;
+            color: white !important;
         }}
         
-        /* Estilos para mensajes */
-        .stAlert {{
-            border-radius: 8px;
+        /* Cualquier otro botón que pueda haber */
+        button {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
         }}
         
-        /* Mensaje de error */
-        .stAlert[data-testid="stAlert"]:has(.stMarkdown) {{
-            background-color: {COLOR_ERROR_BG} !important;
-            border-left: 4px solid {COLOR_PRIMARY} !important;
-        }}
-        
-        .stAlert .stMarkdown p {{
-            color: {COLOR_ERROR_TEXT} !important;
+        button:hover {{
+            background-color: {COLOR_SECONDARY} !important;
         }}
         
         /* Estilos para expander */
@@ -201,7 +202,6 @@ def configurar_estilo():
         }}
         </style>
     """, unsafe_allow_html=True)
-
 
 # ==================== FUNCIONES DE BASE DE DATOS ====================
 
