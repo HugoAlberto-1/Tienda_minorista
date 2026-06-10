@@ -2,9 +2,207 @@ import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
 
+def configurar_estilo():
+    """Configuración de estilos CSS para el módulo - Mismo estilo que inventario"""
+    COLOR_PRIMARY = "#1e3a5f"
+    COLOR_SECONDARY = "#2c5f8a"
+    COLOR_BG = "#f5f7fa"
+    COLOR_CARD = "#ffffff"
+    COLOR_TEXT = "#333333"
+    COLOR_TEXT_DARK = "#1a1a1a"
+    COLOR_HOVER = "#e8f0fe"
+    COLOR_BORDER = "#e0e0e0"
+    COLOR_BUTTON = "#1e3a5f"
+    
+    st.markdown(f"""
+        <style>
+        /* Fondo general */
+        .stApp {{
+            background-color: {COLOR_BG};
+        }}
+        
+        /* Títulos */
+        .admin-title {{
+            text-align: center;
+            color: {COLOR_PRIMARY};
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }}
+        
+        .admin-subtitle {{
+            text-align: center;
+            color: {COLOR_SECONDARY};
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }}
+        
+        /* Info box */
+        .info-box {{
+            background: {COLOR_HOVER};
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid {COLOR_PRIMARY};
+            margin: 15px 0;
+            color: {COLOR_TEXT_DARK};
+        }}
+        
+        /* Botones */
+        .stButton > button {{
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background-color: {COLOR_PRIMARY};
+            color: white;
+            border: none;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY};
+            transform: translateY(-1px);
+        }}
+        
+        /* Botón volver - Color gris con texto blanco */
+        .volver-btn button {{
+            background-color: #6c757d !important;
+            background: #6c757d !important;
+            color: white !important;
+        }}
+        
+        .volver-btn button:hover {{
+            background-color: #5a6268 !important;
+            background: #5a6268 !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }}
+        
+        /* Labels */
+        .stTextInput > label, .stSelectbox > label, .stRadio > label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Selectores */
+        .stSelectbox > div > div {{
+            background-color: {COLOR_BUTTON};
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        .stSelectbox > div > div > div {{
+            color: white !important;
+        }}
+        
+        .stSelectbox svg {{
+            fill: white !important;
+        }}
+        
+        /* Checkbox */
+        .stCheckbox label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Radio buttons */
+        .stRadio label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {COLOR_PRIMARY} !important;
+        }}
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+        }}
+        
+        .stTabs [data-baseweb="tab"] {{
+            background-color: {COLOR_BUTTON};
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: white !important;
+        }}
+        
+        .stTabs [data-baseweb="tab"]:hover {{
+            background-color: {COLOR_SECONDARY};
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+        }}
+        
+        /* Dataframe */
+        .stDataFrame {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 12px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] table {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] th {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            padding: 12px 8px !important;
+        }}
+        
+        [data-testid="stDataFrame"] td {{
+            color: {COLOR_TEXT} !important;
+            text-align: center !important;
+            padding: 10px 8px !important;
+            background-color: {COLOR_CARD} !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
+            background-color: #f8f9fa !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:hover td {{
+            background-color: {COLOR_HOVER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] td div {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Alertas */
+        .stAlert {{
+            background-color: {COLOR_CARD} !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        /* Formularios */
+        .stForm {{
+            background-color: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid {COLOR_BORDER};
+        }}
+        
+        /* Dividers */
+        hr {{
+            border-color: {COLOR_BORDER};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+
 def modulo_gestion_admin():
-    st.title("👑 Panel de Administración")
-    st.subheader("Gestión de Tiendas y Usuarios")
+    configurar_estilo()
+    
+    st.markdown('<div class="admin-title">👑 Panel de Administración</div>', unsafe_allow_html=True)
+    st.markdown('<div class="admin-subtitle">Gestión de Tiendas y Usuarios</div>', unsafe_allow_html=True)
 
     # Verificar que sea administrador
     if st.session_state.get("nivel_usuario") != "Administrador":
@@ -305,11 +503,11 @@ def modulo_gestion_admin():
                 cursor.close()
                 conn.close()
 
-    
-        # Botón para volver al menú principal (fuera de las tabs)
+    # Botón para volver al menú principal (fuera de las tabs)
     st.divider()
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
         if st.button("🔙 Volver al menú principal", use_container_width=True):
             # Limpiar el módulo actual
             if "module" in st.session_state:
@@ -318,4 +516,4 @@ def modulo_gestion_admin():
             if "macro_modulo" in st.session_state:
                 st.session_state["macro_modulo"] = None
             st.rerun()
-   
+        st.markdown('</div>', unsafe_allow_html=True)
