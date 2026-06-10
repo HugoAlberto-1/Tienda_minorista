@@ -16,13 +16,10 @@ def configurar_estilo():
     COLOR_BUTTON = "#1e3a5f"
     COLOR_ERROR_BG = "#f8d7da"
     COLOR_ERROR_TEXT = "#721c24"
-    COLOR_ERROR_BORDER = "#f5c6cb"
     COLOR_WARNING_BG = "#fff3cd"
     COLOR_WARNING_TEXT = "#856404"
-    COLOR_WARNING_BORDER = "#ffeeba"
     COLOR_SUCCESS_BG = "#d4edda"
     COLOR_SUCCESS_TEXT = "#155724"
-    COLOR_SUCCESS_BORDER = "#c3e6cb"
     
     st.markdown(f"""
         <style>
@@ -103,7 +100,7 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        /* Estilos para botones */
+        /* Estilos para todos los botones - Mismo color azul */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -118,7 +115,17 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Estilos para mensajes de error - usando paleta corporativa */
+        /* Estilos para botones de formulario */
+        .stForm button[type="submit"] {{
+            background-color: {COLOR_PRIMARY};
+            color: white;
+        }}
+        
+        .stForm button[type="submit"]:hover {{
+            background-color: {COLOR_SECONDARY};
+        }}
+        
+        /* Estilos para mensajes */
         .stAlert {{
             border-radius: 8px;
         }}
@@ -131,11 +138,6 @@ def configurar_estilo():
         
         .stAlert .stMarkdown p {{
             color: {COLOR_ERROR_TEXT} !important;
-        }}
-        
-        /* Mensaje de éxito */
-        .stAlert .stMarkdown:has(> p:contains("✅")) {{
-            background-color: {COLOR_SUCCESS_BG} !important;
         }}
         
         /* Estilos para expander */
@@ -196,12 +198,6 @@ def configurar_estilo():
         .stTabs [aria-selected="false"] {{
             background-color: {COLOR_BORDER};
             color: {COLOR_TEXT_DARK};
-        }}
-        
-        /* Estilo para mensajes de información */
-        .stAlert .stMarkdown:has(> p:contains("ℹ️")) {{
-            background-color: {COLOR_HOVER} !important;
-            border-left: 4px solid {COLOR_ACCENT} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
