@@ -409,10 +409,10 @@ def modulo_gestion_admin():
                     else:
                         st.info("No hay tiendas activas para mostrar usuarios")
                 
-                else:  # Todos los usuarios - CORREGIDO con LEFT JOIN
+                else:  # Todos los usuarios - CORREGIDO CON CONVERT
                     cursor.execute("""
                         SELECT e.id_empleado, e.Nombre, e.Usuario, e.DUI, e.Contacto, e.Nivel_usuario, 
-                               COALESCE(t.nombre, '👑 Dueño (Todas las tiendas)') as Tienda
+                               COALESCE(CONVERT(t.nombre USING utf8mb4), '👑 Dueño (Todas las tiendas)') as Tienda
                         FROM Empleado e
                         LEFT JOIN tienda t ON e.id_tienda = t.id_tienda
                         ORDER BY 
