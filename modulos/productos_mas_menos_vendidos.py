@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
 from datetime import datetime
-import plotly.graph_objects as go
 
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo"""
@@ -208,39 +207,6 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         return None, None, None
 
 
-def graficar_productos(df, titulo, color):
-    """Crea gráfico de barras para productos"""
-    if df.empty:
-        return None
-    
-    # Limitar a top 15
-    df_plot = df.head(15).copy()
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Bar(
-        x=df_plot["Producto"],
-        y=df_plot["Cantidad_Vendida"],
-        text=df_plot["Cantidad con Unidad"],
-        textposition='outside',
-        textfont=dict(size=10, color="#333333"),
-        marker=dict(color=color, line=dict(width=1, color='white'), opacity=0.85),
-        hovertemplate='<b>%{x}</b><br>📦 Cantidad: %{y:.2f}<extra></extra>'
-    ))
-    
-    fig.update_layout(
-        title=dict(text=f"<b>{titulo}</b>", font=dict(size=18, color="#1e3a5f"), x=0.5),
-        xaxis=dict(title="Producto", titlefont=dict(size=12), tickangle=-45),
-        yaxis=dict(title="Cantidad Vendida", titlefont=dict(size=12), gridcolor='#e0e0e0'),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        height=500,
-        bargap=0.3
-    )
-    
-    return fig
-
-
 def modulo_productos_mas_menos_vendidos():
     configurar_estilo()
     
@@ -338,33 +304,52 @@ def modulo_productos_mas_menos_vendidos():
         df_mas_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=False)
         df_menos_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=True)
         
-        # Más Vendidos
+        # ============================================================
+        # MÁS VENDIDOS
+        # ============================================================
         st.markdown("## 🏆 Productos Más Vendidos")
+        
         if not df_mas_vendidos.empty:
-            fig_mas = graficar_productos(df_mas_vendidos, "Productos Más Vendidos", "#2ecc71")
-            if fig_mas:
-                st.plotly_chart(fig_mas, use_container_width=True)
-            st.dataframe(df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]], use_container_width=True)
+            # Gráfico de barras con st.bar_chart
+            chart_data = df_mas_vendidos.head(15).set_index("Producto")[["Cantidad_Vendida"]]
+            st.bar_chart(chart_data, use_container_width=True)
+            
+            # Tabla completa
+            st.dataframe(
+                df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+                use_container_width=True
+            )
         else:
             st.info("No hay productos con ventas en el período seleccionado.")
         
         st.markdown("---")
         
-        # Menos Vendidos
+        # ============================================================
+        # MENOS VENDIDOS
+        # ============================================================
         st.markdown("## 📉 Productos Menos Vendidos")
+        
         if not df_menos_vendidos.empty:
-            fig_menos = graficar_productos(df_menos_vendidos, "Productos Menos Vendidos", "#e74c3c")
-            if fig_menos:
-                st.plotly_chart(fig_menos, use_container_width=True)
-            st.dataframe(df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]], use_container_width=True)
+            # Gráfico de barras con st.bar_chart
+            chart_data_menos = df_menos_vendidos.head(15).set_index("Producto")[["Cantidad_Vendida"]]
+            st.bar_chart(chart_data_menos, use_container_width=True)
+            
+            # Tabla completa
+            st.dataframe(
+                df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+                use_container_width=True
+            )
         else:
             st.info("No hay productos con ventas en el período seleccionado.")
         
-        # Productos sin ventas
+        # ============================================================
+        # PRODUCTOS SIN VENTAS
+        # ============================================================
         if not df_sin_ventas.empty:
             st.markdown("---")
             st.markdown("## 🚫 Productos Sin Ventas")
-            st.info(f"Hay {len(df_sin_ventas)} productos sin ventas en el período.")
+            st.info(f"Hay {len(df_sin_ventas)} productos que no tuvieron ventas en el período seleccionado.")
+            
             with st.expander("📋 Ver productos sin ventas"):
                 st.dataframe(df_sin_ventas[["Producto", "Categoria"]], use_container_width=True)
     
