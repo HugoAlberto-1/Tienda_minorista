@@ -44,7 +44,7 @@ def configurar_estilo():
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
-            color: {COLOR_TEXT_DARK};
+            color: {COLOR_TEXT} !important;
         }}
         
         /* Botones */
@@ -76,10 +76,20 @@ def configurar_estilo():
             transform: translateY(-2px);
         }}
         
-        /* Labels */
-        .stTextInput > label, .stSelectbox > label, .stRadio > label {{
-            color: {COLOR_TEXT_DARK} !important;
+        /* Labels generales */
+        .stTextInput > label, .stSelectbox > label, .stRadio > label, .stCheckbox label {{
+            color: {COLOR_TEXT} !important;
             font-weight: 500 !important;
+        }}
+        
+        /* Radio buttons - opciones individuales */
+        .stRadio div[role="radiogroup"] label {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Checkbox label */
+        .stCheckbox label {{
+            color: {COLOR_TEXT} !important;
         }}
         
         /* Selectores */
@@ -95,16 +105,6 @@ def configurar_estilo():
         
         .stSelectbox svg {{
             fill: white !important;
-        }}
-        
-        /* Checkbox */
-        .stCheckbox label {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        /* Radio buttons */
-        .stRadio label {{
-            color: {COLOR_TEXT_DARK} !important;
         }}
         
         /* Headers */
@@ -332,7 +332,7 @@ def modulo_gestion_admin():
                         nivel = "Administrador"
                         tienda_seleccionada = "Ninguna (Dueño de todas las tiendas)"
                         id_tienda_seleccionada = None
-                        st.info("👑 El Administrador será dueño de TODAS las tiendas (sin tienda asignada)")
+                        st.markdown('<div class="info-box">👑 El Administrador será dueño de TODAS las tiendas (sin tienda asignada)</div>', unsafe_allow_html=True)
                     else:
                         nivel = st.selectbox("Nivel de usuario", ["Vendedora"])
                         # Selector de tienda solo para vendedores/cajeros
@@ -394,7 +394,7 @@ def modulo_gestion_admin():
         st.markdown("### 📊 Usuarios por Tienda")
         
         # Mostrar también los Administradores (Dueños) que tienen id_tienda = NULL
-        st.info("👑 Los Administradores (Dueños) aparecen en 'Todas las tiendas' porque no pertenecen a una específica")
+        st.markdown('<div class="info-box">👑 Los Administradores (Dueños) aparecen en "Todas las tiendas" porque no pertenecen a una específica</div>', unsafe_allow_html=True)
         
         # Opción para ver todos los usuarios o por tienda
         vista = st.radio(
