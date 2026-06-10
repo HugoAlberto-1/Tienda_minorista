@@ -60,7 +60,6 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
         
-        /* Tarjetas para Top 3 */
         .top-card {{
             background: linear-gradient(135deg, {COLOR_PRIMARY} 0%, {COLOR_SECONDARY} 100%);
             padding: 20px;
@@ -107,7 +106,6 @@ def configurar_estilo():
             margin-top: 10px;
         }}
         
-        /* Tarjetas para menos vendidos */
         .bottom-card {{
             background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
             padding: 20px;
@@ -166,20 +164,6 @@ def configurar_estilo():
             background-color: {COLOR_SECONDARY};
         }}
         
-        /* Botón volver - Color gris con texto blanco */
-        .volver-btn button {{
-            background-color: #6c757d !important;
-            background: #6c757d !important;
-            color: white !important;
-        }}
-        
-        .volver-btn button:hover {{
-            background-color: #5a6268 !important;
-            background: #5a6268 !important;
-            color: white !important;
-            transform: translateY(-2px);
-        }}
-        
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
@@ -207,7 +191,7 @@ def configurar_estilo():
 
 
 def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
-    """Obtiene todos los productos con sus cantidades vendidas"""
+    """Obtiene todos los productos con sus cantidades vendidas (convertidas a libras para granos)"""
     conn = obtener_conexion()
     if not conn:
         return pd.DataFrame()
@@ -218,52 +202,86 @@ def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         if es_admin:
             query = """
                 SELECT 
+                    p.id_producto,
                     p.Nombre as Producto,
-                    p.Cod_barra as Codigo,
                     p.categoria as Categoria,
-                    COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Vendida,
-                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Vendido,
-                    COUNT(DISTINCT pv.ID_Venta) as Numero_Ventas,
-                    pv.unidad as Unidad
+                    pv.unidad,
+                    SUM(pv.Cantidad_vendida) as Cantidad_Vendida,
+                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Vendido
                 FROM Producto p
-                LEFT JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra
-                LEFT JOIN Venta v ON pv.ID_Venta = v.ID_Venta AND DATE(v.Fecha) BETWEEN %s AND %s
-                GROUP BY p.Cod_barra, p.Nombre, p.categoria, pv.unidad
-                ORDER BY Cantidad_Vendida DESC
+                JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra AND p.id_tienda = pv.id_tienda
+                JOIN Venta v ON pv.Id_venta = v.Id_venta
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                GROUP BY p.id_producto, p.Nombre, p.categoria, pv.unidad
             """
             cursor.execute(query, (fecha_inicio, fecha_fin))
         else:
             query = """
                 SELECT 
+                    p.id_producto,
                     p.Nombre as Producto,
-                    p.Cod_barra as Codigo,
                     p.categoria as Categoria,
-                    COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Vendida,
-                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Vendido,
-                    COUNT(DISTINCT pv.ID_Venta) as Numero_Ventas,
-                    pv.unidad as Unidad
+                    pv.unidad,
+                    SUM(pv.Cantidad_vendida) as Cantidad_Vendida,
+                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Vendido
                 FROM Producto p
-                LEFT JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra
-                LEFT JOIN Venta v ON pv.ID_Venta = v.ID_Venta AND DATE(v.Fecha) BETWEEN %s AND %s AND v.id_tienda = %s
-                WHERE p.id_tienda = %s
-                GROUP BY p.Cod_barra, p.Nombre, p.categoria, pv.unidad
-                ORDER BY Cantidad_Vendida DESC
+                JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra AND p.id_tienda = pv.id_tienda
+                JOIN Venta v ON pv.Id_venta = v.Id_venta
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                  AND v.id_tienda = %s
+                GROUP BY p.id_producto, p.Nombre, p.categoria, pv.unidad
             """
-            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda, id_tienda))
+            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda))
         
         resultados = cursor.fetchall()
         cursor.close()
         conn.close()
         
-        if resultados:
-            df = pd.DataFrame(resultados, columns=["Producto", "Codigo", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas", "Unidad"])
+        if not resultados:
+            return pd.DataFrame()
+        
+        # Procesar resultados para convertir a unidad base (libras)
+        productos_data = {}
+        
+        for row in resultados:
+            id_producto, nombre, categoria, unidad, cantidad, total = row
+            
+            if id_producto not in productos_data:
+                productos_data[id_producto] = {
+                    "Producto": nombre,
+                    "Categoria": categoria,
+                    "Cantidad_Total": 0,
+                    "Total_Vendido": 0,
+                    "Unidad_Base": ""
+                }
+            
+            # Convertir a unidad base (libras)
+            cantidad_en_libras = cantidad
+            if unidad == "quintal":
+                cantidad_en_libras = cantidad * 100
+            elif unidad == "arroba":
+                cantidad_en_libras = cantidad * 25
+            # libras se queda igual
+            
+            productos_data[id_producto]["Cantidad_Total"] += cantidad_en_libras
+            productos_data[id_producto]["Total_Vendido"] += total
+            productos_data[id_producto]["Unidad_Base"] = "libras"
+        
+        # Crear DataFrame
+        df = pd.DataFrame(list(productos_data.values()))
+        
+        if not df.empty:
+            # Formatear cantidad con unidad
             df["Cantidad con Unidad"] = df.apply(
-                lambda x: f"{x['Cantidad_Vendida']:.2f} {x['Unidad']}" if x['Unidad'] and x['Cantidad_Vendida'] > 0 else f"{x['Cantidad_Vendida']:.2f}", 
+                lambda x: f"{x['Cantidad_Total']:.2f} {x['Unidad_Base']}", 
                 axis=1
             )
             df["Total_Vendido"] = df["Total_Vendido"].round(2)
-            return df
-        return pd.DataFrame()
+            
+            # Ordenar por cantidad vendida
+            df = df.sort_values("Cantidad_Total", ascending=False)
+        
+        return df
         
     except Exception as e:
         st.error(f"Error al obtener datos: {e}")
@@ -322,7 +340,6 @@ def mostrar_top_card(producto, cantidad, unidad, total, posicion, color="blue"):
     else:
         card_class = "bottom-card"
     
-    # Medalla según posición
     if posicion == 1:
         medalla = "🥇"
     elif posicion == 2:
@@ -349,7 +366,6 @@ def modulo_productos_mas_menos_vendidos():
     st.markdown('<div class="main-title">📊 Productos Más y Menos Vendidos</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Análisis completo de ventas por producto</div>', unsafe_allow_html=True)
     
-    # Obtener información de la sesión
     rol_usuario = st.session_state.get("nivel_usuario", "")
     nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
     id_tienda = st.session_state.get("id_tienda", None)
@@ -435,10 +451,9 @@ def modulo_productos_mas_menos_vendidos():
     if df_completo.empty:
         st.warning("⚠️ No hay datos de ventas en el período seleccionado.")
     else:
-        df_con_ventas = df_completo[df_completo["Cantidad_Vendida"] > 0].copy()
-        df_sin_ventas = df_completo[df_completo["Cantidad_Vendida"] == 0].copy()
-        df_mas_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=False)
-        df_menos_vendidos = df_con_ventas.sort_values("Cantidad_Vendida", ascending=True)
+        df_con_ventas = df_completo[df_completo["Cantidad_Total"] > 0].copy()
+        df_mas_vendidos = df_con_ventas.sort_values("Cantidad_Total", ascending=False)
+        df_menos_vendidos = df_con_ventas.sort_values("Cantidad_Total", ascending=True)
         
         # ============================================================
         # TOP 3 MÁS VENDIDOS - TARJETAS
@@ -447,37 +462,34 @@ def modulo_productos_mas_menos_vendidos():
         
         if len(df_mas_vendidos) >= 3:
             top3_mas = df_mas_vendidos.head(3)
-            
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 row = top3_mas.iloc[0]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=1,
                     color="blue"
                 )
-            
             with col2:
                 row = top3_mas.iloc[1]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=2,
                     color="blue"
                 )
-            
             with col3:
                 row = top3_mas.iloc[2]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=3,
                     color="blue"
@@ -489,8 +501,8 @@ def modulo_productos_mas_menos_vendidos():
                 row = df_mas_vendidos.iloc[0]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=1,
                     color="blue"
@@ -499,8 +511,8 @@ def modulo_productos_mas_menos_vendidos():
                 row = df_mas_vendidos.iloc[1]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=2,
                     color="blue"
@@ -512,8 +524,8 @@ def modulo_productos_mas_menos_vendidos():
             with col2:
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=1,
                     color="blue"
@@ -528,7 +540,7 @@ def modulo_productos_mas_menos_vendidos():
         # ============================================================
         st.markdown("### 📋 Lista completa de productos más vendidos")
         st.dataframe(
-            df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+            df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido"]],
             use_container_width=True
         )
         
@@ -541,37 +553,34 @@ def modulo_productos_mas_menos_vendidos():
         
         if len(df_menos_vendidos) >= 3:
             top3_menos = df_menos_vendidos.head(3)
-            
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 row = top3_menos.iloc[0]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=1,
                     color="red"
                 )
-            
             with col2:
                 row = top3_menos.iloc[1]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=2,
                     color="red"
                 )
-            
             with col3:
                 row = top3_menos.iloc[2]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=3,
                     color="red"
@@ -583,8 +592,8 @@ def modulo_productos_mas_menos_vendidos():
                 row = df_menos_vendidos.iloc[0]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=1,
                     color="red"
@@ -593,8 +602,8 @@ def modulo_productos_mas_menos_vendidos():
                 row = df_menos_vendidos.iloc[1]
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=2,
                     color="red"
@@ -606,8 +615,8 @@ def modulo_productos_mas_menos_vendidos():
             with col2:
                 mostrar_top_card(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Vendida"],
-                    unidad=row["Unidad"] if row["Unidad"] else "unidades",
+                    cantidad=row["Cantidad_Total"],
+                    unidad=row["Unidad_Base"],
                     total=row["Total_Vendido"],
                     posicion=1,
                     color="red"
@@ -622,25 +631,40 @@ def modulo_productos_mas_menos_vendidos():
         # ============================================================
         st.markdown("### 📋 Lista completa de productos menos vendidos")
         st.dataframe(
-            df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]],
+            df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido"]],
             use_container_width=True
         )
         
         # ============================================================
         # PRODUCTOS SIN VENTAS
         # ============================================================
-        if not df_sin_ventas.empty:
-            st.markdown("---")
-            st.markdown(f"## 🚫 Productos Sin Ventas ({len(df_sin_ventas)})")
-            with st.expander("📋 Ver productos sin ventas"):
-                st.dataframe(df_sin_ventas[["Producto", "Categoria"]], use_container_width=True)
+        productos_con_ventas = set(df_con_ventas["Producto"].tolist())
+        
+        # Obtener todos los productos
+        conn = obtener_conexion()
+        if conn:
+            cursor = conn.cursor()
+            if es_admin:
+                cursor.execute("SELECT Nombre, categoria FROM Producto")
+            else:
+                cursor.execute("SELECT Nombre, categoria FROM Producto WHERE id_tienda = %s", (id_tienda_usar,))
+            todos_productos = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            productos_sin_ventas = [p for p in todos_productos if p[0] not in productos_con_ventas]
+            
+            if productos_sin_ventas:
+                st.markdown("---")
+                st.markdown(f"## 🚫 Productos Sin Ventas ({len(productos_sin_ventas)})")
+                df_sin_ventas = pd.DataFrame(productos_sin_ventas, columns=["Producto", "Categoria"])
+                with st.expander("📋 Ver productos sin ventas"):
+                    st.dataframe(df_sin_ventas, use_container_width=True)
     
-    # Botón para volver (color gris con texto blanco)
+    # Botón para volver
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
         if st.button("🔙 Volver al menú principal", use_container_width=True):
             st.session_state["module"] = None
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
