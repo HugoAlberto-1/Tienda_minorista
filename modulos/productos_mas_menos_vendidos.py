@@ -101,8 +101,9 @@ def configurar_estilo():
         }}
         
         .top-card .total {{
-            font-size: 0.9em;
-            color: rgba(255,255,255,0.8);
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffd700;
             margin-top: 10px;
         }}
         
@@ -147,8 +148,9 @@ def configurar_estilo():
         }}
         
         .bottom-card .total {{
-            font-size: 0.9em;
-            color: rgba(255,255,255,0.8);
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffd700;
             margin-top: 10px;
         }}
         
@@ -191,7 +193,7 @@ def configurar_estilo():
 
 
 def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
-    """Obtiene todos los productos con sus cantidades vendidas (convertidas a libras para granos)"""
+    """Obtiene todos los productos con sus ingresos totales (sin importar unidad)"""
     conn = obtener_conexion()
     if not conn:
         return pd.DataFrame()
@@ -205,14 +207,14 @@ def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
                     p.id_producto,
                     p.Nombre as Producto,
                     p.categoria as Categoria,
-                    pv.unidad,
-                    SUM(pv.Cantidad_vendida) as Cantidad_Vendida,
-                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Vendido
+                    SUM(pv.Cantidad_vendida) as Cantidad_Total,
+                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ingresos
                 FROM Producto p
                 JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra AND p.id_tienda = pv.id_tienda
                 JOIN Venta v ON pv.Id_venta = v.Id_venta
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                GROUP BY p.id_producto, p.Nombre, p.categoria, pv.unidad
+                GROUP BY p.id_producto, p.Nombre, p.categoria
+                ORDER BY Total_Ingresos DESC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin))
         else:
@@ -221,15 +223,15 @@ def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
                     p.id_producto,
                     p.Nombre as Producto,
                     p.categoria as Categoria,
-                    pv.unidad,
-                    SUM(pv.Cantidad_vendida) as Cantidad_Vendida,
-                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Vendido
+                    SUM(pv.Cantidad_vendida) as Cantidad_Total,
+                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ingresos
                 FROM Producto p
                 JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra AND p.id_tienda = pv.id_tienda
                 JOIN Venta v ON pv.Id_venta = v.Id_venta
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
                   AND v.id_tienda = %s
-                GROUP BY p.id_producto, p.Nombre, p.categoria, pv.unidad
+                GROUP BY p.id_producto, p.Nombre, p.categoria
+                ORDER BY Total_Ingresos DESC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda))
         
@@ -240,53 +242,22 @@ def obtener_datos_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         if not resultados:
             return pd.DataFrame()
         
-        # Procesar resultados para convertir a unidad base (libras)
-        productos_data = {}
-        
-        for row in resultados:
-            id_producto, nombre, categoria, unidad, cantidad, total = row
-            
-            if id_producto not in productos_data:
-                productos_data[id_producto] = {
-                    "Producto": nombre,
-                    "Categoria": categoria,
-                    "Cantidad_Total": 0,
-                    "Total_Vendido": 0,
-                    "Unidad_Base": ""
-                }
-            
-            # Convertir a unidad base (libras)
-            cantidad_en_libras = cantidad
-            if unidad == "quintal":
-                cantidad_en_libras = cantidad * 100
-            elif unidad == "arroba":
-                cantidad_en_libras = cantidad * 25
-            # libras se queda igual
-            
-            productos_data[id_producto]["Cantidad_Total"] += cantidad_en_libras
-            productos_data[id_producto]["Total_Vendido"] += total
-            productos_data[id_producto]["Unidad_Base"] = "libras"
-        
-        # Crear DataFrame
-        df = pd.DataFrame(list(productos_data.values()))
+        df = pd.DataFrame(resultados, columns=["id_producto", "Producto", "Categoria", "Cantidad_Total", "Total_Ingresos"])
         
         if not df.empty:
-            # Formatear cantidad con unidad
-            df["Cantidad con Unidad"] = df.apply(
-                lambda x: f"{x['Cantidad_Total']:.2f} {x['Unidad_Base']}", 
-                axis=1
-            )
-            df["Total_Vendido"] = df["Total_Vendido"].round(2)
-            
-            # Ordenar por cantidad vendida
-            df = df.sort_values("Cantidad_Total", ascending=False)
+            # Redondear valores
+            df["Total_Ingresos"] = df["Total_Ingresos"].round(2)
+            df["Cantidad_Total"] = df["Cantidad_Total"].round(2)
+            df["Cantidad con Unidad"] = df["Cantidad_Total"].apply(lambda x: f"{x:.2f} unidades (convertidas)")
         
         return df
         
     except Exception as e:
         st.error(f"Error al obtener datos: {e}")
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
         return pd.DataFrame()
 
 
@@ -333,8 +304,8 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
         return None, None, None
 
 
-def mostrar_top_card(producto, cantidad, unidad, total, posicion, color="blue"):
-    """Muestra una tarjeta con la información del producto"""
+def mostrar_top_card_ingresos(producto, ingresos, posicion, color="blue"):
+    """Muestra una tarjeta con la información del producto basada en ingresos"""
     if color == "blue":
         card_class = "top-card"
     else:
@@ -353,9 +324,8 @@ def mostrar_top_card(producto, cantidad, unidad, total, posicion, color="blue"):
         <div class="{card_class}">
             <div class="position">{medalla}</div>
             <div class="product-name">{producto}</div>
-            <div class="quantity">{cantidad:.2f}</div>
-            <div class="unit">{unidad}</div>
-            <div class="total">💰 ${total:,.2f}</div>
+            <div class="quantity">${ingresos:,.2f}</div>
+            <div class="unit">en ingresos</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -363,8 +333,8 @@ def mostrar_top_card(producto, cantidad, unidad, total, posicion, color="blue"):
 def modulo_productos_mas_menos_vendidos():
     configurar_estilo()
     
-    st.markdown('<div class="main-title">📊 Productos Más y Menos Vendidos</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">Análisis completo de ventas por producto</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">📊 Productos que Más y Menos Ingresos Generan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">Análisis de ingresos por producto</div>', unsafe_allow_html=True)
     
     rol_usuario = st.session_state.get("nivel_usuario", "")
     nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
@@ -451,194 +421,174 @@ def modulo_productos_mas_menos_vendidos():
     if df_completo.empty:
         st.warning("⚠️ No hay datos de ventas en el período seleccionado.")
     else:
-        df_con_ventas = df_completo[df_completo["Cantidad_Total"] > 0].copy()
-        df_mas_vendidos = df_con_ventas.sort_values("Cantidad_Total", ascending=False)
-        df_menos_vendidos = df_con_ventas.sort_values("Cantidad_Total", ascending=True)
+        # Ordenar por ingresos (mayor a menor)
+        df_mayores_ingresos = df_completo.sort_values("Total_Ingresos", ascending=False)
+        # Ordenar por ingresos (menor a mayor)
+        df_menores_ingresos = df_completo[df_completo["Total_Ingresos"] > 0].sort_values("Total_Ingresos", ascending=True)
         
         # ============================================================
-        # TOP 3 MÁS VENDIDOS - TARJETAS
+        # TOP 3 PRODUCTOS QUE MÁS INGRESOS GENERAN - TARJETAS
         # ============================================================
-        st.markdown("## 🏆 Top 3 Productos Más Vendidos")
+        st.markdown("## 🏆 Top 3 Productos que Más Ingresos Generan")
         
-        if len(df_mas_vendidos) >= 3:
-            top3_mas = df_mas_vendidos.head(3)
+        if len(df_mayores_ingresos) >= 3:
+            top3_mas = df_mayores_ingresos.head(3)
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 row = top3_mas.iloc[0]
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=1,
                     color="blue"
                 )
             with col2:
                 row = top3_mas.iloc[1]
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=2,
                     color="blue"
                 )
             with col3:
                 row = top3_mas.iloc[2]
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=3,
                     color="blue"
                 )
-        elif len(df_mas_vendidos) == 2:
-            st.info("Solo hay 2 productos con ventas en el período.")
+        elif len(df_mayores_ingresos) == 2:
+            st.info("Solo hay 2 productos con ingresos en el período.")
             col1, col2 = st.columns(2)
             with col1:
-                row = df_mas_vendidos.iloc[0]
-                mostrar_top_card(
+                row = df_mayores_ingresos.iloc[0]
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=1,
                     color="blue"
                 )
             with col2:
-                row = df_mas_vendidos.iloc[1]
-                mostrar_top_card(
+                row = df_mayores_ingresos.iloc[1]
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=2,
                     color="blue"
                 )
-        elif len(df_mas_vendidos) == 1:
-            st.info("Solo hay 1 producto con ventas en el período.")
-            row = df_mas_vendidos.iloc[0]
+        elif len(df_mayores_ingresos) == 1:
+            st.info("Solo hay 1 producto con ingresos en el período.")
+            row = df_mayores_ingresos.iloc[0]
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=1,
                     color="blue"
                 )
         else:
-            st.info("No hay productos con ventas en el período seleccionado.")
+            st.info("No hay productos con ingresos en el período seleccionado.")
         
         st.markdown("---")
         
         # ============================================================
-        # TABLA DE MÁS VENDIDOS (COMPLETA)
+        # TABLA DE PRODUCTOS QUE MÁS INGRESOS GENERAN (COMPLETA)
         # ============================================================
-        st.markdown("### 📋 Lista completa de productos más vendidos")
+        st.markdown("### 📋 Lista completa de productos por ingresos generados")
         st.dataframe(
-            df_mas_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido"]],
+            df_mayores_ingresos[["Producto", "Categoria", "Cantidad_Total", "Total_Ingresos"]],
             use_container_width=True
         )
         
         st.markdown("---")
         
         # ============================================================
-        # TOP 3 MENOS VENDIDOS - TARJETAS
+        # TOP 3 PRODUCTOS QUE MENOS INGRESOS GENERAN - TARJETAS
         # ============================================================
-        st.markdown("## 📉 Top 3 Productos Menos Vendidos")
+        st.markdown("## 📉 Top 3 Productos que Menos Ingresos Generan")
         
-        if len(df_menos_vendidos) >= 3:
-            top3_menos = df_menos_vendidos.head(3)
+        if len(df_menores_ingresos) >= 3:
+            top3_menos = df_menores_ingresos.head(3)
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 row = top3_menos.iloc[0]
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=1,
                     color="red"
                 )
             with col2:
                 row = top3_menos.iloc[1]
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=2,
                     color="red"
                 )
             with col3:
                 row = top3_menos.iloc[2]
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=3,
                     color="red"
                 )
-        elif len(df_menos_vendidos) == 2:
-            st.info("Solo hay 2 productos con ventas en el período.")
+        elif len(df_menores_ingresos) == 2:
+            st.info("Solo hay 2 productos con ingresos en el período.")
             col1, col2 = st.columns(2)
             with col1:
-                row = df_menos_vendidos.iloc[0]
-                mostrar_top_card(
+                row = df_menores_ingresos.iloc[0]
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=1,
                     color="red"
                 )
             with col2:
-                row = df_menos_vendidos.iloc[1]
-                mostrar_top_card(
+                row = df_menores_ingresos.iloc[1]
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=2,
                     color="red"
                 )
-        elif len(df_menos_vendidos) == 1:
-            st.info("Solo hay 1 producto con ventas en el período.")
-            row = df_menos_vendidos.iloc[0]
+        elif len(df_menores_ingresos) == 1:
+            st.info("Solo hay 1 producto con ingresos en el período.")
+            row = df_menores_ingresos.iloc[0]
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                mostrar_top_card(
+                mostrar_top_card_ingresos(
                     producto=row["Producto"],
-                    cantidad=row["Cantidad_Total"],
-                    unidad=row["Unidad_Base"],
-                    total=row["Total_Vendido"],
+                    ingresos=row["Total_Ingresos"],
                     posicion=1,
                     color="red"
                 )
         else:
-            st.info("No hay productos con ventas en el período seleccionado.")
+            st.info("No hay productos con ingresos en el período seleccionado.")
         
         st.markdown("---")
         
         # ============================================================
-        # TABLA DE MENOS VENDIDOS (COMPLETA)
+        # TABLA DE PRODUCTOS QUE MENOS INGRESOS GENERAN (COMPLETA)
         # ============================================================
-        st.markdown("### 📋 Lista completa de productos menos vendidos")
-        st.dataframe(
-            df_menos_vendidos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido"]],
-            use_container_width=True
-        )
+        st.markdown("### 📋 Lista completa de productos por menores ingresos")
+        if not df_menores_ingresos.empty:
+            st.dataframe(
+                df_menores_ingresos[["Producto", "Categoria", "Cantidad_Total", "Total_Ingresos"]],
+                use_container_width=True
+            )
+        else:
+            st.info("No hay productos con ingresos en el período seleccionado.")
         
         # ============================================================
-        # PRODUCTOS SIN VENTAS
+        # PRODUCTOS SIN INGRESOS (QUE NO SE VENDIERON)
         # ============================================================
-        productos_con_ventas = set(df_con_ventas["Producto"].tolist())
+        productos_con_ingresos = set(df_completo["Producto"].tolist())
         
         # Obtener todos los productos
         conn = obtener_conexion()
@@ -652,14 +602,14 @@ def modulo_productos_mas_menos_vendidos():
             cursor.close()
             conn.close()
             
-            productos_sin_ventas = [p for p in todos_productos if p[0] not in productos_con_ventas]
+            productos_sin_ingresos = [p for p in todos_productos if p[0] not in productos_con_ingresos]
             
-            if productos_sin_ventas:
+            if productos_sin_ingresos:
                 st.markdown("---")
-                st.markdown(f"## 🚫 Productos Sin Ventas ({len(productos_sin_ventas)})")
-                df_sin_ventas = pd.DataFrame(productos_sin_ventas, columns=["Producto", "Categoria"])
-                with st.expander("📋 Ver productos sin ventas"):
-                    st.dataframe(df_sin_ventas, use_container_width=True)
+                st.markdown(f"## 🚫 Productos Sin Ingresos (No se vendieron) ({len(productos_sin_ingresos)})")
+                df_sin_ingresos = pd.DataFrame(productos_sin_ingresos, columns=["Producto", "Categoria"])
+                with st.expander("📋 Ver productos sin ingresos"):
+                    st.dataframe(df_sin_ingresos, use_container_width=True)
     
     # Botón para volver
     st.markdown("---")
