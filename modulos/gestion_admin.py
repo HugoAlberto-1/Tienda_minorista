@@ -78,11 +78,6 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
-        /* Checkbox label - color oscuro */
-        .stCheckbox label {{
-            color: {COLOR_TEXT} !important;
-        }}
-        
         /* Selectores */
         .stSelectbox > div > div {{
             background-color: {COLOR_BUTTON};
@@ -171,7 +166,9 @@ def modulo_gestion_admin():
                 "Nombre de la tienda *",
                 placeholder="Ej: Tienda Centro Histórico"
             )
-            activo = st.checkbox("Tienda activa", value=True)
+            # Checkbox con texto en color oscuro usando HTML
+            st.markdown('<label style="color: #333333;">Tienda activa</label>', unsafe_allow_html=True)
+            activo = st.checkbox("", value=True, label_visibility="collapsed")
 
             submitted = st.form_submit_button("🏪 Crear Tienda", use_container_width=True)
 
