@@ -5,13 +5,12 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
 
-def configurar_estilo_reportes():
-    """Configuración de estilos CSS para el módulo de reportes"""
+def configurar_estilo_top():
+    """Configuración de estilos CSS para el módulo de top productos"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
-    COLOR_TEXT = "#333333"
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     
@@ -21,7 +20,7 @@ def configurar_estilo_reportes():
             background-color: {COLOR_BG};
         }}
         
-        .report-title {{
+        .top-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
             font-size: 2em;
@@ -29,7 +28,7 @@ def configurar_estilo_reportes():
             margin-bottom: 20px;
         }}
         
-        .report-subtitle {{
+        .top-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
@@ -73,7 +72,7 @@ def configurar_estilo_reportes():
     """, unsafe_allow_html=True)
 
 
-def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10, rol_usuario=None):
+def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=30, es_admin=False):
     """Obtiene los productos más vendidos en el período"""
     conn = obtener_conexion()
     if not conn:
@@ -82,7 +81,7 @@ def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10
     cursor = conn.cursor()
     
     try:
-        if rol_usuario == "Administrador":
+        if es_admin:
             query = """
                 SELECT 
                     p.Nombre as Producto,
@@ -90,12 +89,13 @@ def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10
                     p.categoria as Categoria,
                     SUM(pv.Cantidad_vendida) as Cantidad_Vendida,
                     SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Vendido,
-                    COUNT(DISTINCT v.ID_Venta) as Numero_Ventas
+                    COUNT(DISTINCT v.ID_Venta) as Numero_Ventas,
+                    pv.unidad as Unidad
                 FROM ProductoxVenta pv
                 JOIN Venta v ON pv.ID_Venta = v.ID_Venta
                 JOIN Producto p ON pv.Cod_barra = p.Cod_barra
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                GROUP BY p.Cod_barra, p.Nombre, p.categoria
+                GROUP BY p.Cod_barra, p.Nombre, p.categoria, pv.unidad
                 ORDER BY Cantidad_Vendida DESC
                 LIMIT %s
             """
@@ -108,13 +108,14 @@ def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10
                     p.categoria as Categoria,
                     SUM(pv.Cantidad_vendida) as Cantidad_Vendida,
                     SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Vendido,
-                    COUNT(DISTINCT v.ID_Venta) as Numero_Ventas
+                    COUNT(DISTINCT v.ID_Venta) as Numero_Ventas,
+                    pv.unidad as Unidad
                 FROM ProductoxVenta pv
                 JOIN Venta v ON pv.ID_Venta = v.ID_Venta
                 JOIN Producto p ON pv.Cod_barra = p.Cod_barra
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
                   AND v.id_tienda = %s
-                GROUP BY p.Cod_barra, p.Nombre, p.categoria
+                GROUP BY p.Cod_barra, p.Nombre, p.categoria, pv.unidad
                 ORDER BY Cantidad_Vendida DESC
                 LIMIT %s
             """
@@ -125,7 +126,9 @@ def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10
         conn.close()
         
         if resultados:
-            df = pd.DataFrame(resultados, columns=["Producto", "Codigo", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas"])
+            df = pd.DataFrame(resultados, columns=["Producto", "Codigo", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas", "Unidad"])
+            # Formatear cantidad con unidad
+            df["Cantidad con Unidad"] = df.apply(lambda x: f"{x['Cantidad_Vendida']:.2f} {x['Unidad']}" if x['Unidad'] else f"{x['Cantidad_Vendida']:.2f}", axis=1)
             return df
         return pd.DataFrame()
         
@@ -136,7 +139,7 @@ def obtener_productos_mas_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10
         return pd.DataFrame()
 
 
-def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=10, rol_usuario=None):
+def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=30, es_admin=False):
     """Obtiene los productos menos vendidos en el período"""
     conn = obtener_conexion()
     if not conn:
@@ -145,7 +148,7 @@ def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=
     cursor = conn.cursor()
     
     try:
-        if rol_usuario == "Administrador":
+        if es_admin:
             query = """
                 SELECT 
                     p.Nombre as Producto,
@@ -153,17 +156,17 @@ def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=
                     p.categoria as Categoria,
                     COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Vendida,
                     COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Vendido,
-                    COUNT(DISTINCT pv.ID_Venta) as Numero_Ventas
+                    COUNT(DISTINCT pv.ID_Venta) as Numero_Ventas,
+                    pv.unidad as Unidad
                 FROM Producto p
                 LEFT JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra
                 LEFT JOIN Venta v ON pv.ID_Venta = v.ID_Venta AND DATE(v.Fecha) BETWEEN %s AND %s
-                WHERE p.id_tienda = %s
-                GROUP BY p.Cod_barra, p.Nombre, p.categoria
+                GROUP BY p.Cod_barra, p.Nombre, p.categoria, pv.unidad
                 HAVING Cantidad_Vendida > 0
                 ORDER BY Cantidad_Vendida ASC
                 LIMIT %s
             """
-            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda, limite))
+            cursor.execute(query, (fecha_inicio, fecha_fin, limite))
         else:
             query = """
                 SELECT 
@@ -172,12 +175,13 @@ def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=
                     p.categoria as Categoria,
                     COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Vendida,
                     COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Vendido,
-                    COUNT(DISTINCT pv.ID_Venta) as Numero_Ventas
+                    COUNT(DISTINCT pv.ID_Venta) as Numero_Ventas,
+                    pv.unidad as Unidad
                 FROM Producto p
                 LEFT JOIN ProductoxVenta pv ON p.Cod_barra = pv.Cod_barra
                 LEFT JOIN Venta v ON pv.ID_Venta = v.ID_Venta AND DATE(v.Fecha) BETWEEN %s AND %s AND v.id_tienda = %s
                 WHERE p.id_tienda = %s
-                GROUP BY p.Cod_barra, p.Nombre, p.categoria
+                GROUP BY p.Cod_barra, p.Nombre, p.categoria, pv.unidad
                 HAVING Cantidad_Vendida > 0
                 ORDER BY Cantidad_Vendida ASC
                 LIMIT %s
@@ -189,7 +193,9 @@ def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=
         conn.close()
         
         if resultados:
-            df = pd.DataFrame(resultados, columns=["Producto", "Codigo", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas"])
+            df = pd.DataFrame(resultados, columns=["Producto", "Codigo", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas", "Unidad"])
+            # Formatear cantidad con unidad
+            df["Cantidad con Unidad"] = df.apply(lambda x: f"{x['Cantidad_Vendida']:.2f} {x['Unidad']}" if x['Unidad'] and x['Cantidad_Vendida'] > 0 else f"{x['Cantidad_Vendida']:.2f}", axis=1)
             return df
         return pd.DataFrame()
         
@@ -200,7 +206,7 @@ def obtener_productos_menos_vendidos(id_tienda, fecha_inicio, fecha_fin, limite=
         return pd.DataFrame()
 
 
-def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, rol_usuario=None):
+def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, es_admin=False):
     """Obtiene resumen general de ventas"""
     conn = obtener_conexion()
     if not conn:
@@ -209,7 +215,7 @@ def obtener_resumen_ventas(id_tienda, fecha_inicio, fecha_fin, rol_usuario=None)
     cursor = conn.cursor()
     
     try:
-        if rol_usuario == "Administrador":
+        if es_admin:
             cursor.execute("""
                 SELECT 
                     COUNT(DISTINCT v.ID_Venta) as total_ventas,
@@ -250,7 +256,7 @@ def graficar_top_productos(df, titulo, color):
         return None
     
     fig = px.bar(
-        df.head(10),
+        df.head(15),
         x="Producto",
         y="Cantidad_Vendida",
         title=titulo,
@@ -268,10 +274,11 @@ def graficar_top_productos(df, titulo, color):
     return fig
 
 
-def modulo_top_productos():
-    configurar_estilo_reportes()
+def modulo_top_30():
+    configurar_estilo_top()
     
-    st.markdown('<div class="report-title">🏆 Productos Más y Menos Vendidos</div>', unsafe_allow_html=True)
+    st.markdown('<div class="top-title">🏆 Top 30 Productos</div>', unsafe_allow_html=True)
+    st.markdown('<div class="top-subtitle">Productos más y menos vendidos</div>', unsafe_allow_html=True)
     
     # Obtener información de la sesión
     rol_usuario = st.session_state.get("nivel_usuario", "")
@@ -297,10 +304,10 @@ def modulo_top_productos():
                 
                 if tienda_seleccionada == "Todas las tiendas":
                     id_tienda_usar = None
-                    nombre_tienda_actual = "Todas las tiendas"
+                    es_admin = True
                 else:
                     id_tienda_usar = opciones[tienda_seleccionada]
-                    nombre_tienda_actual = tienda_seleccionada
+                    es_admin = False
             else:
                 st.warning("No hay tiendas activas.")
                 return
@@ -309,40 +316,33 @@ def modulo_top_productos():
             return
     else:
         id_tienda_usar = id_tienda
-        nombre_tienda_actual = nombre_tienda
+        es_admin = False
         st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>', unsafe_allow_html=True)
     
     # Filtros de fecha
-    st.markdown("### 📅 Período de análisis")
-    col1, col2, col3 = st.columns([1, 1, 2])
+    col1, col2 = st.columns(2)
     
     with col1:
         fecha_inicio = st.date_input(
-            "Fecha inicio",
+            "📅 Fecha inicio",
             value=datetime.today().replace(day=1),
-            key="inicio_top"
+            key="inicio_top30"
         )
     with col2:
         fecha_fin = st.date_input(
-            "Fecha fin",
+            "📅 Fecha fin",
             value=datetime.today(),
-            key="fin_top"
+            key="fin_top30"
         )
     
     if fecha_inicio > fecha_fin:
         st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
         return
     
-    # Número de productos a mostrar
-    with col3:
-        limite = st.slider("📊 Número de productos a mostrar", min_value=5, max_value=30, value=10, step=5)
-    
     # Obtener resumen de ventas
-    total_ventas, total_productos, total_ingresos = obtener_resumen_ventas(id_tienda_usar, fecha_inicio, fecha_fin, rol_usuario if tienda_seleccionada == "Todas las tiendas" else None)
+    total_ventas, total_productos, total_ingresos = obtener_resumen_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
     
-    if total_ventas:
-        st.markdown("### 📈 Resumen del período")
-        
+    if total_ventas and total_ventas > 0:
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown(f"""
@@ -370,39 +370,37 @@ def modulo_top_productos():
     
     # Obtener datos
     with st.spinner("Cargando datos..."):
-        df_mas = obtener_productos_mas_vendidos(id_tienda_usar, fecha_inicio, fecha_fin, limite, rol_usuario if tienda_seleccionada == "Todas las tiendas" else None)
-        df_menos = obtener_productos_menos_vendidos(id_tienda_usar, fecha_inicio, fecha_fin, limite, rol_usuario if tienda_seleccionada == "Todas las tiendas" else None)
+        df_mas = obtener_productos_mas_vendidos(id_tienda_usar, fecha_inicio, fecha_fin, 30, es_admin)
+        df_menos = obtener_productos_menos_vendidos(id_tienda_usar, fecha_inicio, fecha_fin, 30, es_admin)
     
     # Mostrar resultados en dos columnas
     col1, col2 = st.columns(2, gap="large")
     
     with col1:
-        st.markdown("### 🏆 Productos Más Vendidos")
+        st.markdown("### 🏆 TOP 30 MÁS VENDIDOS")
         if not df_mas.empty:
-            # Gráfico
-            fig_mas = graficar_top_productos(df_mas, "Top Productos Más Vendidos", "#2ecc71")
+            fig_mas = graficar_top_productos(df_mas, "Top 30 Productos Más Vendidos", "#2ecc71")
             if fig_mas:
                 st.plotly_chart(fig_mas, use_container_width=True)
             
             # Tabla
             st.dataframe(
-                df_mas[["Producto", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas"]].head(limite),
+                df_mas[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]].head(30),
                 use_container_width=True
             )
         else:
             st.info("No hay datos de productos más vendidos en el período seleccionado.")
     
     with col2:
-        st.markdown("### 📉 Productos Menos Vendidos")
+        st.markdown("### 📉 TOP 30 MENOS VENDIDOS")
         if not df_menos.empty:
-            # Gráfico
-            fig_menos = graficar_top_productos(df_menos, "Top Productos Menos Vendidos", "#e74c3c")
+            fig_menos = graficar_top_productos(df_menos, "Top 30 Productos Menos Vendidos", "#e74c3c")
             if fig_menos:
                 st.plotly_chart(fig_menos, use_container_width=True)
             
             # Tabla
             st.dataframe(
-                df_menos[["Producto", "Categoria", "Cantidad_Vendida", "Total_Vendido", "Numero_Ventas"]].head(limite),
+                df_menos[["Producto", "Categoria", "Cantidad con Unidad", "Total_Vendido", "Numero_Ventas"]].head(30),
                 use_container_width=True
             )
         else:
@@ -417,6 +415,7 @@ def modulo_top_productos():
             st.rerun()
 
 
-def modulo_productos_mas_menos_vendidos():
-    """Función principal que se llama desde app.py"""
-    modulo_top_productos()
+# Esta es la función que se llamará desde app.py
+def modulo_top_30_mas_vendidos():
+    """Función principal que se llama desde app.py - Mantiene el nombre original"""
+    modulo_top_30()
