@@ -9,6 +9,7 @@ def configurar_estilo():
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
     COLOR_TEXT_DARK = "#1a1a1a"
+    COLOR_TEXT_LIGHT = "#ffffff"
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
@@ -104,40 +105,47 @@ def configurar_estilo():
             border-radius: 8px;
         }}
         
-        /* Estilos para expander - TEXTO OSCURO FORZADO */
+        /* Estilos para expander - FONDO AZUL OSCURO Y TEXTO CLARO */
         .streamlit-expanderHeader {{
-            background-color: {COLOR_HOVER} !important;
+            background-color: {COLOR_PRIMARY} !important;
             border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER};
         }}
         
         .streamlit-expanderHeader p {{
-            color: {COLOR_TEXT_DARK} !important;
+            color: {COLOR_TEXT_LIGHT} !important;
             font-weight: 600 !important;
             font-size: 1em !important;
         }}
         
         .streamlit-expanderHeader span {{
-            color: {COLOR_TEXT_DARK} !important;
+            color: {COLOR_TEXT_LIGHT} !important;
         }}
         
-        /* Forzar color del summary */
         details summary {{
-            color: {COLOR_TEXT_DARK} !important;
+            color: {COLOR_TEXT_LIGHT} !important;
         }}
         
         details summary p {{
+            color: {COLOR_TEXT_LIGHT} !important;
+        }}
+        
+        /* Contenido del expander - fondo blanco con texto oscuro */
+        .streamlit-expanderContent {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+            border-top: none !important;
+            padding: 10px !important;
+        }}
+        
+        .streamlit-expanderContent p {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
-        .streamlit-expanderContent {{
-            background-color: {COLOR_CARD};
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
-        /* Forzar color del texto dentro del contenido */
-        .streamlit-expanderContent p {{
-            color: {COLOR_TEXT} !important;
+        /* Estilo para el texto dentro del contenido */
+        .streamlit-expanderContent strong {{
+            color: {COLOR_PRIMARY} !important;
         }}
         
         hr {{
@@ -375,10 +383,9 @@ def mostrar_lista_categorias(id_tienda):
         
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
-            # Título del expander sin HTML
             with st.expander(f"📁 {nombre}"):
-                st.markdown(f"**ID:** `{id_cat}`")
-                st.markdown(f"**Descripción:** {descripcion if descripcion else '*Sin descripción*'}")
+                st.markdown(f"**ID:** {id_cat}")
+                st.markdown(f"**Descripción:** {descripcion if descripcion else 'Sin descripción'}")
                 st.markdown(f"**Fecha de creación:** {fecha}")
 
 
