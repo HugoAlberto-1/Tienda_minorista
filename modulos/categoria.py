@@ -104,18 +104,32 @@ def configurar_estilo():
             border-radius: 8px;
         }}
         
-        /* Estilos para expander */
+        /* Estilos para expander - TEXTO OSCURO */
         .streamlit-expanderHeader {{
-            background-color: {COLOR_HOVER};
-            border-radius: 8px;
-            font-weight: 500;
-            color: {COLOR_TEXT_DARK};
+            background-color: {COLOR_HOVER} !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        .streamlit-expanderHeader p {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 600 !important;
+        }}
+        
+        .streamlit-expanderHeader span {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         
         .streamlit-expanderContent {{
             background-color: {COLOR_CARD};
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
+        }}
+        
+        /* Estilo específico para el título del expander */
+        details summary {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         
         hr {{
@@ -353,7 +367,8 @@ def mostrar_lista_categorias(id_tienda):
         
         for cat in categorias:
             id_cat, nombre, descripcion, fecha = cat
-            with st.expander(f"📁 {nombre}"):
+            # Usamos HTML para forzar color oscuro en el título del expander
+            with st.expander(f"<span style='color: #1a1a1a; font-weight: 600;'>📁 {nombre}</span>", unsafe_allow_html=True):
                 st.markdown(f"**ID:** `{id_cat}`")
                 st.markdown(f"**Descripción:** {descripcion if descripcion else '*Sin descripción*'}")
                 st.markdown(f"**Fecha de creación:** {fecha}")
