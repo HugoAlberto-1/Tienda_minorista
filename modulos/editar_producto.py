@@ -62,15 +62,12 @@ def configurar_estilo():
             color: #721c24;
         }}
         
-        /* Estilos para labels */
         .stTextInput > label, .stSelectbox > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
         
-        /* ============================================ */
-        /* ESTILOS PARA CHECKBOX - TEXTO OSCuro Y VISIBLE */
-        /* ============================================ */
+        /* Estilos para CHECKBOX - Mismo color que el nombre de la tienda */
         .stCheckbox label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
@@ -80,8 +77,15 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK} !important;
         }}
         
-        /* Estilo para el texto del checkbox cuando está marcado */
-        .stCheckbox label[data-testid="stMarkdownContainer"] p {{
+        .stCheckbox label div {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        .stCheckbox label p {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        div[data-testid="stCheckbox"] label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
@@ -318,7 +322,13 @@ def modulo_editar_producto():
                         st.markdown(f'<div class="warning-box">⚠️ <strong>Este producto tiene registros asociados:</strong><br>• {compras_count} compra(s) registrada(s)<br>• {ventas_count} venta(s) registrada(s)</div>', unsafe_allow_html=True)
                         st.markdown('<div class="danger-box">⚠️ <strong>Si lo eliminas, se eliminarán TODAS sus compras y ventas asociadas.</strong></div>', unsafe_allow_html=True)
                         
-                        confirm = st.checkbox("✅ Confirmo que quiero eliminar el producto y TODAS sus transacciones")
+                        # Checkbox con texto en color oscuro
+                        col_check1, col_check2 = st.columns([1, 12])
+                        with col_check1:
+                            confirm = st.checkbox("", key="confirm_checkbox_transacciones")
+                        with col_check2:
+                            st.markdown('<label for="confirm_checkbox_transacciones" style="color: #1a1a1a; font-weight: 500;">✅ Confirmo que quiero eliminar el producto y TODAS sus transacciones</label>', unsafe_allow_html=True)
+                        
                         if st.button("🗑️ Eliminar producto y todas sus transacciones", use_container_width=True, type="primary"):
                             if not confirm:
                                 st.warning("☝️ Marca la casilla para confirmar la eliminación.")
@@ -364,7 +374,12 @@ def modulo_editar_producto():
                                     conn.close()
                     else:
                         # Producto sin transacciones, eliminación simple
-                        confirm = st.checkbox("¿Estás seguro que deseas eliminar este producto?")
+                        col_check1, col_check2 = st.columns([1, 12])
+                        with col_check1:
+                            confirm = st.checkbox("", key="confirm_checkbox_simple")
+                        with col_check2:
+                            st.markdown('<label for="confirm_checkbox_simple" style="color: #1a1a1a; font-weight: 500;">¿Estás seguro que deseas eliminar este producto?</label>', unsafe_allow_html=True)
+                        
                         if st.button("🗑️ Eliminar producto", use_container_width=True):
                             if not confirm:
                                 st.warning("☝️ Marca la casilla para confirmar la eliminación.")
