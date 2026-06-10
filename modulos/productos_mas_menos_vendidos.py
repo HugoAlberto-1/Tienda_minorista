@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
-from datetime import datetime, timedelta
+from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -415,7 +415,7 @@ def modulo_top_30():
             st.rerun()
 
 
-# Esta es la función que se llamará desde app.py
-def modulo_top_30_mas_vendidos():
-    """Función principal que se llama desde app.py - Mantiene el nombre original"""
+# Esta es la función que se llama desde app.py
+def modulo_productos_mas_menos_vendidos():
+    """Función principal que se llama desde app.py"""
     modulo_top_30()
