@@ -72,13 +72,23 @@ def configurar_estilo():
             background-color: #5a6268 !important;
         }}
         
-        /* Checkbox label */
-        .stCheckbox label {{
+        /* Labels generales */
+        .stTextInput > label, .stSelectbox > label {{
+            color: {COLOR_TEXT} !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Radio buttons - opciones individuales en color oscuro */
+        .stRadio div[role="radiogroup"] label {{
             color: {COLOR_TEXT} !important;
         }}
         
-        /* Radio buttons labels */
-        .stRadio label {{
+        .stRadio div[role="radiogroup"] div {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Checkbox label */
+        .stCheckbox label {{
             color: {COLOR_TEXT} !important;
         }}
         
@@ -166,9 +176,7 @@ def modulo_gestion_admin():
                 "Nombre de la tienda *",
                 placeholder="Ej: Tienda Centro Histórico"
             )
-            # Checkbox con texto en color oscuro usando HTML
-            st.markdown('<label style="color: #333333;">Tienda activa</label>', unsafe_allow_html=True)
-            activo = st.checkbox("", value=True, label_visibility="collapsed")
+            activo = st.checkbox("Tienda activa", value=True)
 
             submitted = st.form_submit_button("🏪 Crear Tienda", use_container_width=True)
 
@@ -235,13 +243,11 @@ def modulo_gestion_admin():
     with tab2:
         st.markdown("### 📝 Crear Nuevo Usuario")
         
-        # Radio buttons con texto en color oscuro usando HTML
-        st.markdown('<label style="color: #333333; font-weight: 500;">Tipo de usuario a crear:</label>', unsafe_allow_html=True)
+        # Radio buttons - ahora el CSS hará que el texto sea oscuro
         tipo_usuario = st.radio(
-            "",
+            "Tipo de usuario a crear:",
             ["👑 Administrador (Dueño de todas las tiendas)", "👥 Vendedora (Asignado a una tienda)"],
-            horizontal=True,
-            label_visibility="collapsed"
+            horizontal=True
         )
         
         st.divider()
@@ -281,14 +287,11 @@ def modulo_gestion_admin():
                         id_tienda_seleccionada = None
                         st.markdown('<div class="info-box">👑 El Administrador será dueño de TODAS las tiendas (sin tienda asignada)</div>', unsafe_allow_html=True)
                     else:
-                        # Selector de nivel con texto en color oscuro
-                        st.markdown('<label style="color: #333333;">Nivel de usuario</label>', unsafe_allow_html=True)
-                        nivel = st.selectbox("", ["Vendedora"], label_visibility="collapsed")
-                        # Selector de tienda con texto en color oscuro
-                        st.markdown('<label style="color: #333333;">Tienda donde trabajará *</label>', unsafe_allow_html=True)
+                        nivel = st.selectbox("Nivel de usuario", ["Vendedora"])
+                        # Selector de tienda solo para vendedores/cajeros
                         if tiendas_activas:
                             opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas_activas}
-                            tienda_seleccionada = st.selectbox("", list(opciones_tienda.keys()), label_visibility="collapsed")
+                            tienda_seleccionada = st.selectbox("Tienda donde trabajará *", list(opciones_tienda.keys()))
                             id_tienda_seleccionada = opciones_tienda[tienda_seleccionada]
                         else:
                             st.warning("⚠️ No hay tiendas activas. Crea una tienda primero en la pestaña 'Gestionar Tiendas'.")
@@ -343,16 +346,14 @@ def modulo_gestion_admin():
     with tab3:
         st.markdown("### 📊 Usuarios por Tienda")
         
-        # Info box con texto en color oscuro
+        # Mostrar también los Administradores (Dueños) que tienen id_tienda = NULL
         st.markdown('<div class="info-box">👑 Los Administradores (Dueños) aparecen en "Todas las tiendas" porque no pertenecen a una específica</div>', unsafe_allow_html=True)
         
-        # Radio buttons con texto en color oscuro
-        st.markdown('<label style="color: #333333; font-weight: 500;">Ver:</label>', unsafe_allow_html=True)
+        # Radio buttons para seleccionar vista
         vista = st.radio(
-            "",
+            "Ver:",
             ["👑 Administradores (Dueños)", "🏪 Usuarios por tienda", "📋 Todos los usuarios"],
-            horizontal=True,
-            label_visibility="collapsed"
+            horizontal=True
         )
         
         conn = obtener_conexion()
@@ -391,8 +392,7 @@ def modulo_gestion_admin():
                     
                     if tiendas_listado:
                         opciones_listado = {t["nombre"]: t["id_tienda"] for t in tiendas_listado}
-                        st.markdown('<label style="color: #333333;">Ver usuarios de:</label>', unsafe_allow_html=True)
-                        tienda_ver = st.selectbox("", list(opciones_listado.keys()), key="ver_usuarios", label_visibility="collapsed")
+                        tienda_ver = st.selectbox("Ver usuarios de:", list(opciones_listado.keys()), key="ver_usuarios")
                         id_tienda_ver = opciones_listado[tienda_ver]
                         
                         cursor.execute("""
