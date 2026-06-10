@@ -101,6 +101,7 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
+        /* Estilos para Radio buttons - Texto oscuro */
         .stRadio > div {{
             gap: 20px;
         }}
@@ -108,6 +109,21 @@ def configurar_estilo():
         .stRadio label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
+        }}
+        
+        .stRadio div[role="radiogroup"] label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilos para texto de precio y otros textos */
+        .price-text {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 600 !important;
+            font-size: 1.1em !important;
+        }}
+        
+        .info-text {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         
         /* Estilos para botones */
@@ -148,6 +164,21 @@ def configurar_estilo():
         [data-testid="stMetricValue"] {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: bold !important;
+        }}
+        
+        /* Estilos para captions y textos informativos */
+        .stCaption {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilos para markdown */
+        .stMarkdown p {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        /* Estilo específico para el precio de venta */
+        div:has(> strong:contains("💰 Precio de venta")) {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -335,10 +366,13 @@ def modulo_ventas():
                     
                     unidades_disponibles = ["libras", "quintal", "arroba"]
                     
+                    # Radio buttons con texto oscuro
+                    st.markdown('<label style="color: #1a1a1a; font-weight: 500;">🧾 Seleccione el tipo de cliente</label>', unsafe_allow_html=True)
                     tipo_cliente = st.radio(
-                        "🧾 Seleccione el tipo de cliente",
+                        "",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
-                        key="venta_tipo_cliente"
+                        key="venta_tipo_cliente",
+                        label_visibility="collapsed"
                     )
                     
                     if tipo_cliente == "Minorista":
@@ -351,7 +385,7 @@ def modulo_ventas():
                     if precio_por_libra <= 0:
                         st.error(f"❌ No hay precio para {tipo_cliente}.")
                     else:
-                        st.markdown(f"**💰 Precio de venta por libra:** ${precio_por_libra:.2f}")
+                        st.markdown(f'<p class="price-text">💰 Precio de venta por libra: ${precio_por_libra:.2f}</p>', unsafe_allow_html=True)
                         
                         unidad_venta = st.selectbox(
                             "📏 Unidad de venta",
@@ -408,7 +442,7 @@ def modulo_ventas():
                             st.caption(f"🔄 {cantidad:.2f} arroba(s) = {cantidad_en_libras:.2f} libras")
                         
                         subtotal = round(precio_por_libra * cantidad_en_libras, 2)
-                        st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                        st.markdown(f'<p class="price-text">🧾 Subtotal: ${subtotal:.2f}</p>', unsafe_allow_html=True)
                         
                         if cantidad_en_libras > existencia_libras:
                             st.error(f"❌ No hay suficiente stock. Stock disponible: {stock_disponible:.2f} {unidad_venta}")
@@ -432,7 +466,7 @@ def modulo_ventas():
                                     st.rerun()
             
             else:
-                # Productos no granos
+                # Productos no granos - código existente
                 existencias = {}
                 for unidad, cantidad in compras:
                     existencias[unidad] = existencias.get(unidad, 0) + cantidad
@@ -486,10 +520,12 @@ def modulo_ventas():
                     else:
                         unidades_disponibles = ["unidad"]
                     
+                    st.markdown('<label style="color: #1a1a1a; font-weight: 500;">🧾 Seleccione el tipo de cliente</label>', unsafe_allow_html=True)
                     tipo_cliente = st.radio(
-                        "🧾 Seleccione el tipo de cliente",
+                        "",
                         ["Minorista", "Mayorista 1", "Mayorista 2"],
-                        key="venta_tipo_cliente"
+                        key="venta_tipo_cliente",
+                        label_visibility="collapsed"
                     )
                     
                     if tipo_cliente == "Minorista":
@@ -502,7 +538,7 @@ def modulo_ventas():
                     if precio_base <= 0:
                         st.error(f"❌ No hay precio para {tipo_cliente}.")
                     else:
-                        st.markdown(f"**💰 Precio de venta:** ${precio_base:.2f}")
+                        st.markdown(f'<p class="price-text">💰 Precio de venta: ${precio_base:.2f}</p>', unsafe_allow_html=True)
                         unidad_venta = st.selectbox("📏 Unidad de venta", unidades_disponibles, key="unidad_select")
                         stock_disponible = existencias.get(unidad_venta, 0)
                         st.caption(f"📦 Stock disponible: {stock_disponible:.2f} {unidad_venta}")
@@ -528,7 +564,7 @@ def modulo_ventas():
                             st.error(f"❌ Stock insuficiente. Disponible: {stock_disponible:.2f} {unidad_venta}")
                         else:
                             subtotal = round(precio_base * cantidad, 2)
-                            st.markdown(f"**🧾 Subtotal:** ${subtotal:.2f}")
+                            st.markdown(f'<p class="price-text">🧾 Subtotal: ${subtotal:.2f}</p>', unsafe_allow_html=True)
                             
                             col1, col2, col3 = st.columns([1, 2, 1])
                             with col2:
