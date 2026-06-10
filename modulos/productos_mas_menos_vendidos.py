@@ -49,20 +49,13 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
         
-        /* Metric cards - CORREGIDO */
+        /* Metric cards */
         .metric-card {{
             background: {COLOR_CARD};
             padding: 15px;
             border-radius: 10px;
             text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }}
-        
-        .metric-card div:first-child {{
-            color: {COLOR_TEXT} !important;
-            font-size: 0.9em;
-            font-weight: 500;
-            margin-bottom: 8px;
         }}
         
         .metric-value {{
@@ -479,15 +472,30 @@ def modulo_productos_mas_menos_vendidos():
         total_ventas, total_productos, total_ingresos = obtener_resumen_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
         df_completo = obtener_datos_ventas(id_tienda_usar, fecha_inicio, fecha_fin, es_admin)
     
-    # Mostrar resumen - USANDO st.metric EN LUGAR DE HTML
+    # Mostrar resumen - CON TEXTO OSCuro VISIBLE
     st.markdown("### 📈 Resumen del Período")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("💰 Total Ingresos", f"${total_ingresos:,.2f}")
+        st.markdown(f"""
+            <div class="metric-card">
+                <div style="color: #333333; font-size: 0.9em; font-weight: 500; margin-bottom: 8px;">💰 Total Ingresos</div>
+                <div class="metric-value">${total_ingresos:,.2f}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.metric("📦 Productos Vendidos", f"{total_productos:,.0f}")
+        st.markdown(f"""
+            <div class="metric-card">
+                <div style="color: #333333; font-size: 0.9em; font-weight: 500; margin-bottom: 8px;">📦 Productos Vendidos</div>
+                <div class="metric-value">{total_productos:,.0f}</div>
+            </div>
+        """, unsafe_allow_html=True)
     with col3:
-        st.metric("🛒 Transacciones", f"{total_ventas:,.0f}")
+        st.markdown(f"""
+            <div class="metric-card">
+                <div style="color: #333333; font-size: 0.9em; font-weight: 500; margin-bottom: 8px;">🛒 Transacciones</div>
+                <div class="metric-value">{total_ventas:,.0f}</div>
+            </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
