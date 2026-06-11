@@ -194,12 +194,47 @@ def reporte_ventas():
     # 🔐 Obtener información de la tienda desde la sesión
     rol_usuario = st.session_state.get("nivel_usuario", "")
     nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
-    id_tienda = st.session_state.get("id_tienda", None)
+    id_tienda_sesion = st.session_state.get("id_tienda", None)
 
-    # Mostrar nombre de la tienda en la interfaz
+    # ============================================================
+    # ADMINISTRADOR: puede seleccionar una tienda específica
+    # ============================================================
     if rol_usuario == "Administrador":
-        st.markdown('<div class="info-box">👑 <strong>Administrador</strong> - Reporte de todas las tiendas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-box">👑 <strong>Administrador</strong> - Puedes filtrar por tienda</div>', unsafe_allow_html=True)
+        
+        # Obtener lista de tiendas
+        conn = obtener_conexion()
+        if conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
+            tiendas = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            if tiendas:
+                opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas}
+                # Agregar opción "Todas las tiendas"
+                tienda_seleccionada = st.selectbox(
+                    "🏪 Filtrar por tienda:",
+                    ["Todas las tiendas"] + list(opciones_tienda.keys())
+                )
+                
+                if tienda_seleccionada == "Todas las tiendas":
+                    id_tienda_usar = None
+                    filtro_tienda = "Todas las tiendas"
+                else:
+                    id_tienda_usar = opciones_tienda[tienda_seleccionada]
+                    filtro_tienda = tienda_seleccionada
+            else:
+                st.warning("No hay tiendas activas.")
+                return
+        else:
+            st.error("Error de conexión.")
+            return
     else:
+        # Vendedor: solo su tienda
+        id_tienda_usar = id_tienda_sesion
+        filtro_tienda = nombre_tienda
         st.markdown(f'<div class="info-box">🏪 <strong>Tienda:</strong> {nombre_tienda}</div>', unsafe_allow_html=True)
 
     # Filtros de fecha
@@ -217,31 +252,53 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # 🔧 Consulta según el rol del usuario (incluyendo la unidad)
+        # 🔧 Consulta según el rol del usuario y el filtro de tienda
         if rol_usuario == "Administrador":
-            query = """
-                SELECT
-                    p.Nombre,
-                    pv.Cantidad_vendida,
-                    pv.unidad,
-                    pv.Precio_Venta,
-                    v.Fecha,
-                    t.nombre as Tienda
-                FROM Venta v
-                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
-                WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                ORDER BY v.Fecha DESC, p.Nombre ASC
-            """
-            cursor.execute(query, (fecha_inicio, fecha_fin))
-            rows = cursor.fetchall()
+            if id_tienda_usar is None:
+                # Todas las tiendas
+                query = """
+                    SELECT
+                        p.Nombre,
+                        pv.Cantidad_vendida,
+                        pv.unidad,
+                        pv.Precio_Venta,
+                        v.Fecha,
+                        t.nombre as Tienda
+                    FROM Venta v
+                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
+                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                    ORDER BY v.Fecha DESC, p.Nombre ASC
+                """
+                cursor.execute(query, (fecha_inicio, fecha_fin))
+            else:
+                # Tienda específica
+                query = """
+                    SELECT
+                        p.Nombre,
+                        pv.Cantidad_vendida,
+                        pv.unidad,
+                        pv.Precio_Venta,
+                        v.Fecha,
+                        t.nombre as Tienda
+                    FROM Venta v
+                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
+                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                      AND v.id_tienda = %s
+                    ORDER BY v.Fecha DESC, p.Nombre ASC
+                """
+                cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
             
+            rows = cursor.fetchall()
             if rows:
                 columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"]
             else:
                 columns = []
         else:
+            # Vendedor
             query = """
                 SELECT
                     p.Nombre,
@@ -256,7 +313,7 @@ def reporte_ventas():
                   AND v.id_tienda = %s
                 ORDER BY v.Fecha DESC, p.Nombre ASC
             """
-            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda))
+            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
             rows = cursor.fetchall()
             columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
 
@@ -355,10 +412,10 @@ def reporte_ventas():
                 pdf.cell(190, 10, txt="Reporte de Ventas", ln=True, align="C")
                 pdf.ln(5)
                 
-                # Nombre de la tienda
+                # Nombre de la tienda o filtro
                 pdf.set_font("Arial", "I", 10)
                 if rol_usuario == "Administrador":
-                    pdf.cell(190, 8, txt="Reporte Global - Todas las tiendas", ln=True, align="C")
+                    pdf.cell(190, 8, txt=f"Reporte - {filtro_tienda}", ln=True, align="C")
                 else:
                     pdf.cell(190, 8, txt=f"Tienda: {nombre_tienda}", ln=True, align="C")
                 
