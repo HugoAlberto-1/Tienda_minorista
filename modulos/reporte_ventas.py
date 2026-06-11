@@ -177,6 +177,31 @@ def reporte_ventas():
         cursor = con.cursor()
 
         # ============================================================
+        # PRIMERO: Obtener el TOTAL GENERAL desde la base de datos
+        # ============================================================
+        if id_tienda_usar is None:
+            query_total = """
+                SELECT COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as TotalGeneral
+                FROM Venta v
+                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+            """
+            cursor.execute(query_total, (fecha_inicio, fecha_fin))
+        else:
+            query_total = """
+                SELECT COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as TotalGeneral
+                FROM Venta v
+                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                  AND v.id_tienda = %s
+            """
+            cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar))
+        
+        total_row = cursor.fetchone()
+        gran_total = float(total_row[0]) if total_row else 0
+        gran_total = round(gran_total, 2)
+
+        # ============================================================
         # CONSULTA PRINCIPAL - Ventas agrupadas por mes
         # ============================================================
         
@@ -199,8 +224,6 @@ def reporte_ventas():
             if rows:
                 df = pd.DataFrame(rows, columns=["Tienda", "Total_Ventas"])
                 df["Total_Ventas"] = df["Total_Ventas"].astype(float)
-                gran_total = float(df["Total_Ventas"].sum())
-                gran_total = round(gran_total, 2)
                 
                 st.markdown("### 📊 Ventas por Tienda")
                 fig = px.bar(
@@ -221,7 +244,7 @@ def reporte_ventas():
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Datos para exportar
+                # Datos para exportar (detalle)
                 query_detalle = """
                     SELECT
                         p.Nombre,
@@ -254,25 +277,21 @@ def reporte_ventas():
             # Consulta: extraer mes y año, sumar ventas por mes
             query = """
                 SELECT 
-                    YEAR(v.Fecha) as Anio,
-                    MONTH(v.Fecha) as Mes,
-                    DATE_FORMAT(v.Fecha, '%b %Y') as Nombre_Mes,
+                    DATE_FORMAT(v.Fecha, '%%b %%Y') as Nombre_Mes,
                     COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
                 FROM Venta v
                 JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
                   AND v.id_tienda = %s
-                GROUP BY YEAR(v.Fecha), MONTH(v.Fecha), DATE_FORMAT(v.Fecha, '%b %Y')
-                ORDER BY Anio ASC, Mes ASC
+                GROUP BY DATE_FORMAT(v.Fecha, '%%b %%Y'), YEAR(v.Fecha), MONTH(v.Fecha)
+                ORDER BY YEAR(v.Fecha) ASC, MONTH(v.Fecha) ASC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
             rows = cursor.fetchall()
             
             if rows:
-                df = pd.DataFrame(rows, columns=["Anio", "Mes", "Nombre_Mes", "Total_Ventas"])
+                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas"])
                 df["Total_Ventas"] = df["Total_Ventas"].astype(float)
-                gran_total = float(df["Total_Ventas"].sum())
-                gran_total = round(gran_total, 2)
                 
                 # Crear gráfico de barras
                 fig = px.bar(
@@ -293,7 +312,7 @@ def reporte_ventas():
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Datos para exportar
+                # Datos para exportar (detalle)
                 query_detalle = """
                     SELECT
                         p.Nombre,
@@ -314,27 +333,6 @@ def reporte_ventas():
                     df_detalle = pd.DataFrame(rows_detalle, columns=["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"])
                 else:
                     df_detalle = pd.DataFrame()
-                
-                # === DEPURACIÓN: Verificar totales ===
-                with st.expander("🔍 Verificar totales (depuración)"):
-                    st.write("**Total desde consulta agrupada (gran_total):**", f"${gran_total:,.2f}")
-                    
-                    if not df_detalle.empty:
-                        df_detalle["Total_Calculado"] = df_detalle["Cantidad Vendida"] * df_detalle["Precio Venta"]
-                        total_detalle = float(df_detalle["Total_Calculado"].sum())
-                        total_detalle_redondeado = round(total_detalle, 2)
-                        st.write("**Total desde detalle (suma de cantidad × precio):**", f"${total_detalle_redondeado:,.2f}")
-                        
-                        diferencia = abs(gran_total - total_detalle_redondeado)
-                        st.write(f"**Diferencia:** ${diferencia:.2f}")
-                        
-                        if diferencia > 0.01:
-                            st.warning("⚠️ Hay una diferencia entre los totales. Verifica los datos.")
-                            
-                            # Mostrar algunos registros para identificar el problema
-                            st.write("**Primeros 5 registros del detalle:**")
-                            st.dataframe(df_detalle.head(5))
-                # ============================================
             else:
                 st.warning("No hay datos de ventas en el período seleccionado para esta tienda.")
                 return
@@ -377,16 +375,25 @@ def reporte_ventas():
         st.markdown("### 📁 Exportar datos")
         
         if not df_detalle.empty:
+            # Calcular el total en el detalle para verificar
+            df_detalle["Total"] = df_detalle["Cantidad Vendida"] * df_detalle["Precio Venta"]
+            total_detalle = round(df_detalle["Total"].sum(), 2)
+            
+            # Mostrar verificación
+            with st.expander("🔍 Verificar totales"):
+                st.write(f"**Total general (desde BD):** ${gran_total:,.2f}")
+                st.write(f"**Total desde detalle:** ${total_detalle:,.2f}")
+                if abs(gran_total - total_detalle) > 0.01:
+                    st.warning(f"⚠️ Diferencia de ${abs(gran_total - total_detalle):.2f}")
+                else:
+                    st.success("✅ Los totales coinciden")
+            
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 # Hoja 1: Detalle de ventas
                 df_excel = df_detalle.copy()
                 if "Fecha Venta" in df_excel.columns:
                     df_excel["Fecha Venta"] = pd.to_datetime(df_excel["Fecha Venta"]).dt.strftime("%Y-%m-%d")
-                if "Total" not in df_excel.columns and "Precio Venta" in df_excel.columns and "Cantidad Vendida" in df_excel.columns:
-                    df_excel["Total"] = df_excel["Cantidad Vendida"] * df_excel["Precio Venta"]
-                    df_excel["Total"] = df_excel["Total"].round(2)
-                
                 df_excel.to_excel(writer, index=False, sheet_name="Detalle_Ventas")
                 
                 # Hoja 2: Resumen por mes (si es tienda específica)
