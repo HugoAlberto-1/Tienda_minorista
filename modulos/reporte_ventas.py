@@ -66,7 +66,7 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
         
-        /* Botones */
+        /* Botones generales */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -79,6 +79,19 @@ def configurar_estilo():
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
+        }}
+        
+        /* Botones de descarga - Mismo color azul */
+        .stDownloadButton button {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            border-radius: 8px !important;
+            border: none !important;
+        }}
+        
+        .stDownloadButton button:hover {{
+            background-color: {COLOR_SECONDARY} !important;
+            transform: translateY(-1px) !important;
         }}
         
         /* Botón volver - Color gris con texto blanco */
@@ -400,7 +413,7 @@ def reporte_ventas():
 
         st.markdown("---")
 
-        # ➤ Exportar a Excel
+        # ➤ Exportar a Excel y PDF
         st.markdown("### 📁 Exportar ventas filtradas")
 
         col1, col2 = st.columns(2)
