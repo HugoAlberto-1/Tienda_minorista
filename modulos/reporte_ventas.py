@@ -356,15 +356,30 @@ def reporte_ventas():
         st.markdown("### 📁 Exportar datos")
         
         if not df_detalle.empty:
-            if "Fecha Venta" in df_detalle.columns:
-                df_detalle["Fecha Venta"] = pd.to_datetime(df_detalle["Fecha Venta"]).dt.strftime("%Y-%m-%d")
-            if "Total" not in df_detalle.columns and "Precio Venta" in df_detalle.columns and "Cantidad Vendida" in df_detalle.columns:
-                df_detalle["Total"] = df_detalle["Cantidad Vendida"] * df_detalle["Precio Venta"]
-                df_detalle["Total"] = df_detalle["Total"].round(2)
-            
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df_detalle.to_excel(writer, index=False, sheet_name="ReporteVentas")
+                # Hoja 1: Detalle de ventas
+                df_excel = df_detalle.copy()
+                if "Fecha Venta" in df_excel.columns:
+                    df_excel["Fecha Venta"] = pd.to_datetime(df_excel["Fecha Venta"]).dt.strftime("%Y-%m-%d")
+                if "Total" not in df_excel.columns and "Precio Venta" in df_excel.columns and "Cantidad Vendida" in df_excel.columns:
+                    df_excel["Total"] = df_excel["Cantidad Vendida"] * df_excel["Precio Venta"]
+                    df_excel["Total"] = df_excel["Total"].round(2)
+                
+                df_excel.to_excel(writer, index=False, sheet_name="Detalle_Ventas")
+                
+                # Hoja 2: Resumen por mes (si es tienda específica)
+                if id_tienda_usar is not None and 'df' in locals() and not df.empty:
+                    df_resumen = df[["Nombre_Mes", "Total_Ventas"]].copy()
+                    df_resumen["Total_Ventas"] = df_resumen["Total_Ventas"].round(2)
+                    df_resumen.to_excel(writer, index=False, sheet_name="Resumen_Mensual")
+                
+                # Hoja 3: Totales
+                df_totales = pd.DataFrame({
+                    "Concepto": ["TOTAL GENERAL DE VENTAS"],
+                    "Monto": [gran_total]
+                })
+                df_totales.to_excel(writer, index=False, sheet_name="Totales")
             
             st.download_button(
                 label="⬇️ Descargar Excel",
