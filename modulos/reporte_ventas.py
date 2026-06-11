@@ -177,6 +177,120 @@ def reporte_ventas():
         cursor = con.cursor()
 
         # ============================================================
+        # DIAGNÓSTICO DE DATOS
+        # ============================================================
+        with st.expander("🔍 Diagnóstico de datos (para identificar inconsistencias)"):
+            # Total general desde BD
+            if id_tienda_usar is None:
+                cursor.execute("""
+                    SELECT COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as TotalGeneral
+                    FROM Venta v
+                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                """, (fecha_inicio, fecha_fin))
+            else:
+                cursor.execute("""
+                    SELECT COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as TotalGeneral
+                    FROM Venta v
+                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                      AND v.id_tienda = %s
+                """, (fecha_inicio, fecha_fin, id_tienda_usar))
+            total_row = cursor.fetchone()
+            st.write(f"**💰 Total General desde BD:** ${float(total_row[0]):,.2f}")
+            
+            # Ventas en tabla Venta
+            if id_tienda_usar is None:
+                cursor.execute("""
+                    SELECT COUNT(*) as total_ventas, MIN(Fecha) as fecha_min, MAX(Fecha) as fecha_max
+                    FROM Venta
+                    WHERE DATE(Fecha) BETWEEN %s AND %s
+                """, (fecha_inicio, fecha_fin))
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*) as total_ventas, MIN(Fecha) as fecha_min, MAX(Fecha) as fecha_max
+                    FROM Venta
+                    WHERE DATE(Fecha) BETWEEN %s AND %s
+                      AND id_tienda = %s
+                """, (fecha_inicio, fecha_fin, id_tienda_usar))
+            ventas_info = cursor.fetchone()
+            st.write(f"**📋 Ventas en tabla Venta:** {ventas_info[0]} ventas")
+            st.write(f"   Fecha mínima: {ventas_info[1]}, Fecha máxima: {ventas_info[2]}")
+            
+            # Productos en ProductoxVenta
+            if id_tienda_usar is None:
+                cursor.execute("""
+                    SELECT COUNT(pv.Cod_barra) as registros_productos,
+                           COUNT(DISTINCT pv.ID_Venta) as ventas_con_productos
+                    FROM ProductoxVenta pv
+                    JOIN Venta v ON pv.ID_Venta = v.ID_Venta
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                """, (fecha_inicio, fecha_fin))
+            else:
+                cursor.execute("""
+                    SELECT COUNT(pv.Cod_barra) as registros_productos,
+                           COUNT(DISTINCT pv.ID_Venta) as ventas_con_productos
+                    FROM ProductoxVenta pv
+                    JOIN Venta v ON pv.ID_Venta = v.ID_Venta
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                      AND v.id_tienda = %s
+                """, (fecha_inicio, fecha_fin, id_tienda_usar))
+            pv_info = cursor.fetchone()
+            st.write(f"**📦 En ProductoxVenta:** {pv_info[0]} registros de productos")
+            st.write(f"   Corresponden a {pv_info[1]} ventas")
+            
+            # Ventas sin productos
+            if id_tienda_usar is None:
+                cursor.execute("""
+                    SELECT COUNT(*) as ventas_sin_productos
+                    FROM Venta v
+                    LEFT JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                      AND pv.ID_Venta IS NULL
+                """, (fecha_inicio, fecha_fin))
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*) as ventas_sin_productos
+                    FROM Venta v
+                    LEFT JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                      AND v.id_tienda = %s
+                      AND pv.ID_Venta IS NULL
+                """, (fecha_inicio, fecha_fin, id_tienda_usar))
+            ventas_sin = cursor.fetchone()
+            if ventas_sin[0] > 0:
+                st.warning(f"⚠️ Hay {ventas_sin[0]} ventas que NO tienen productos registrados en ProductoxVenta")
+                
+                # Mostrar esas ventas
+                if id_tienda_usar is None:
+                    cursor.execute("""
+                        SELECT v.ID_Venta, v.Fecha, v.id_tienda, COALESCE(t.nombre, 'Sin tienda') as tienda
+                        FROM Venta v
+                        LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                        LEFT JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                        WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                          AND pv.ID_Venta IS NULL
+                        LIMIT 10
+                    """, (fecha_inicio, fecha_fin))
+                else:
+                    cursor.execute("""
+                        SELECT v.ID_Venta, v.Fecha, v.id_tienda, COALESCE(t.nombre, 'Sin tienda') as tienda
+                        FROM Venta v
+                        LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                        LEFT JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                        WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                          AND v.id_tienda = %s
+                          AND pv.ID_Venta IS NULL
+                        LIMIT 10
+                    """, (fecha_inicio, fecha_fin, id_tienda_usar))
+                ventas_sin_detalle = cursor.fetchall()
+                if ventas_sin_detalle:
+                    st.write("**Ejemplo de ventas sin productos:**")
+                    st.dataframe(pd.DataFrame(ventas_sin_detalle, columns=["ID_Venta", "Fecha", "id_tienda", "Tienda"]))
+            else:
+                st.success("✅ Todas las ventas tienen productos registrados")
+
+        # ============================================================
         # PRIMERO: Obtener el TOTAL GENERAL desde la base de datos
         # ============================================================
         if id_tienda_usar is None:
@@ -405,11 +519,6 @@ def reporte_ventas():
                     "Monto": [gran_total]
                 })
                 df_totales.to_excel(writer, index=False, sheet_name="Totales")
-            
-            # Verificar que el total en Excel coincide
-            total_excel = df_detalle["Total"].sum() if "Total" in df_detalle.columns else 0
-            if abs(total_excel - gran_total) > 0.01:
-                st.info(f"💡 El total general (${gran_total:,.2f}) es el correcto. En el Excel puedes sumar la columna 'Total' para verificar.")
             
             st.download_button(
                 label="⬇️ Descargar Excel",
