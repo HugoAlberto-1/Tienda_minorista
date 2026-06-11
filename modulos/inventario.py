@@ -82,6 +82,16 @@ def configurar_estilo():
             margin-bottom: 20px;
         }}
         
+        /* Subtítulo de productos próximos a vencer - ALINEADO A LA IZQUIERDA Y MÁS GRANDE */
+        .expiry-subtitle {{
+            text-align: left;
+            color: {COLOR_PRIMARY};
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }}
+        
         /* Info box */
         .info-box {{
             background: {COLOR_HOVER};
@@ -222,19 +232,16 @@ def configurar_estilo():
     """, unsafe_allow_html=True)
 
 
-def obtener_productos_proximos_vencer(id_tienda, dias, filtro_categoria="Todas las categorías"):
-    """Obtiene los productos próximos a vencer en un período específico (incluye vencidos)"""
+def obtener_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las categorías"):
+    """Obtiene todos los productos con fecha de vencimiento"""
     conn = obtener_conexion()
     if not conn:
         return []
     
     cursor = conn.cursor()
-    hoy = datetime.now().date()
-    fecha_limite = hoy + timedelta(days=dias) if dias != 9999 else hoy + timedelta(days=365*10)  # 10 años para "Todos"
     
     try:
         if filtro_categoria == "Todas las categorías":
-            # Incluir productos vencidos y próximos
             cursor.execute("""
                 SELECT DISTINCT
                     pc.Cod_barra, 
@@ -270,7 +277,7 @@ def obtener_productos_proximos_vencer(id_tienda, dias, filtro_categoria="Todas l
         productos = cursor.fetchall()
         return productos
     except Exception as e:
-        st.error(f"Error al obtener productos próximos a vencer: {e}")
+        st.error(f"Error al obtener productos: {e}")
         return []
     finally:
         cursor.close()
@@ -281,17 +288,20 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     """Muestra un selector de período y los productos próximos a vencer"""
     
     st.markdown("---")
-    st.markdown('<div class="inventory-subtitle">⏳ Productos próximos a vencer</div>', unsafe_allow_html=True)
+    # Título alineado a la izquierda y más grande
+    st.markdown('<div class="expiry-subtitle">⏳ Productos próximos a vencer</div>', unsafe_allow_html=True)
     
     # Selector de período
-    periodo = st.selectbox(
-        "Seleccione el período:",
-        ["Todos (incluye vencidos)", "7 días", "15 días", "30 días", "60 días"],
-        index=2  # 15 días por defecto
-    )
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        periodo = st.selectbox(
+            "Seleccione el período:",
+            ["Todos (incluye vencidos)", "7 días", "15 días", "30 días", "60 días"],
+            index=2  # 15 días por defecto
+        )
     
     # Obtener todos los productos con fecha de vencimiento
-    productos = obtener_productos_proximos_vencer(id_tienda, 0, filtro_categoria)
+    productos = obtener_productos_proximos_vencer(id_tienda, filtro_categoria)
     
     if not productos:
         st.info(f"✅ No hay productos con fecha de vencimiento registrada.")
@@ -388,12 +398,6 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     styled_df = df.style.apply(color_dias, subset=["Días Restantes"])
     
     st.dataframe(styled_df, use_container_width=True)
-    
-    # Botón para volver al inventario completo
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("📋 Ver inventario completo", use_container_width=True):
-            st.rerun()
 
 
 def modulo_inventario():
