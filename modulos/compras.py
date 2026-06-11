@@ -194,6 +194,13 @@ def obtener_id_producto(cursor, cod_barra, id_tienda):
     return resultado[0] if resultado else None
 
 
+def obtener_proximo_id_compra(cursor, id_tienda):
+    """Obtiene el próximo ID disponible para una compra"""
+    cursor.execute("SELECT MAX(Id_compra) FROM Compra WHERE id_tienda = %s", (id_tienda,))
+    ultimo_id = cursor.fetchone()[0]
+    return 1 if ultimo_id is None else int(ultimo_id) + 1
+
+
 def modulo_compras():
     configurar_estilo()
     
@@ -289,7 +296,6 @@ def modulo_compras():
         )
         if producto_encontrado:
             codigo, nombre, categoria_producto = producto_encontrado
-            # Obtener el id_producto
             id_producto_actual = obtener_id_producto(cursor, codigo, id_tienda)
             
             st.markdown(f'<div class="info-box">✅ Producto encontrado: <strong>{nombre}</strong><br>📁 Categoría: <strong>{categoria_producto}</strong><br>🆔 ID Producto: <strong>{id_producto_actual}</strong></div>', unsafe_allow_html=True)
@@ -466,9 +472,8 @@ def modulo_compras():
                 st.error("❌ No hay productos agregados.")
             else:
                 try:
-                    cursor.execute("SELECT MAX(Id_compra) FROM Compra WHERE id_tienda = %s", (id_tienda,))
-                    ultimo_id = cursor.fetchone()[0]
-                    nuevo_id = 1 if ultimo_id is None else int(ultimo_id) + 1
+                    # Usar la función para obtener el próximo ID disponible
+                    nuevo_id = obtener_proximo_id_compra(cursor, id_tienda)
 
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     id_empleado = st.session_state["id_empleado"]
@@ -479,7 +484,6 @@ def modulo_compras():
                     )
 
                     for prod in st.session_state["productos_seleccionados"]:
-                        # Ahora incluimos id_producto en el INSERT
                         cursor.execute(
                             """
                             INSERT INTO ProductoxCompra
