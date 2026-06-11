@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 from config.conexion import obtener_conexion
 from datetime import datetime
-from io import BytesIO
-from fpdf import FPDF
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -61,18 +59,6 @@ def configurar_estilo():
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
-        }}
-        
-        .stDownloadButton button {{
-            background-color: {COLOR_PRIMARY} !important;
-            color: white !important;
-            border-radius: 8px !important;
-            border: none !important;
-        }}
-        
-        .stDownloadButton button:hover {{
-            background-color: {COLOR_SECONDARY} !important;
-            transform: translateY(-1px) !important;
         }}
         
         .volver-btn button {{
@@ -243,30 +229,6 @@ def reporte_ventas():
                     showlegend=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
-                
-                # Datos para exportar (detalle)
-                query_detalle = """
-                    SELECT
-                        p.Nombre as Producto,
-                        pv.Cantidad_vendida as Cantidad,
-                        pv.unidad as Unidad,
-                        pv.Precio_Venta as Precio_Unitario,
-                        (pv.Cantidad_vendida * pv.Precio_Venta) as Total,
-                        v.Fecha as Fecha_Venta,
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda
-                    FROM Venta v
-                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
-                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                    ORDER BY v.Fecha DESC, p.Nombre ASC
-                """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
-                rows_detalle = cursor.fetchall()
-                if rows_detalle:
-                    df_detalle = pd.DataFrame(rows_detalle)
-                else:
-                    df_detalle = pd.DataFrame()
             else:
                 st.warning("No hay datos en el período seleccionado.")
                 return
@@ -320,35 +282,12 @@ def reporte_ventas():
                     showlegend=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
-                
-                # Datos para exportar (detalle)
-                query_detalle = """
-                    SELECT
-                        p.Nombre as Producto,
-                        pv.Cantidad_vendida as Cantidad,
-                        pv.unidad as Unidad,
-                        pv.Precio_Venta as Precio_Unitario,
-                        (pv.Cantidad_vendida * pv.Precio_Venta) as Total,
-                        v.Fecha as Fecha_Venta
-                    FROM Venta v
-                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                      AND v.id_tienda = %s
-                    ORDER BY v.Fecha DESC, p.Nombre ASC
-                """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
-                rows_detalle = cursor.fetchall()
-                if rows_detalle:
-                    df_detalle = pd.DataFrame(rows_detalle)
-                else:
-                    df_detalle = pd.DataFrame()
             else:
                 st.warning("No hay datos de ventas en el período seleccionado para esta tienda.")
                 return
 
         # ============================================================
-        # TOTAL GENERAL Y EXPORTACIÓN
+        # TOTAL GENERAL
         # ============================================================
         
         st.markdown("---")
@@ -380,41 +319,6 @@ def reporte_ventas():
             </div>
         </div>
         """, unsafe_allow_html=True)
-
-        st.markdown("---")
-        st.markdown("### 📁 Exportar datos")
-        
-        if not df_detalle.empty:
-            excel_buffer = BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                # Hoja 1: Detalle de ventas
-                df_excel = df_detalle.copy()
-                if "Fecha_Venta" in df_excel.columns:
-                    df_excel["Fecha_Venta"] = pd.to_datetime(df_excel["Fecha_Venta"]).dt.strftime("%Y-%m-%d")
-                df_excel.to_excel(writer, index=False, sheet_name="Detalle_Ventas")
-                
-                # Hoja 2: Resumen por mes (si es tienda específica)
-                if id_tienda_usar is not None and 'df' in locals() and not df.empty:
-                    df_resumen = df[["Nombre_Mes", "Total_Ventas"]].copy()
-                    df_resumen["Total_Ventas"] = df_resumen["Total_Ventas"].round(2)
-                    df_resumen.to_excel(writer, index=False, sheet_name="Resumen_Mensual")
-                
-                # Hoja 3: Totales
-                df_totales = pd.DataFrame({
-                    "Concepto": ["TOTAL GENERAL DE VENTAS"],
-                    "Monto": [gran_total]
-                })
-                df_totales.to_excel(writer, index=False, sheet_name="Totales")
-            
-            st.download_button(
-                label="⬇️ Descargar Excel",
-                data=excel_buffer.getvalue(),
-                file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        else:
-            st.info("No hay datos para exportar")
 
         # Botón para volver
         st.markdown("---")
