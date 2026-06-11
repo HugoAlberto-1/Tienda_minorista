@@ -321,7 +321,7 @@ def reporte_ventas():
                     
                     if not df_detalle.empty:
                         df_detalle["Total_Calculado"] = df_detalle["Cantidad Vendida"] * df_detalle["Precio Venta"]
-                        total_detalle = df_detalle["Total_Calculado"].sum()
+                        total_detalle = float(df_detalle["Total_Calculado"].sum())
                         total_detalle_redondeado = round(total_detalle, 2)
                         st.write("**Total desde detalle (suma de cantidad × precio):**", f"${total_detalle_redondeado:,.2f}")
                         
