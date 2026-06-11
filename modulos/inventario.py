@@ -53,6 +53,7 @@ def configurar_estilo():
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
     COLOR_TEXT_DARK = "#1a1a1a"
+    COLOR_TEXT_LIGHT = "#666666"  # ✅ AGREGADO - Texto gris claro
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
