@@ -199,8 +199,8 @@ def reporte_ventas():
                 # Todas las tiendas - Ventas por tienda
                 query_por_tienda = """
                     SELECT 
-                        t.nombre as Tienda,
-                        SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ventas
+                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
+                        COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
                     FROM Venta v
                     JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                     LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
@@ -213,6 +213,8 @@ def reporte_ventas():
                 
                 if rows_por_tienda:
                     df_por_tienda = pd.DataFrame(rows_por_tienda, columns=["Tienda", "Total_Ventas"])
+                    # Convertir a float
+                    df_por_tienda["Total_Ventas"] = df_por_tienda["Total_Ventas"].astype(float)
                 else:
                     df_por_tienda = pd.DataFrame()
                 
@@ -224,7 +226,7 @@ def reporte_ventas():
                         pv.unidad,
                         pv.Precio_Venta,
                         v.Fecha,
-                        t.nombre as Tienda
+                        COALESCE(t.nombre, 'Sin tienda') as Tienda
                     FROM Venta v
                     JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                     JOIN Producto p ON p.Cod_barra = pv.Cod_barra
@@ -244,8 +246,8 @@ def reporte_ventas():
                 query_por_producto = """
                     SELECT 
                         p.Nombre as Producto,
-                        SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ventas,
-                        SUM(pv.Cantidad_vendida) as Cantidad_Total
+                        COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
+                        COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Total
                     FROM Venta v
                     JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                     JOIN Producto p ON p.Cod_barra = pv.Cod_barra
@@ -260,6 +262,9 @@ def reporte_ventas():
                 
                 if rows_por_producto:
                     df_por_producto = pd.DataFrame(rows_por_producto, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
+                    # Convertir a float
+                    df_por_producto["Total_Ventas"] = df_por_producto["Total_Ventas"].astype(float)
+                    df_por_producto["Cantidad_Total"] = df_por_producto["Cantidad_Total"].astype(float)
                 else:
                     df_por_producto = pd.DataFrame()
                 
@@ -290,8 +295,8 @@ def reporte_ventas():
             query_por_producto = """
                 SELECT 
                     p.Nombre as Producto,
-                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ventas,
-                    SUM(pv.Cantidad_vendida) as Cantidad_Total
+                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
+                    COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Total
                 FROM Venta v
                 JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                 JOIN Producto p ON p.Cod_barra = pv.Cod_barra
@@ -306,6 +311,9 @@ def reporte_ventas():
             
             if rows_por_producto:
                 df_por_producto = pd.DataFrame(rows_por_producto, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
+                # Convertir a float
+                df_por_producto["Total_Ventas"] = df_por_producto["Total_Ventas"].astype(float)
+                df_por_producto["Cantidad_Total"] = df_por_producto["Cantidad_Total"].astype(float)
             else:
                 df_por_producto = pd.DataFrame()
             
@@ -355,8 +363,9 @@ def reporte_ventas():
             # Todas las tiendas - Gráfico de ventas por tienda
             st.markdown("### 📊 Ventas por Tienda")
             
-            # Calcular gran total
-            gran_total = df_por_tienda["Total_Ventas"].sum().round(2)
+            # Calcular gran total - CORREGIDO
+            gran_total = float(df_por_tienda["Total_Ventas"].sum())
+            gran_total = round(gran_total, 2)
             
             # Crear gráfico de barras
             fig = px.bar(
@@ -390,8 +399,9 @@ def reporte_ventas():
             else:
                 st.markdown(f"### 📊 Ventas por Producto - {nombre_tienda}")
             
-            # Calcular gran total
-            gran_total = df_por_producto["Total_Ventas"].sum().round(2)
+            # Calcular gran total - CORREGIDO
+            gran_total = float(df_por_producto["Total_Ventas"].sum())
+            gran_total = round(gran_total, 2)
             
             # Crear gráfico de barras
             fig = px.bar(
