@@ -194,9 +194,9 @@ def obtener_id_producto(cursor, cod_barra, id_tienda):
     return resultado[0] if resultado else None
 
 
-def obtener_proximo_id_compra(cursor, id_tienda):
-    """Obtiene el próximo ID disponible para una compra"""
-    cursor.execute("SELECT MAX(Id_compra) FROM Compra WHERE id_tienda = %s", (id_tienda,))
+def obtener_proximo_id_compra(cursor):
+    """Obtiene el próximo ID disponible para una compra (global)"""
+    cursor.execute("SELECT MAX(Id_compra) FROM Compra")
     ultimo_id = cursor.fetchone()[0]
     return 1 if ultimo_id is None else int(ultimo_id) + 1
 
@@ -472,17 +472,19 @@ def modulo_compras():
                 st.error("❌ No hay productos agregados.")
             else:
                 try:
-                    # Usar la función para obtener el próximo ID disponible
-                    nuevo_id = obtener_proximo_id_compra(cursor, id_tienda)
+                    # Obtener el próximo ID disponible (global)
+                    nuevo_id = obtener_proximo_id_compra(cursor)
 
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     id_empleado = st.session_state["id_empleado"]
 
+                    # Insertar la compra
                     cursor.execute(
                         "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda) VALUES (%s, %s, %s, %s)",
                         (nuevo_id, fecha, id_empleado, id_tienda),
                     )
 
+                    # Insertar los productos de la compra
                     for prod in st.session_state["productos_seleccionados"]:
                         cursor.execute(
                             """
