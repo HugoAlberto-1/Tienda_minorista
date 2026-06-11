@@ -247,14 +247,22 @@ def reporte_ventas():
                 
         else:
             # ============================================================
-            # OPCIÓN 2: TIENDA ESPECÍFICA - Ventas por mes (SOLO MESES CON VENTAS)
+            # OPCIÓN 2: TIENDA ESPECÍFICA - Ventas por mes (TODOS LOS MESES)
             # ============================================================
             if rol_usuario == "Administrador":
                 st.markdown(f"### 📊 Análisis de Ventas Mensuales - {filtro_tienda}")
             else:
                 st.markdown(f"### 📊 Análisis de Ventas Mensuales - {nombre_tienda}")
             
-            # Consulta para ventas mensuales (solo meses con ventas)
+            # Generar todos los meses entre fecha_inicio y fecha_fin
+            meses = pd.date_range(start=fecha_inicio, end=fecha_fin, freq='MS')
+            df_meses = pd.DataFrame({
+                'Mes': [m.strftime('%Y-%m') for m in meses],
+                'Nombre_Mes': [m.strftime('%b %Y') for m in meses],
+                'Mes_Orden': meses
+            })
+            
+            # Consulta para ventas mensuales
             query_mensual = """
                 SELECT 
                     DATE_FORMAT(v.Fecha, '%%Y-%%m') as Mes,
@@ -266,21 +274,28 @@ def reporte_ventas():
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
                   AND v.id_tienda = %s
                 GROUP BY DATE_FORMAT(v.Fecha, '%%Y-%%m'), DATE_FORMAT(v.Fecha, '%%b %%Y')
-                HAVING Total_Ventas > 0
                 ORDER BY Mes ASC
             """
             cursor.execute(query_mensual, (fecha_inicio, fecha_fin, id_tienda_usar))
             rows_mensual = cursor.fetchall()
             
             if rows_mensual:
-                df_mensual = pd.DataFrame(rows_mensual, columns=["Mes", "Nombre_Mes", "Total_Ventas", "Numero_Ventas"])
-                df_mensual["Total_Ventas"] = df_mensual["Total_Ventas"].astype(float)
-                df_mensual["Numero_Ventas"] = df_mensual["Numero_Ventas"].astype(int)
-                gran_total = float(df_mensual["Total_Ventas"].sum())
-                gran_total = round(gran_total, 2)
+                df_ventas = pd.DataFrame(rows_mensual, columns=["Mes", "Nombre_Mes", "Total_Ventas", "Numero_Ventas"])
+                df_ventas["Total_Ventas"] = df_ventas["Total_Ventas"].astype(float)
+                df_ventas["Numero_Ventas"] = df_ventas["Numero_Ventas"].astype(int)
             else:
-                df_mensual = pd.DataFrame()
-                gran_total = 0
+                df_ventas = pd.DataFrame(columns=["Mes", "Nombre_Mes", "Total_Ventas", "Numero_Ventas"])
+            
+            # Combinar todos los meses con los datos de ventas
+            df_completo = df_meses.merge(df_ventas, on="Mes", how="left")
+            df_completo["Total_Ventas"] = df_completo["Total_Ventas"].fillna(0)
+            df_completo["Numero_Ventas"] = df_completo["Numero_Ventas"].fillna(0)
+            df_completo["Nombre_Mes"] = df_completo["Nombre_Mes_x"].fillna(df_completo["Nombre_Mes_y"])
+            df_completo = df_completo[["Mes", "Nombre_Mes", "Total_Ventas", "Numero_Ventas"]]
+            
+            # Calcular gran total
+            gran_total = float(df_completo["Total_Ventas"].sum())
+            gran_total = round(gran_total, 2)
             
             # Datos detallados para exportar
             query_detalle = """
@@ -310,8 +325,8 @@ def reporte_ventas():
         # ============================================================
         
         if (rol_usuario == "Administrador" and id_tienda_usar is None and df_por_tienda.empty) or \
-           (rol_usuario != "Administrador" and df_mensual.empty) or \
-           (rol_usuario == "Administrador" and id_tienda_usar is not None and df_mensual.empty):
+           (rol_usuario != "Administrador" and df_completo.empty) or \
+           (rol_usuario == "Administrador" and id_tienda_usar is not None and df_completo.empty):
             st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No se encontraron ventas en el rango seleccionado.</div>', unsafe_allow_html=True)
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -348,27 +363,21 @@ def reporte_ventas():
             )
             st.plotly_chart(fig, use_container_width=True)
             
-            # Mostrar tabla
-            st.markdown("### 🗂 Detalle de Ventas por Tienda")
-            df_mostrar = df_por_tienda.copy()
-            df_mostrar["Total_Ventas"] = df_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
-            st.dataframe(df_mostrar, use_container_width=True)
-            
         else:
             # ============================================================
-            # TIENDA ESPECÍFICA - Gráfico de ventas por mes
+            # TIENDA ESPECÍFICA - Gráfico de ventas por mes (TODOS LOS MESES)
             # ============================================================
             st.markdown("### 📈 Ventas Mensuales")
             
             # Gráfico de barras de ventas por mes
             fig_mensual = px.bar(
-                df_mensual,
+                df_completo,
                 x="Nombre_Mes",
                 y="Total_Ventas",
                 title="Total de Ventas por Mes",
                 color="Total_Ventas",
                 color_continuous_scale="Blues",
-                text=df_mensual["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+                text=df_completo["Total_Ventas"].apply(lambda x: f"${x:,.2f}" if x > 0 else "")
             )
             fig_mensual.update_traces(textposition='outside')
             fig_mensual.update_layout(
@@ -378,12 +387,6 @@ def reporte_ventas():
                 showlegend=False
             )
             st.plotly_chart(fig_mensual, use_container_width=True)
-            
-            # Tabla de ventas mensuales
-            st.markdown("### 🗂 Detalle de Ventas por Mes")
-            df_mensual_mostrar = df_mensual.copy()
-            df_mensual_mostrar["Total_Ventas"] = df_mensual_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
-            st.dataframe(df_mensual_mostrar[["Nombre_Mes", "Total_Ventas", "Numero_Ventas"]], use_container_width=True)
 
         # ============================================================
         # TOTAL GENERAL Y EXPORTACIÓN
