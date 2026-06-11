@@ -58,12 +58,6 @@ def configurar_estilo():
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
     
-    # Colores para estados
-    COLOR_VENCIDO = "#dc3545"  # Rojo
-    COLOR_URGENTE = "#fd7e14"  # Naranja
-    COLOR_PROXIMO = "#ffc107"  # Amarillo
-    COLOR_VIGENTE = "#28a745"  # Verde
-    
     st.markdown(f"""
         <style>
         /* Fondo general */
@@ -364,25 +358,23 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     
     st.markdown("---")
     
-    # Función para colorear SOLO el texto según el estado (sin cambiar fondo)
-    def color_text_by_status(val):
-        if isinstance(val, str):
-            # Para la columna de días restantes o estado
-            if "Días Restantes" in str(val):
-                try:
-                    dias = int(val)
-                    if dias < 0:
-                        return 'color: #dc3545; font-weight: bold;'  # Rojo para vencidos
-                    elif dias <= 7:
-                        return 'color: #fd7e14; font-weight: bold;'  # Naranja para urgente
-                    elif dias <= 15:
-                        return 'color: #ffc107; font-weight: bold;'  # Amarillo para próximo
-                except:
-                    pass
-        return ''
+    # Función para colorear SOLO el texto de la columna "Días Restantes"
+    def highlight_dias(val):
+        try:
+            dias = int(val)
+            if dias < 0:
+                return 'color: #dc3545; font-weight: bold;'  # Rojo para vencidos
+            elif dias <= 7:
+                return 'color: #fd7e14; font-weight: bold;'  # Naranja para urgente
+            elif dias <= 15:
+                return 'color: #ffc107; font-weight: bold;'  # Amarillo para próximo
+            else:
+                return 'color: #28a745; font-weight: bold;'  # Verde para vigente
+        except:
+            return ''
     
-    # Aplicar estilo solo al texto de la columna "Días Restantes"
-    styled_df = df.style.applymap(color_text_by_status, subset=["Días Restantes"])
+    # Aplicar estilo solo a la columna "Días Restantes"
+    styled_df = df.style.applymap(highlight_dias, subset=["Días Restantes"])
     
     st.dataframe(styled_df, use_container_width=True)
     
