@@ -44,7 +44,7 @@ def configurar_estilo():
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
-            color: {COLOR_TEXT} !important;
+            color: {COLOR_TEXT_DARK};
         }}
         
         /* Botones */
@@ -62,14 +62,18 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Botón volver */
+        /* Botón volver - Color gris con texto blanco */
         .volver-btn button {{
             background-color: #6c757d !important;
+            background: #6c757d !important;
             color: white !important;
         }}
         
         .volver-btn button:hover {{
             background-color: #5a6268 !important;
+            background: #5a6268 !important;
+            color: white !important;
+            transform: translateY(-2px);
         }}
         
         /* Labels generales */
@@ -99,6 +103,10 @@ def configurar_estilo():
         }}
         
         /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+        }}
+        
         .stTabs [data-baseweb="tab"] {{
             background-color: {COLOR_BUTTON};
             border-radius: 8px;
@@ -120,22 +128,47 @@ def configurar_estilo():
         }}
         
         [data-testid="stDataFrame"] {{
+            background-color: {COLOR_CARD} !important;
             border-radius: 12px !important;
             border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] table {{
+            background-color: {COLOR_CARD} !important;
         }}
         
         [data-testid="stDataFrame"] th {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            padding: 12px 8px !important;
         }}
         
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
+            text-align: center !important;
+            padding: 10px 8px !important;
             background-color: {COLOR_CARD} !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
+            background-color: #f8f9fa !important;
         }}
         
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] td div {{
+            color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Alertas */
+        .stAlert {{
+            background-color: {COLOR_CARD} !important;
+            border: 1px solid {COLOR_BORDER} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
