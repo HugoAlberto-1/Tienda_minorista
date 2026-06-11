@@ -314,6 +314,27 @@ def reporte_ventas():
                     df_detalle = pd.DataFrame(rows_detalle, columns=["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"])
                 else:
                     df_detalle = pd.DataFrame()
+                
+                # === DEPURACIÓN: Verificar totales ===
+                with st.expander("🔍 Verificar totales (depuración)"):
+                    st.write("**Total desde consulta agrupada (gran_total):**", f"${gran_total:,.2f}")
+                    
+                    if not df_detalle.empty:
+                        df_detalle["Total_Calculado"] = df_detalle["Cantidad Vendida"] * df_detalle["Precio Venta"]
+                        total_detalle = df_detalle["Total_Calculado"].sum()
+                        total_detalle_redondeado = round(total_detalle, 2)
+                        st.write("**Total desde detalle (suma de cantidad × precio):**", f"${total_detalle_redondeado:,.2f}")
+                        
+                        diferencia = abs(gran_total - total_detalle_redondeado)
+                        st.write(f"**Diferencia:** ${diferencia:.2f}")
+                        
+                        if diferencia > 0.01:
+                            st.warning("⚠️ Hay una diferencia entre los totales. Verifica los datos.")
+                            
+                            # Mostrar algunos registros para identificar el problema
+                            st.write("**Primeros 5 registros del detalle:**")
+                            st.dataframe(df_detalle.head(5))
+                # ============================================
             else:
                 st.warning("No hay datos de ventas en el período seleccionado para esta tienda.")
                 return
