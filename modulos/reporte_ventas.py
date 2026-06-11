@@ -192,107 +192,91 @@ def reporte_ventas():
         cursor = con.cursor()
 
         # ============================================================
-        # CONSULTA PARA VENTAS POR PRODUCTO (gráfico de barras)
+        # CONSULTAS SEGÚN EL TIPO DE FILTRO
         # ============================================================
-        if rol_usuario == "Administrador":
-            if id_tienda_usar is None:
-                # Todas las tiendas - Ventas por tienda
-                query_por_tienda = """
-                    SELECT 
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
-                        COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
-                    FROM Venta v
-                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
-                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                    GROUP BY t.nombre
-                    ORDER BY Total_Ventas DESC
-                """
-                cursor.execute(query_por_tienda, (fecha_inicio, fecha_fin))
-                rows_por_tienda = cursor.fetchall()
-                
-                if rows_por_tienda:
-                    df_por_tienda = pd.DataFrame(rows_por_tienda, columns=["Tienda", "Total_Ventas"])
-                    # Convertir a float
-                    df_por_tienda["Total_Ventas"] = df_por_tienda["Total_Ventas"].astype(float)
-                else:
-                    df_por_tienda = pd.DataFrame()
-                
-                # También obtener datos para exportar
-                query_detalle = """
-                    SELECT
-                        p.Nombre,
-                        pv.Cantidad_vendida,
-                        pv.unidad,
-                        pv.Precio_Venta,
-                        v.Fecha,
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda
-                    FROM Venta v
-                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
-                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                    ORDER BY v.Fecha DESC, p.Nombre ASC
-                """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
-                rows_detalle = cursor.fetchall()
-                if rows_detalle:
-                    columns_detalle = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"]
-                    df_detalle = pd.DataFrame(rows_detalle, columns=columns_detalle)
-                else:
-                    df_detalle = pd.DataFrame()
+        if rol_usuario == "Administrador" and id_tienda_usar is None:
+            # ============================================================
+            # OPCIÓN 1: TODAS LAS TIENDAS - Ventas por tienda
+            # ============================================================
+            query_por_tienda = """
+                SELECT 
+                    COALESCE(t.nombre, 'Sin tienda') as Tienda,
+                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
+                FROM Venta v
+                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                GROUP BY t.nombre
+                ORDER BY Total_Ventas DESC
+            """
+            cursor.execute(query_por_tienda, (fecha_inicio, fecha_fin))
+            rows_por_tienda = cursor.fetchall()
+            
+            if rows_por_tienda:
+                df_por_tienda = pd.DataFrame(rows_por_tienda, columns=["Tienda", "Total_Ventas"])
+                df_por_tienda["Total_Ventas"] = df_por_tienda["Total_Ventas"].astype(float)
             else:
-                # Tienda específica - Ventas por producto
-                query_por_producto = """
-                    SELECT 
-                        p.Nombre as Producto,
-                        COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
-                        COALESCE(SUM(pv.Cantidad_vendida), 0) as Cantidad_Total
-                    FROM Venta v
-                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                      AND v.id_tienda = %s
-                    GROUP BY p.Nombre
-                    ORDER BY Total_Ventas DESC
-                    LIMIT 15
-                """
-                cursor.execute(query_por_producto, (fecha_inicio, fecha_fin, id_tienda_usar))
-                rows_por_producto = cursor.fetchall()
+                df_por_tienda = pd.DataFrame()
+            
+            # Datos para exportar
+            query_detalle = """
+                SELECT
+                    p.Nombre,
+                    pv.Cantidad_vendida,
+                    pv.unidad,
+                    pv.Precio_Venta,
+                    v.Fecha,
+                    COALESCE(t.nombre, 'Sin tienda') as Tienda
+                FROM Venta v
+                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                JOIN Producto p ON p.Cod_barra = pv.Cod_barra
+                LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                ORDER BY v.Fecha DESC, p.Nombre ASC
+            """
+            cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
+            rows_detalle = cursor.fetchall()
+            if rows_detalle:
+                columns_detalle = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"]
+                df_detalle = pd.DataFrame(rows_detalle, columns=columns_detalle)
+            else:
+                df_detalle = pd.DataFrame()
                 
-                if rows_por_producto:
-                    df_por_producto = pd.DataFrame(rows_por_producto, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
-                    # Convertir a float
-                    df_por_producto["Total_Ventas"] = df_por_producto["Total_Ventas"].astype(float)
-                    df_por_producto["Cantidad_Total"] = df_por_producto["Cantidad_Total"].astype(float)
-                else:
-                    df_por_producto = pd.DataFrame()
-                
-                # También obtener datos para exportar
-                query_detalle = """
-                    SELECT
-                        p.Nombre,
-                        pv.Cantidad_vendida,
-                        pv.unidad,
-                        pv.Precio_Venta,
-                        v.Fecha
-                    FROM Venta v
-                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                      AND v.id_tienda = %s
-                    ORDER BY v.Fecha DESC, p.Nombre ASC
-                """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
-                rows_detalle = cursor.fetchall()
-                if rows_detalle:
-                    columns_detalle = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
-                    df_detalle = pd.DataFrame(rows_detalle, columns=columns_detalle)
-                else:
-                    df_detalle = pd.DataFrame()
         else:
-            # Vendedor - Ventas por producto
-            query_por_producto = """
+            # ============================================================
+            # OPCIÓN 2: TIENDA ESPECÍFICA - Ventas por mes
+            # ============================================================
+            if rol_usuario == "Administrador":
+                st.markdown(f"### 📊 Análisis de Ventas - {filtro_tienda}")
+            else:
+                st.markdown(f"### 📊 Análisis de Ventas - {nombre_tienda}")
+            
+            # Consulta para ventas mensuales
+            query_mensual = """
+                SELECT 
+                    DATE_FORMAT(v.Fecha, '%%Y-%%m') as Mes,
+                    DATE_FORMAT(v.Fecha, '%%b %%Y') as Nombre_Mes,
+                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
+                    COUNT(DISTINCT v.ID_Venta) as Numero_Ventas
+                FROM Venta v
+                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                  AND v.id_tienda = %s
+                GROUP BY DATE_FORMAT(v.Fecha, '%%Y-%%m'), DATE_FORMAT(v.Fecha, '%%b %%Y')
+                ORDER BY Mes ASC
+            """
+            cursor.execute(query_mensual, (fecha_inicio, fecha_fin, id_tienda_usar))
+            rows_mensual = cursor.fetchall()
+            
+            if rows_mensual:
+                df_mensual = pd.DataFrame(rows_mensual, columns=["Mes", "Nombre_Mes", "Total_Ventas", "Numero_Ventas"])
+                df_mensual["Total_Ventas"] = df_mensual["Total_Ventas"].astype(float)
+                df_mensual["Numero_Ventas"] = df_mensual["Numero_Ventas"].astype(int)
+            else:
+                df_mensual = pd.DataFrame()
+            
+            # Consulta para top productos (para la tabla adicional)
+            query_top_productos = """
                 SELECT 
                     p.Nombre as Producto,
                     COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
@@ -304,20 +288,19 @@ def reporte_ventas():
                   AND v.id_tienda = %s
                 GROUP BY p.Nombre
                 ORDER BY Total_Ventas DESC
-                LIMIT 15
+                LIMIT 10
             """
-            cursor.execute(query_por_producto, (fecha_inicio, fecha_fin, id_tienda_usar))
-            rows_por_producto = cursor.fetchall()
+            cursor.execute(query_top_productos, (fecha_inicio, fecha_fin, id_tienda_usar))
+            rows_top = cursor.fetchall()
             
-            if rows_por_producto:
-                df_por_producto = pd.DataFrame(rows_por_producto, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
-                # Convertir a float
-                df_por_producto["Total_Ventas"] = df_por_producto["Total_Ventas"].astype(float)
-                df_por_producto["Cantidad_Total"] = df_por_producto["Cantidad_Total"].astype(float)
+            if rows_top:
+                df_top = pd.DataFrame(rows_top, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
+                df_top["Total_Ventas"] = df_top["Total_Ventas"].astype(float)
+                df_top["Cantidad_Total"] = df_top["Cantidad_Total"].astype(float)
             else:
-                df_por_producto = pd.DataFrame()
+                df_top = pd.DataFrame()
             
-            # Datos para exportar
+            # Datos detallados para exportar
             query_detalle = """
                 SELECT
                     p.Nombre,
@@ -340,30 +323,29 @@ def reporte_ventas():
             else:
                 df_detalle = pd.DataFrame()
 
-        # Verificar si hay datos
-        if (rol_usuario == "Administrador" and id_tienda_usar is None and df_por_tienda.empty) or \
-           (rol_usuario == "Administrador" and id_tienda_usar is not None and df_por_producto.empty) or \
-           (rol_usuario != "Administrador" and df_por_producto.empty):
-            st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No se encontraron ventas en el rango seleccionado.</div>', unsafe_allow_html=True)
-            st.markdown("---")
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
-                if st.button("🔙 Volver al Menú Principal", use_container_width=True):
-                    st.session_state["module"] = None
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-            return
-
         # ============================================================
-        # GRÁFICOS Y TOTALES
+        # MOSTRAR RESULTADOS SEGÚN EL TIPO
         # ============================================================
         
         if rol_usuario == "Administrador" and id_tienda_usar is None:
-            # Todas las tiendas - Gráfico de ventas por tienda
+            # ============================================================
+            # TODAS LAS TIENDAS - Gráfico de ventas por tienda
+            # ============================================================
+            if df_por_tienda.empty:
+                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No se encontraron ventas en el rango seleccionado.</div>', unsafe_allow_html=True)
+                st.markdown("---")
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
+                    if st.button("🔙 Volver al Menú Principal", use_container_width=True):
+                        st.session_state["module"] = None
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
+                return
+            
             st.markdown("### 📊 Ventas por Tienda")
             
-            # Calcular gran total - CORREGIDO
+            # Calcular gran total
             gran_total = float(df_por_tienda["Total_Ventas"].sum())
             gran_total = round(gran_total, 2)
             
@@ -386,50 +368,106 @@ def reporte_ventas():
             )
             st.plotly_chart(fig, use_container_width=True)
             
-            # Mostrar tabla de ventas por tienda
+            # Mostrar tabla
             st.markdown("### 🗂 Detalle de Ventas por Tienda")
             df_mostrar = df_por_tienda.copy()
             df_mostrar["Total_Ventas"] = df_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
             st.dataframe(df_mostrar, use_container_width=True)
             
         else:
-            # Tienda específica o vendedor - Gráfico de ventas por producto
-            if rol_usuario == "Administrador":
-                st.markdown(f"### 📊 Ventas por Producto - {filtro_tienda}")
-            else:
-                st.markdown(f"### 📊 Ventas por Producto - {nombre_tienda}")
+            # ============================================================
+            # TIENDA ESPECÍFICA - Gráfico de ventas mensuales
+            # ============================================================
+            if df_mensual.empty:
+                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No se encontraron ventas en el rango seleccionado.</div>', unsafe_allow_html=True)
+                st.markdown("---")
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
+                    if st.button("🔙 Volver al Menú Principal", use_container_width=True):
+                        st.session_state["module"] = None
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
+                return
             
-            # Calcular gran total - CORREGIDO
-            gran_total = float(df_por_producto["Total_Ventas"].sum())
+            # Calcular gran total del período
+            gran_total = float(df_mensual["Total_Ventas"].sum())
             gran_total = round(gran_total, 2)
             
-            # Crear gráfico de barras
-            fig = px.bar(
-                df_por_producto,
-                x="Producto",
+            # Gráfico de ventas mensuales
+            st.markdown("### 📈 Evolución de Ventas por Mes")
+            
+            fig_mensual = px.bar(
+                df_mensual,
+                x="Nombre_Mes",
                 y="Total_Ventas",
-                title="Top 15 Productos Más Vendidos",
+                title="Ventas Mensuales",
                 color="Total_Ventas",
                 color_continuous_scale="Blues",
-                text=df_por_producto["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+                text=df_mensual["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
             )
-            fig.update_traces(textposition='outside')
-            fig.update_layout(
-                xaxis_title="Producto",
+            fig_mensual.update_traces(textposition='outside')
+            fig_mensual.update_layout(
+                xaxis_title="Mes",
                 yaxis_title="Total de Ventas ($)",
-                xaxis_tickangle=-45,
                 height=500,
                 showlegend=False
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig_mensual, use_container_width=True)
             
-            # Mostrar tabla de ventas por producto
-            st.markdown("### 🗂 Detalle de Ventas por Producto")
-            df_mostrar = df_por_producto.copy()
-            df_mostrar["Total_Ventas"] = df_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
-            st.dataframe(df_mostrar, use_container_width=True)
+            # Gráfico de número de ventas por mes
+            fig_ventas = px.line(
+                df_mensual,
+                x="Nombre_Mes",
+                y="Numero_Ventas",
+                title="Número de Transacciones por Mes",
+                markers=True,
+                color_discrete_sequence=["#1e3a5f"]
+            )
+            fig_ventas.update_layout(
+                xaxis_title="Mes",
+                yaxis_title="Número de Ventas",
+                height=400
+            )
+            st.plotly_chart(fig_ventas, use_container_width=True)
+            
+            # Tabla de ventas mensuales
+            st.markdown("### 🗂 Detalle de Ventas Mensuales")
+            df_mensual_mostrar = df_mensual.copy()
+            df_mensual_mostrar["Total_Ventas"] = df_mensual_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+            st.dataframe(df_mensual_mostrar[["Nombre_Mes", "Total_Ventas", "Numero_Ventas"]], use_container_width=True)
+            
+            # Top 10 productos (información adicional)
+            if not df_top.empty:
+                st.markdown("---")
+                st.markdown("### 🏆 Top 10 Productos Más Vendidos")
+                
+                fig_top = px.bar(
+                    df_top,
+                    x="Producto",
+                    y="Total_Ventas",
+                    title="Top 10 Productos",
+                    color="Total_Ventas",
+                    color_continuous_scale="Blues",
+                    text=df_top["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+                )
+                fig_top.update_traces(textposition='outside')
+                fig_top.update_layout(
+                    xaxis_title="Producto",
+                    yaxis_title="Total de Ventas ($)",
+                    xaxis_tickangle=-45,
+                    height=450,
+                    showlegend=False
+                )
+                st.plotly_chart(fig_top, use_container_width=True)
+                
+                st.dataframe(df_top, use_container_width=True)
 
-        # ➤ Mostrar GRAN TOTAL debajo
+        # ============================================================
+        # TOTAL GENERAL Y EXPORTACIÓN
+        # ============================================================
+        
+        # Mostrar GRAN TOTAL
         st.markdown("---")
         st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
         st.markdown(f"""
@@ -462,33 +500,30 @@ def reporte_ventas():
 
         st.markdown("---")
 
-        # ➤ Exportar a Excel (datos detallados)
+        # Exportar a Excel
         st.markdown("### 📁 Exportar datos")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            if not df_detalle.empty:
-                df_excel = df_detalle.copy()
-                if "Fecha Venta" in df_excel.columns:
-                    df_excel["Fecha Venta"] = pd.to_datetime(df_excel["Fecha Venta"]).dt.strftime("%Y-%m-%d")
-                if "Total" not in df_excel.columns:
-                    df_excel["Total"] = df_excel["Cantidad Vendida"] * df_excel["Precio Venta"]
-                    df_excel["Total"] = df_excel["Total"].round(2)
-                
-                excel_buffer = BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                    df_excel.to_excel(writer, index=False, sheet_name="ReporteVentas")
-                
-                st.download_button(
-                    label="⬇️ Descargar Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-            else:
-                st.info("No hay datos para exportar")
+        
+        if not df_detalle.empty:
+            df_excel = df_detalle.copy()
+            if "Fecha Venta" in df_excel.columns:
+                df_excel["Fecha Venta"] = pd.to_datetime(df_excel["Fecha Venta"]).dt.strftime("%Y-%m-%d")
+            if "Total" not in df_excel.columns and "Precio Venta" in df_excel.columns and "Cantidad Vendida" in df_excel.columns:
+                df_excel["Total"] = df_excel["Cantidad Vendida"] * df_excel["Precio Venta"]
+                df_excel["Total"] = df_excel["Total"].round(2)
+            
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                df_excel.to_excel(writer, index=False, sheet_name="ReporteVentas")
+            
+            st.download_button(
+                label="⬇️ Descargar Excel",
+                data=excel_buffer.getvalue(),
+                file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        else:
+            st.info("No hay datos para exportar")
 
         # Botón para volver
         st.markdown("---")
