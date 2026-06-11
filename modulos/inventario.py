@@ -182,7 +182,7 @@ def configurar_estilo():
             color: {COLOR_TEXT} !important;
         }}
         
-        /* Estilos para métricas - Texto oscuro */
+        /* Estilos para métricas - Texto negro */
         .stMetric {{
             background-color: {COLOR_HOVER};
             border-radius: 10px;
@@ -190,28 +190,13 @@ def configurar_estilo():
         }}
         
         .stMetric label {{
-            color: {COLOR_TEXT_DARK} !important;
+            color: #000000 !important;
             font-weight: 600 !important;
         }}
         
         .stMetric .stMetricValue {{
-            color: {COLOR_PRIMARY} !important;
+            color: #000000 !important;
             font-weight: bold !important;
-        }}
-        
-        /* Radio buttons horizontales - texto oscuro */
-        .stRadio > div {{
-            gap: 20px;
-        }}
-        
-        .stRadio label {{
-            color: {COLOR_TEXT_DARK} !important;
-            font-weight: 500 !important;
-        }}
-        
-        /* Texto de información */
-        .stInfo {{
-            color: {COLOR_TEXT_DARK} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -277,15 +262,12 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     st.markdown("---")
     st.markdown('<div class="inventory-subtitle">⏳ Productos próximos a vencer</div>', unsafe_allow_html=True)
     
-    # Selector de período
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        periodo = st.radio(
-            "Seleccione el período:",
-            ["7 días", "15 días", "30 días", "60 días"],
-            index=1,
-            horizontal=True
-        )
+    # Selector de período - LISTA DESPLEGABLE
+    periodo = st.selectbox(
+        "Seleccione el período:",
+        ["7 días", "15 días", "30 días", "60 días"],
+        index=1  # 15 días por defecto
+    )
     
     # Mapeo de período a días
     dias_map = {
