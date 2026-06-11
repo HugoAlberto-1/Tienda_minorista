@@ -82,6 +82,25 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
+        /* Inputs de texto - color azul */
+        .stTextInput > div > div > input {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            padding: 10px 15px;
+        }}
+        
+        .stTextInput > div > div > input::placeholder {{
+            color: rgba(255,255,255,0.7) !important;
+        }}
+        
+        /* Inputs de contraseña */
+        .stTextInput input[type="password"] {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+        }}
+        
         /* Selectores */
         .stSelectbox > div > div {{
             background-color: {COLOR_BUTTON};
