@@ -504,7 +504,7 @@ def modulo_productos_mas_menos_vendidos():
     st.markdown("---")
     
     if df_completo.empty:
-        st.warning("⚠️ No hay datos de ventas en el período seleccionado.")
+        st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No hay datos de ventas en el período seleccionado.</div>', unsafe_allow_html=True)
     else:
         # Ordenar por ingresos (mayor a menor)
         df_mayores_ingresos = df_completo.sort_values("Total_Ingresos", ascending=False)
@@ -545,7 +545,7 @@ def modulo_productos_mas_menos_vendidos():
                     color="blue"
                 )
         elif len(df_mayores_ingresos) == 2:
-            st.info("Solo hay 2 productos con ingresos en el período.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ Solo hay 2 productos con ingresos en el período.</div>', unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 row = df_mayores_ingresos.iloc[0]
@@ -564,7 +564,7 @@ def modulo_productos_mas_menos_vendidos():
                     color="blue"
                 )
         elif len(df_mayores_ingresos) == 1:
-            st.info("Solo hay 1 producto con ingresos en el período.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ Solo hay 1 producto con ingresos en el período.</div>', unsafe_allow_html=True)
             row = df_mayores_ingresos.iloc[0]
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -575,7 +575,7 @@ def modulo_productos_mas_menos_vendidos():
                     color="blue"
                 )
         else:
-            st.info("No hay productos con ingresos en el período seleccionado.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ No hay productos con ingresos en el período seleccionado.</div>', unsafe_allow_html=True)
         
         st.markdown("---")
         
@@ -624,7 +624,7 @@ def modulo_productos_mas_menos_vendidos():
                     color="red"
                 )
         elif len(df_menores_ingresos) == 2:
-            st.info("Solo hay 2 productos con ingresos en el período.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ Solo hay 2 productos con ingresos en el período.</div>', unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 row = df_menores_ingresos.iloc[0]
@@ -643,7 +643,7 @@ def modulo_productos_mas_menos_vendidos():
                     color="red"
                 )
         elif len(df_menores_ingresos) == 1:
-            st.info("Solo hay 1 producto con ingresos en el período.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ Solo hay 1 producto con ingresos en el período.</div>', unsafe_allow_html=True)
             row = df_menores_ingresos.iloc[0]
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -654,7 +654,7 @@ def modulo_productos_mas_menos_vendidos():
                     color="red"
                 )
         else:
-            st.info("No hay productos con ingresos en el período seleccionado.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ No hay productos con ingresos en el período seleccionado.</div>', unsafe_allow_html=True)
         
         st.markdown("---")
         
@@ -668,7 +668,7 @@ def modulo_productos_mas_menos_vendidos():
                 use_container_width=True
             )
         else:
-            st.info("No hay productos con ingresos en el período seleccionado.")
+            st.markdown('<div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; border-left: 4px solid #17a2b8;">ℹ️ No hay productos con ingresos en el período seleccionado.</div>', unsafe_allow_html=True)
     
     # Botón para volver
     st.markdown("---")
