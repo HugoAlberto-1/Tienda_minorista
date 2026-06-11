@@ -182,21 +182,40 @@ def configurar_estilo():
             color: {COLOR_TEXT} !important;
         }}
         
-        /* Estilos para métricas - Texto negro */
-        .stMetric {{
-            background-color: {COLOR_HOVER};
-            border-radius: 10px;
-            padding: 15px;
+        /* Estilos para métricas estilo tarjeta */
+        .metric-card {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid {COLOR_BORDER};
+            transition: all 0.3s ease;
         }}
         
-        .stMetric label {{
-            color: #000000 !important;
-            font-weight: 600 !important;
+        .metric-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: {COLOR_ACCENT};
         }}
         
-        .stMetric .stMetricValue {{
-            color: #000000 !important;
-            font-weight: bold !important;
+        .metric-icon {{
+            font-size: 2em;
+            margin-bottom: 10px;
+        }}
+        
+        .metric-label {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }}
+        
+        .metric-value {{
+            color: {COLOR_PRIMARY};
+            font-size: 1.8em;
+            font-weight: bold;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -266,7 +285,7 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     periodo = st.selectbox(
         "Seleccione el período:",
         ["7 días", "15 días", "30 días", "60 días"],
-        index=1  # 15 días por defecto
+        index=1
     )
     
     # Mapeo de período a días
@@ -315,16 +334,37 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     df = pd.DataFrame(data)
     df = df.sort_values("Fecha Vencimiento", ascending=True)
     
-    # Mostrar resumen con métricas
+    # Mostrar resumen con métricas estilo tarjeta
     col1, col2, col3 = st.columns(3)
+    
     with col1:
-        st.metric("📦 Total de productos", len(df))
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">📦</div>
+                <div class="metric-label">TOTAL DE PRODUCTOS</div>
+                <div class="metric-value">{len(df)}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
     with col2:
         urgentes = len(df[df["Estado"] == "Urgente (≤7 días)"])
-        st.metric("⚠️ Productos urgentes (≤7 días)", urgentes)
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">⚠️</div>
+                <div class="metric-label">PRODUCTOS URGENTES</div>
+                <div class="metric-value">{urgentes}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
     with col3:
         vencidos = len(df[df["Estado"] == "VENCIDO"])
-        st.metric("❌ Productos vencidos", vencidos)
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">❌</div>
+                <div class="metric-label">PRODUCTOS VENCIDOS</div>
+                <div class="metric-value">{vencidos}</div>
+            </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
