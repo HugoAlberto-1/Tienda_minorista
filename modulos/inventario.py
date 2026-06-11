@@ -48,7 +48,7 @@ def configurar_estilo():
     """Configuración de estilos CSS para el módulo de inventario - MODO CLARO"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
-    COLOR_ACCENT = "#3a7ca5"  # ✅ AGREGADO - Azul claro
+    COLOR_ACCENT = "#3a7ca5"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
@@ -139,11 +139,6 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Botón de ver productos próximos a vencer */
-        .stButton:has(> button:contains("Ver productos próximos a vencer")) > button {{
-            background-color: {COLOR_ACCENT} !important;
-        }}
-        
         /* Estilos para tabla en modo claro */
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
@@ -185,6 +180,38 @@ def configurar_estilo():
         
         [data-testid="stDataFrame"] td div {{
             color: {COLOR_TEXT} !important;
+        }}
+        
+        /* Estilos para métricas - Texto oscuro */
+        .stMetric {{
+            background-color: {COLOR_HOVER};
+            border-radius: 10px;
+            padding: 15px;
+        }}
+        
+        .stMetric label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 600 !important;
+        }}
+        
+        .stMetric .stMetricValue {{
+            color: {COLOR_PRIMARY} !important;
+            font-weight: bold !important;
+        }}
+        
+        /* Radio buttons horizontales - texto oscuro */
+        .stRadio > div {{
+            gap: 20px;
+        }}
+        
+        .stRadio label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        /* Texto de información */
+        .stInfo {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -256,7 +283,7 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
         periodo = st.radio(
             "Seleccione el período:",
             ["7 días", "15 días", "30 días", "60 días"],
-            index=1,  # 15 días por defecto
+            index=1,
             horizontal=True
         )
     
@@ -306,7 +333,7 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     df = pd.DataFrame(data)
     df = df.sort_values("Fecha Vencimiento", ascending=True)
     
-    # Mostrar resumen
+    # Mostrar resumen con métricas
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("📦 Total de productos", len(df))
@@ -333,8 +360,10 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     st.dataframe(styled_df, use_container_width=True)
     
     # Botón para volver al inventario completo
-    if st.button("📋 Ver inventario completo", use_container_width=True):
-        st.rerun()
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("📋 Ver inventario completo", use_container_width=True):
+            st.rerun()
 
 
 def modulo_inventario():
