@@ -274,7 +274,7 @@ def reporte_ventas():
             # TIENDA ESPECÍFICA - Ventas por mes
             st.markdown(f"### 📊 Análisis de Ventas Mensuales - {filtro_tienda}")
             
-            # Consulta corregida: extraer mes y año correctamente
+            # Consulta para ventas mensuales
             query = """
                 SELECT 
                     CONCAT(
@@ -286,26 +286,20 @@ def reporte_ventas():
                         END,
                         ' ', YEAR(v.Fecha)
                     ) as Nombre_Mes,
-                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
-                    YEAR(v.Fecha) as Anio,
-                    MONTH(v.Fecha) as MesNum
+                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
                 FROM Venta v
                 JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
                   AND v.id_tienda = %s
                 GROUP BY YEAR(v.Fecha), MONTH(v.Fecha)
-                ORDER BY Anio ASC, MesNum ASC
+                ORDER BY YEAR(v.Fecha) ASC, MONTH(v.Fecha) ASC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
             rows = cursor.fetchall()
             
             if rows:
-                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas", "Anio", "MesNum"])
+                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas"])
                 df["Total_Ventas"] = df["Total_Ventas"].astype(float)
-                
-                # DEBUG: Mostrar lo que tiene el DataFrame
-                with st.expander("🔍 Depuración - Datos del gráfico"):
-                    st.write(df)
                 
                 # Gráfico de barras
                 fig = px.bar(
