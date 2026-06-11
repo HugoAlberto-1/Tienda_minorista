@@ -223,17 +223,18 @@ def configurar_estilo():
 
 
 def obtener_productos_proximos_vencer(id_tienda, dias, filtro_categoria="Todas las categorías"):
-    """Obtiene los productos próximos a vencer en un período específico"""
+    """Obtiene los productos próximos a vencer en un período específico (incluye vencidos)"""
     conn = obtener_conexion()
     if not conn:
         return []
     
     cursor = conn.cursor()
     hoy = datetime.now().date()
-    fecha_limite = hoy + timedelta(days=dias)
+    fecha_limite = hoy + timedelta(days=dias) if dias != 9999 else hoy + timedelta(days=365*10)  # 10 años para "Todos"
     
     try:
         if filtro_categoria == "Todas las categorías":
+            # Incluir productos vencidos y próximos
             cursor.execute("""
                 SELECT DISTINCT
                     pc.Cod_barra, 
@@ -244,11 +245,11 @@ def obtener_productos_proximos_vencer(id_tienda, dias, filtro_categoria="Todas l
                     pc.cantidad_comprada
                 FROM ProductoxCompra pc
                 JOIN Producto p ON pc.Cod_barra = p.Cod_barra AND pc.id_tienda = p.id_tienda
-                WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                WHERE pc.fecha_vencimiento IS NOT NULL
                   AND pc.id_tienda = %s
                   AND p.categoria != 'Granos y productos a granel'
                 ORDER BY pc.fecha_vencimiento ASC
-            """, (hoy, fecha_limite, id_tienda))
+            """, (id_tienda,))
         else:
             cursor.execute("""
                 SELECT DISTINCT
@@ -260,11 +261,11 @@ def obtener_productos_proximos_vencer(id_tienda, dias, filtro_categoria="Todas l
                     pc.cantidad_comprada
                 FROM ProductoxCompra pc
                 JOIN Producto p ON pc.Cod_barra = p.Cod_barra AND pc.id_tienda = p.id_tienda
-                WHERE pc.fecha_vencimiento BETWEEN %s AND %s
+                WHERE pc.fecha_vencimiento IS NOT NULL
                   AND pc.id_tienda = %s
                   AND p.categoria = %s
                 ORDER BY pc.fecha_vencimiento ASC
-            """, (hoy, fecha_limite, id_tienda, filtro_categoria))
+            """, (id_tienda, filtro_categoria))
         
         productos = cursor.fetchall()
         return productos
@@ -282,34 +283,37 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     st.markdown("---")
     st.markdown('<div class="inventory-subtitle">⏳ Productos próximos a vencer</div>', unsafe_allow_html=True)
     
-    # Selector de período - LISTA DESPLEGABLE
+    # Selector de período
     periodo = st.selectbox(
         "Seleccione el período:",
-        ["7 días", "15 días", "30 días", "60 días"],
-        index=1
+        ["Todos (incluye vencidos)", "7 días", "15 días", "30 días", "60 días"],
+        index=2  # 15 días por defecto
     )
     
-    # Mapeo de período a días
-    dias_map = {
-        "7 días": 7,
-        "15 días": 15,
-        "30 días": 30,
-        "60 días": 60
-    }
-    dias = dias_map[periodo]
-    
-    # Obtener productos próximos a vencer
-    productos = obtener_productos_proximos_vencer(id_tienda, dias, filtro_categoria)
+    # Obtener todos los productos con fecha de vencimiento
+    productos = obtener_productos_proximos_vencer(id_tienda, 0, filtro_categoria)
     
     if not productos:
-        st.info(f"✅ No hay productos próximos a vencer en los próximos {dias} días.")
+        st.info(f"✅ No hay productos con fecha de vencimiento registrada.")
         return
     
     # Crear DataFrame
+    hoy = datetime.now().date()
     data = []
     for prod in productos:
         cod_barra, nombre, unidad, fecha_vencimiento, categoria, cantidad = prod
-        dias_restantes = (fecha_vencimiento - datetime.now().date()).days
+        dias_restantes = (fecha_vencimiento - hoy).days
+        
+        # Filtrar según el período seleccionado
+        if periodo == "7 días" and dias_restantes > 7:
+            continue
+        elif periodo == "15 días" and dias_restantes > 15:
+            continue
+        elif periodo == "30 días" and dias_restantes > 30:
+            continue
+        elif periodo == "60 días" and dias_restantes > 60:
+            continue
+        # "Todos (incluye vencidos)" no filtra
         
         data.append({
             "Código": cod_barra,
@@ -320,6 +324,10 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
             "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d"),
             "Días Restantes": dias_restantes
         })
+    
+    if not data:
+        st.info(f"✅ No hay productos próximos a vencer en los próximos {periodo}.")
+        return
     
     df = pd.DataFrame(data)
     df = df.sort_values("Fecha Vencimiento", ascending=True)
@@ -358,7 +366,7 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     
     st.markdown("---")
     
-    # Función para colorear SOLO el texto de la columna "Días Restantes"
+    # Función para colorear el texto de la columna "Días Restantes"
     def highlight_dias(val):
         try:
             dias = int(val)
@@ -373,23 +381,11 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
         except:
             return ''
     
-    # Aplicar estilo usando la función correcta (map)
-    # Primero creamos una copia del dataframe con el estilo aplicado
-    styled_df = df.style
-    # Aplicamos el formato a la columna específica
-    for idx, val in enumerate(df["Días Restantes"]):
-        pass  # Este enfoque no funciona bien
+    # Aplicar estilo
+    def color_dias(s):
+        return [highlight_dias(x) for x in s]
     
-    # Mejor: usar applymap (si existe) o hacer un styled dataframe directamente
-    try:
-        # Intentar con applymap (versiones antiguas de pandas)
-        styled_df = df.style.applymap(highlight_dias, subset=["Días Restantes"])
-    except AttributeError:
-        # Si falla, crear un nuevo styled dataframe con la función map
-        def color_dias(s):
-            return [highlight_dias(x) for x in s]
-        
-        styled_df = df.style.apply(color_dias, subset=["Días Restantes"])
+    styled_df = df.style.apply(color_dias, subset=["Días Restantes"])
     
     st.dataframe(styled_df, use_container_width=True)
     
