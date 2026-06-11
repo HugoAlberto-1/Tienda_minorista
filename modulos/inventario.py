@@ -53,10 +53,16 @@ def configurar_estilo():
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
     COLOR_TEXT_DARK = "#1a1a1a"
-    COLOR_TEXT_LIGHT = "#666666"  # ✅ AGREGADO - Texto gris claro
+    COLOR_TEXT_LIGHT = "#666666"
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
+    
+    # Colores para estados
+    COLOR_VENCIDO = "#dc3545"  # Rojo
+    COLOR_URGENTE = "#fd7e14"  # Naranja
+    COLOR_PROXIMO = "#ffc107"  # Amarillo
+    COLOR_VIGENTE = "#28a745"  # Verde
     
     st.markdown(f"""
         <style>
@@ -311,16 +317,6 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
         cod_barra, nombre, unidad, fecha_vencimiento, categoria, cantidad = prod
         dias_restantes = (fecha_vencimiento - datetime.now().date()).days
         
-        # Determinar estado
-        if dias_restantes < 0:
-            estado = "VENCIDO"
-        elif dias_restantes <= 7:
-            estado = "Urgente (≤7 días)"
-        elif dias_restantes <= 15:
-            estado = "Próximo (≤15 días)"
-        else:
-            estado = "Vigente"
-        
         data.append({
             "Código": cod_barra,
             "Producto": nombre,
@@ -328,8 +324,7 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
             "Unidad": unidad,
             "Cantidad": cantidad,
             "Fecha Vencimiento": fecha_vencimiento.strftime("%Y-%m-%d"),
-            "Días Restantes": dias_restantes,
-            "Estado": estado
+            "Días Restantes": dias_restantes
         })
     
     df = pd.DataFrame(data)
@@ -348,17 +343,17 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
         """, unsafe_allow_html=True)
     
     with col2:
-        urgentes = len(df[df["Estado"] == "Urgente (≤7 días)"])
+        urgentes = len(df[df["Días Restantes"] <= 7])
         st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-icon">⚠️</div>
-                <div class="metric-label">PRODUCTOS URGENTES</div>
+                <div class="metric-label">PRODUCTOS URGENTES (≤7 DÍAS)</div>
                 <div class="metric-value">{urgentes}</div>
             </div>
         """, unsafe_allow_html=True)
     
     with col3:
-        vencidos = len(df[df["Estado"] == "VENCIDO"])
+        vencidos = len(df[df["Días Restantes"] < 0])
         st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-icon">❌</div>
@@ -369,16 +364,25 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     
     st.markdown("---")
     
-    # Función para colorear las filas según el estado
-    def color_rows(row):
-        if row["Estado"] == "VENCIDO":
-            return ['background-color: #f8d7da'] * len(row)
-        elif row["Estado"] == "Urgente (≤7 días)":
-            return ['background-color: #fff3cd'] * len(row)
-        return [''] * len(row)
+    # Función para colorear SOLO el texto según el estado (sin cambiar fondo)
+    def color_text_by_status(val):
+        if isinstance(val, str):
+            # Para la columna de días restantes o estado
+            if "Días Restantes" in str(val):
+                try:
+                    dias = int(val)
+                    if dias < 0:
+                        return 'color: #dc3545; font-weight: bold;'  # Rojo para vencidos
+                    elif dias <= 7:
+                        return 'color: #fd7e14; font-weight: bold;'  # Naranja para urgente
+                    elif dias <= 15:
+                        return 'color: #ffc107; font-weight: bold;'  # Amarillo para próximo
+                except:
+                    pass
+        return ''
     
-    # Aplicar estilo
-    styled_df = df.style.apply(color_rows, axis=1)
+    # Aplicar estilo solo al texto de la columna "Días Restantes"
+    styled_df = df.style.applymap(color_text_by_status, subset=["Días Restantes"])
     
     st.dataframe(styled_df, use_container_width=True)
     
