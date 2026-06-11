@@ -367,12 +367,34 @@ def reporte_ventas():
         
         st.dataframe(df_mostrar, use_container_width=True)
 
-        # ➤ Mostrar GRAN TOTAL debajo
+        # ➤ Mostrar GRAN TOTAL debajo - Con recuadro
         st.markdown("---")
         st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
         st.markdown(f"""
-        <div style='font-size:30px; font-weight:bold; color:#2ecc71; text-align:center;'>
-            ${gran_total:,.2f}
+        <div style='
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        '>
+            <div style='
+                font-size: 2.5em;
+                font-weight: bold;
+                color: #ffd700;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                letter-spacing: 2px;
+            '>
+                ${gran_total:,.2f}
+            </div>
+            <div style='
+                font-size: 0.9em;
+                color: rgba(255,255,255,0.8);
+                margin-top: 8px;
+            '>
+                Ingresos totales del período
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
