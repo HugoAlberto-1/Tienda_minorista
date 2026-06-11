@@ -318,7 +318,8 @@ def reporte_ventas():
             columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
 
         if not rows:
-            st.warning("⚠️ No se encontraron ventas en el rango seleccionado.")
+            # Mensaje de advertencia con color oscuro
+            st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No se encontraron ventas en el rango seleccionado.</div>', unsafe_allow_html=True)
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
