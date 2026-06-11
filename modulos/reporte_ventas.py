@@ -202,7 +202,7 @@ def reporte_ventas():
         gran_total = round(gran_total, 2)
 
         # ============================================================
-        # CONSULTA PRINCIPAL - Ventas agrupadas por mes
+        # CONSULTA PRINCIPAL - Ventas agrupadas
         # ============================================================
         
         if id_tienda_usar is None:
@@ -271,7 +271,7 @@ def reporte_ventas():
                 return
                 
         else:
-            # TIENDA ESPECÍFICA - Ventas por mes
+            # TIENDA ESPECÍFICA - Ventas por mes (como estaba antes)
             st.markdown(f"### 📊 Análisis de Ventas Mensuales - {filtro_tienda}")
             
             # Consulta: extraer mes y año, sumar ventas por mes
@@ -293,7 +293,7 @@ def reporte_ventas():
                 df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas"])
                 df["Total_Ventas"] = df["Total_Ventas"].astype(float)
                 
-                # Crear gráfico de barras
+                # Gráfico de barras (como estaba antes)
                 fig = px.bar(
                     df,
                     x="Nombre_Mes",
@@ -375,19 +375,6 @@ def reporte_ventas():
         st.markdown("### 📁 Exportar datos")
         
         if not df_detalle.empty:
-            # Calcular el total en el detalle para verificar
-            df_detalle["Total"] = df_detalle["Cantidad Vendida"] * df_detalle["Precio Venta"]
-            total_detalle = round(df_detalle["Total"].sum(), 2)
-            
-            # Mostrar verificación
-            with st.expander("🔍 Verificar totales"):
-                st.write(f"**Total general (desde BD):** ${gran_total:,.2f}")
-                st.write(f"**Total desde detalle:** ${total_detalle:,.2f}")
-                if abs(gran_total - total_detalle) > 0.01:
-                    st.warning(f"⚠️ Diferencia de ${abs(gran_total - total_detalle):.2f}")
-                else:
-                    st.success("✅ Los totales coinciden")
-            
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 # Hoja 1: Detalle de ventas
