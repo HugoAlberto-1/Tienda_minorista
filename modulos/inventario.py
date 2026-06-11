@@ -82,7 +82,7 @@ def configurar_estilo():
             margin-bottom: 20px;
         }}
         
-        /* Subtítulo de productos próximos a vencer - ALINEADO A LA IZQUIERDA Y MÁS GRANDE */
+        /* Subtítulo de productos próximos a vencer - ALINEADO A LA IZQUIERDA */
         .expiry-subtitle {{
             text-align: left;
             color: {COLOR_PRIMARY};
@@ -90,6 +90,11 @@ def configurar_estilo():
             font-weight: bold;
             margin-bottom: 20px;
             margin-top: 10px;
+        }}
+        
+        /* Contenedor para selector alineado a la izquierda */
+        .left-align {{
+            text-align: left;
         }}
         
         /* Info box */
@@ -288,17 +293,17 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     """Muestra un selector de período y los productos próximos a vencer"""
     
     st.markdown("---")
-    # Título alineado a la izquierda y más grande
+    # Título alineado a la izquierda
     st.markdown('<div class="expiry-subtitle">⏳ Productos próximos a vencer</div>', unsafe_allow_html=True)
     
-    # Selector de período
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        periodo = st.selectbox(
-            "Seleccione el período:",
-            ["Todos (incluye vencidos)", "7 días", "15 días", "30 días", "60 días"],
-            index=2  # 15 días por defecto
-        )
+    # Selector de período alineado a la izquierda
+    st.markdown('<div class="left-align">', unsafe_allow_html=True)
+    periodo = st.selectbox(
+        "Seleccione el período:",
+        ["Todos (incluye vencidos)", "7 días", "15 días", "30 días", "60 días"],
+        index=2  # 15 días por defecto
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Obtener todos los productos con fecha de vencimiento
     productos = obtener_productos_proximos_vencer(id_tienda, filtro_categoria)
