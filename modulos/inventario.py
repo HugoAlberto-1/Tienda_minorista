@@ -48,6 +48,7 @@ def configurar_estilo():
     """Configuración de estilos CSS para el módulo de inventario - MODO CLARO"""
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
+    COLOR_ACCENT = "#3a7ca5"  # ✅ AGREGADO - Azul claro
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
@@ -139,7 +140,7 @@ def configurar_estilo():
         }}
         
         /* Botón de ver productos próximos a vencer */
-        .expiry-button {{
+        .stButton:has(> button:contains("Ver productos próximos a vencer")) > button {{
             background-color: {COLOR_ACCENT} !important;
         }}
         
@@ -184,16 +185,6 @@ def configurar_estilo():
         
         [data-testid="stDataFrame"] td div {{
             color: {COLOR_TEXT} !important;
-        }}
-        
-        /* Estilo para filas vencidas */
-        .expired-row {{
-            background-color: #f8d7da !important;
-        }}
-        
-        /* Estilo para filas próximas a vencer */
-        .warning-row {{
-            background-color: #fff3cd !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -293,13 +284,13 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
         
         # Determinar estado
         if dias_restantes < 0:
-            estado = "⚠️ VENCIDO"
+            estado = "VENCIDO"
         elif dias_restantes <= 7:
-            estado = "🔴 Urgente"
+            estado = "Urgente (≤7 días)"
         elif dias_restantes <= 15:
-            estado = "🟡 Próximo"
+            estado = "Próximo (≤15 días)"
         else:
-            estado = "🟢 Vigente"
+            estado = "Vigente"
         
         data.append({
             "Código": cod_barra,
@@ -320,19 +311,19 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     with col1:
         st.metric("📦 Total de productos", len(df))
     with col2:
-        urgentes = len(df[df["Estado"] == "🔴 Urgente"])
+        urgentes = len(df[df["Estado"] == "Urgente (≤7 días)"])
         st.metric("⚠️ Productos urgentes (≤7 días)", urgentes)
     with col3:
-        vencidos = len(df[df["Estado"] == "⚠️ VENCIDO"])
+        vencidos = len(df[df["Estado"] == "VENCIDO"])
         st.metric("❌ Productos vencidos", vencidos)
     
     st.markdown("---")
     
     # Función para colorear las filas según el estado
     def color_rows(row):
-        if row["Estado"] == "⚠️ VENCIDO":
+        if row["Estado"] == "VENCIDO":
             return ['background-color: #f8d7da'] * len(row)
-        elif row["Estado"] == "🔴 Urgente":
+        elif row["Estado"] == "Urgente (≤7 días)":
             return ['background-color: #fff3cd'] * len(row)
         return [''] * len(row)
     
@@ -423,12 +414,15 @@ def modulo_inventario():
     if st.session_state["mostrar_vencimiento"]:
         # Mostrar productos próximos a vencer
         categorias_db = obtener_categorias_db(id_tienda)
-        filtro_categoria = st.selectbox(
-            "🔍 Filtrar por categoría:",
-            ["Todas las categorías"] + categorias_db,
-            index=0,
-            key="filtro_vencimiento"
-        )
+        if categorias_db:
+            filtro_categoria = st.selectbox(
+                "🔍 Filtrar por categoría:",
+                ["Todas las categorías"] + categorias_db,
+                index=0,
+                key="filtro_vencimiento"
+            )
+        else:
+            filtro_categoria = "Todas las categorías"
         mostrar_productos_proximos_vencer(id_tienda, filtro_categoria)
     else:
         # ============================================================
