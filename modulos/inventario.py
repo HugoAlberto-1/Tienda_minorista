@@ -373,8 +373,23 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
         except:
             return ''
     
-    # Aplicar estilo solo a la columna "Días Restantes"
-    styled_df = df.style.applymap(highlight_dias, subset=["Días Restantes"])
+    # Aplicar estilo usando la función correcta (map)
+    # Primero creamos una copia del dataframe con el estilo aplicado
+    styled_df = df.style
+    # Aplicamos el formato a la columna específica
+    for idx, val in enumerate(df["Días Restantes"]):
+        pass  # Este enfoque no funciona bien
+    
+    # Mejor: usar applymap (si existe) o hacer un styled dataframe directamente
+    try:
+        # Intentar con applymap (versiones antiguas de pandas)
+        styled_df = df.style.applymap(highlight_dias, subset=["Días Restantes"])
+    except AttributeError:
+        # Si falla, crear un nuevo styled dataframe con la función map
+        def color_dias(s):
+            return [highlight_dias(x) for x in s]
+        
+        styled_df = df.style.apply(color_dias, subset=["Días Restantes"])
     
     st.dataframe(styled_df, use_container_width=True)
     
