@@ -46,7 +46,6 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
         
-        /* Estilos para tarjetas de productos en compra */
         .product-card {{
             background: {COLOR_CARD};
             border-radius: 12px;
@@ -80,7 +79,6 @@ def configurar_estilo():
             color: {COLOR_PRIMARY};
         }}
         
-        /* Total de compra */
         .total-compra {{
             background: {COLOR_HOVER};
             color: {COLOR_PRIMARY};
@@ -186,6 +184,16 @@ def obtener_unidades_por_categoria(categoria):
         return ["unidad"]
 
 
+def obtener_id_producto(cursor, cod_barra, id_tienda):
+    """Obtiene el id_producto a partir del código de barras"""
+    cursor.execute(
+        "SELECT id_producto FROM Producto WHERE Cod_barra = %s AND id_tienda = %s",
+        (cod_barra, id_tienda)
+    )
+    resultado = cursor.fetchone()
+    return resultado[0] if resultado else None
+
+
 def modulo_compras():
     configurar_estilo()
     
@@ -203,7 +211,6 @@ def modulo_compras():
     nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
     nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
 
-    # Mostrar tienda actual
     st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong> | 👤 Empleado: <strong>{nombre_empleado}</strong></div>', unsafe_allow_html=True)
 
     conn = obtener_conexion()
@@ -273,6 +280,7 @@ def modulo_compras():
     producto_encontrado = None
     categoria_producto = None
     unidades_disponibles = ["unidad"]
+    id_producto_actual = None
     
     if codigo_buscado and not codigo_barras_disabled:
         producto_encontrado = next(
@@ -281,7 +289,10 @@ def modulo_compras():
         )
         if producto_encontrado:
             codigo, nombre, categoria_producto = producto_encontrado
-            st.markdown(f'<div class="info-box">✅ Producto encontrado: <strong>{nombre}</strong><br>📁 Categoría: <strong>{categoria_producto}</strong></div>', unsafe_allow_html=True)
+            # Obtener el id_producto
+            id_producto_actual = obtener_id_producto(cursor, codigo, id_tienda)
+            
+            st.markdown(f'<div class="info-box">✅ Producto encontrado: <strong>{nombre}</strong><br>📁 Categoría: <strong>{categoria_producto}</strong><br>🆔 ID Producto: <strong>{id_producto_actual}</strong></div>', unsafe_allow_html=True)
             
             unidades_disponibles = obtener_unidades_por_categoria(categoria_producto)
             
@@ -372,6 +383,7 @@ def modulo_compras():
                     prod_ref = st.session_state["productos_seleccionados"][st.session_state["editar_indice"]]
                     producto = {
                         "cod_barra": codigo_buscado,
+                        "id_producto": prod_ref.get("id_producto"),
                         "nombre": prod_ref["nombre"],
                         "cantidad": cantidad,
                         "precio_compra": precio_compra,
@@ -388,6 +400,7 @@ def modulo_compras():
                 else:
                     producto = {
                         "cod_barra": codigo_buscado,
+                        "id_producto": id_producto_actual,
                         "nombre": producto_encontrado[1],
                         "cantidad": cantidad,
                         "precio_compra": precio_compra,
@@ -419,7 +432,6 @@ def modulo_compras():
             elif prod["unidad"] == "quintal":
                 unidad_texto = "qq"
             
-            # Tarjeta de producto
             st.markdown(f"""
                 <div class="product-card">
                     <div class="product-name">📦 {prod['nombre']}</div>
@@ -467,16 +479,18 @@ def modulo_compras():
                     )
 
                     for prod in st.session_state["productos_seleccionados"]:
+                        # Ahora incluimos id_producto en el INSERT
                         cursor.execute(
                             """
                             INSERT INTO ProductoxCompra
-                            (Id_compra, cod_barra, cantidad_comprada, precio_compra, unidad, fecha_vencimiento,
+                            (Id_compra, cod_barra, id_producto, cantidad_comprada, precio_compra, unidad, fecha_vencimiento,
                              Precio_minorista, Precio_mayorista1, Precio_mayorista2, id_tienda)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """,
                             (
                                 nuevo_id,
                                 prod["cod_barra"],
+                                prod["id_producto"],
                                 prod["cantidad"],
                                 prod["precio_compra"],
                                 prod["unidad"],
