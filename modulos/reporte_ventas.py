@@ -271,29 +271,43 @@ def reporte_ventas():
                 return
                 
         else:
-            # TIENDA ESPECÍFICA - Ventas por mes (como estaba antes)
+            # TIENDA ESPECÍFICA - Ventas por mes
             st.markdown(f"### 📊 Análisis de Ventas Mensuales - {filtro_tienda}")
             
-            # Consulta: extraer mes y año, sumar ventas por mes
+            # Consulta corregida: extraer mes y año correctamente
             query = """
                 SELECT 
-                    DATE_FORMAT(v.Fecha, '%%b %%Y') as Nombre_Mes,
-                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
+                    CONCAT(
+                        CASE MONTH(v.Fecha)
+                            WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
+                            WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
+                            WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
+                            WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
+                        END,
+                        ' ', YEAR(v.Fecha)
+                    ) as Nombre_Mes,
+                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas,
+                    YEAR(v.Fecha) as Anio,
+                    MONTH(v.Fecha) as MesNum
                 FROM Venta v
                 JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                 WHERE DATE(v.Fecha) BETWEEN %s AND %s
                   AND v.id_tienda = %s
-                GROUP BY DATE_FORMAT(v.Fecha, '%%b %%Y'), YEAR(v.Fecha), MONTH(v.Fecha)
-                ORDER BY YEAR(v.Fecha) ASC, MONTH(v.Fecha) ASC
+                GROUP BY YEAR(v.Fecha), MONTH(v.Fecha)
+                ORDER BY Anio ASC, MesNum ASC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
             rows = cursor.fetchall()
             
             if rows:
-                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas"])
+                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas", "Anio", "MesNum"])
                 df["Total_Ventas"] = df["Total_Ventas"].astype(float)
                 
-                # Gráfico de barras (como estaba antes)
+                # DEBUG: Mostrar lo que tiene el DataFrame
+                with st.expander("🔍 Depuración - Datos del gráfico"):
+                    st.write(df)
+                
+                # Gráfico de barras
                 fig = px.bar(
                     df,
                     x="Nombre_Mes",
