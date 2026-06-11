@@ -4,6 +4,8 @@ from config.conexion import obtener_conexion
 from datetime import datetime
 from io import BytesIO
 from fpdf import FPDF
+import plotly.express as px
+import plotly.graph_objects as go
 
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo - Mismo estilo que inventario"""
@@ -51,22 +53,7 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
         
-        /* Metric cards */
-        .metric-card {{
-            background: {COLOR_CARD};
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }}
-        
-        .metric-value {{
-            font-size: 2em;
-            font-weight: bold;
-            color: {COLOR_PRIMARY} !important;
-        }}
-        
-        /* Botones generales */
+        /* Botones */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -81,7 +68,7 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
         
-        /* Botones de descarga - Mismo color azul */
+        /* Botones de descarga */
         .stDownloadButton button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -94,24 +81,26 @@ def configurar_estilo():
             transform: translateY(-1px) !important;
         }}
         
-        /* Botón volver - Color gris con texto blanco */
+        /* Botón volver */
         .volver-btn button {{
             background-color: #6c757d !important;
-            background: #6c757d !important;
             color: white !important;
         }}
         
         .volver-btn button:hover {{
             background-color: #5a6268 !important;
-            background: #5a6268 !important;
-            color: white !important;
-            transform: translateY(-2px);
         }}
         
         /* Labels */
-        .stTextInput > label, .stSelectbox > label {{
-            color: {COLOR_TEXT_DARK} !important;
+        .stTextInput > label, .stSelectbox > label, .stDateInput label {{
+            color: {COLOR_TEXT} !important;
             font-weight: 500 !important;
+        }}
+        
+        /* Fecha inputs */
+        .stDateInput input {{
+            color: #333333 !important;
+            background-color: white !important;
         }}
         
         /* Selectores */
@@ -127,67 +116,6 @@ def configurar_estilo():
         
         .stSelectbox svg {{
             fill: white !important;
-        }}
-        
-        /* Fecha inputs - labels en color oscuro */
-        .stDateInput label {{
-            color: #333333 !important;
-            font-weight: 500 !important;
-        }}
-        
-        /* Fecha inputs - texto dentro del input */
-        .stDateInput input {{
-            color: #333333 !important;
-            background-color: white !important;
-        }}
-        
-        /* Dataframe */
-        .stDataFrame {{
-            background-color: {COLOR_CARD} !important;
-        }}
-        
-        [data-testid="stDataFrame"] {{
-            background-color: {COLOR_CARD} !important;
-            border-radius: 12px !important;
-            border: 1px solid {COLOR_BORDER} !important;
-        }}
-        
-        [data-testid="stDataFrame"] table {{
-            background-color: {COLOR_CARD} !important;
-        }}
-        
-        [data-testid="stDataFrame"] th {{
-            background-color: {COLOR_PRIMARY} !important;
-            color: white !important;
-            font-weight: 600 !important;
-            text-align: center !important;
-            padding: 12px 8px !important;
-        }}
-        
-        [data-testid="stDataFrame"] td {{
-            color: {COLOR_TEXT} !important;
-            text-align: center !important;
-            padding: 10px 8px !important;
-            background-color: {COLOR_CARD} !important;
-            border-bottom: 1px solid {COLOR_BORDER} !important;
-        }}
-        
-        [data-testid="stDataFrame"] tr:nth-child(even) td {{
-            background-color: #f8f9fa !important;
-        }}
-        
-        [data-testid="stDataFrame"] tr:hover td {{
-            background-color: {COLOR_HOVER} !important;
-        }}
-        
-        [data-testid="stDataFrame"] td div {{
-            color: {COLOR_TEXT} !important;
-        }}
-        
-        /* Alertas */
-        .stAlert {{
-            background-color: {COLOR_CARD} !important;
-            border: 1px solid {COLOR_BORDER} !important;
         }}
         
         /* Headers */
@@ -226,7 +154,6 @@ def reporte_ventas():
             
             if tiendas:
                 opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas}
-                # Agregar opción "Todas las tiendas"
                 tienda_seleccionada = st.selectbox(
                     "🏪 Filtrar por tienda:",
                     ["Todas las tiendas"] + list(opciones_tienda.keys())
@@ -245,7 +172,6 @@ def reporte_ventas():
             st.error("Error de conexión.")
             return
     else:
-        # Vendedor: solo su tienda
         id_tienda_usar = id_tienda_sesion
         filtro_tienda = nombre_tienda
         st.markdown(f'<div class="info-box">🏪 <strong>Tienda:</strong> {nombre_tienda}</div>', unsafe_allow_html=True)
@@ -265,11 +191,33 @@ def reporte_ventas():
         con = obtener_conexion()
         cursor = con.cursor()
 
-        # 🔧 Consulta según el rol del usuario y el filtro de tienda
+        # ============================================================
+        # CONSULTA PARA VENTAS POR PRODUCTO (gráfico de barras)
+        # ============================================================
         if rol_usuario == "Administrador":
             if id_tienda_usar is None:
-                # Todas las tiendas
-                query = """
+                # Todas las tiendas - Ventas por tienda
+                query_por_tienda = """
+                    SELECT 
+                        t.nombre as Tienda,
+                        SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ventas
+                    FROM Venta v
+                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                    GROUP BY t.nombre
+                    ORDER BY Total_Ventas DESC
+                """
+                cursor.execute(query_por_tienda, (fecha_inicio, fecha_fin))
+                rows_por_tienda = cursor.fetchall()
+                
+                if rows_por_tienda:
+                    df_por_tienda = pd.DataFrame(rows_por_tienda, columns=["Tienda", "Total_Ventas"])
+                else:
+                    df_por_tienda = pd.DataFrame()
+                
+                # También obtener datos para exportar
+                query_detalle = """
                     SELECT
                         p.Nombre,
                         pv.Cantidad_vendida,
@@ -284,35 +232,85 @@ def reporte_ventas():
                     WHERE DATE(v.Fecha) BETWEEN %s AND %s
                     ORDER BY v.Fecha DESC, p.Nombre ASC
                 """
-                cursor.execute(query, (fecha_inicio, fecha_fin))
+                cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
+                rows_detalle = cursor.fetchall()
+                if rows_detalle:
+                    columns_detalle = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"]
+                    df_detalle = pd.DataFrame(rows_detalle, columns=columns_detalle)
+                else:
+                    df_detalle = pd.DataFrame()
             else:
-                # Tienda específica
-                query = """
+                # Tienda específica - Ventas por producto
+                query_por_producto = """
+                    SELECT 
+                        p.Nombre as Producto,
+                        SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ventas,
+                        SUM(pv.Cantidad_vendida) as Cantidad_Total
+                    FROM Venta v
+                    JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                    JOIN Producto p ON p.Cod_barra = pv.Cod_barra
+                    WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                      AND v.id_tienda = %s
+                    GROUP BY p.Nombre
+                    ORDER BY Total_Ventas DESC
+                    LIMIT 15
+                """
+                cursor.execute(query_por_producto, (fecha_inicio, fecha_fin, id_tienda_usar))
+                rows_por_producto = cursor.fetchall()
+                
+                if rows_por_producto:
+                    df_por_producto = pd.DataFrame(rows_por_producto, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
+                else:
+                    df_por_producto = pd.DataFrame()
+                
+                # También obtener datos para exportar
+                query_detalle = """
                     SELECT
                         p.Nombre,
                         pv.Cantidad_vendida,
                         pv.unidad,
                         pv.Precio_Venta,
-                        v.Fecha,
-                        t.nombre as Tienda
+                        v.Fecha
                     FROM Venta v
                     JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                     JOIN Producto p ON p.Cod_barra = pv.Cod_barra
-                    LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
                     WHERE DATE(v.Fecha) BETWEEN %s AND %s
                       AND v.id_tienda = %s
                     ORDER BY v.Fecha DESC, p.Nombre ASC
                 """
-                cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
-            
-            rows = cursor.fetchall()
-            if rows:
-                columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"]
-            else:
-                columns = []
+                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
+                rows_detalle = cursor.fetchall()
+                if rows_detalle:
+                    columns_detalle = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
+                    df_detalle = pd.DataFrame(rows_detalle, columns=columns_detalle)
+                else:
+                    df_detalle = pd.DataFrame()
         else:
-            # Vendedor
-            query = """
+            # Vendedor - Ventas por producto
+            query_por_producto = """
+                SELECT 
+                    p.Nombre as Producto,
+                    SUM(pv.Cantidad_vendida * pv.Precio_Venta) as Total_Ventas,
+                    SUM(pv.Cantidad_vendida) as Cantidad_Total
+                FROM Venta v
+                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
+                JOIN Producto p ON p.Cod_barra = pv.Cod_barra
+                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+                  AND v.id_tienda = %s
+                GROUP BY p.Nombre
+                ORDER BY Total_Ventas DESC
+                LIMIT 15
+            """
+            cursor.execute(query_por_producto, (fecha_inicio, fecha_fin, id_tienda_usar))
+            rows_por_producto = cursor.fetchall()
+            
+            if rows_por_producto:
+                df_por_producto = pd.DataFrame(rows_por_producto, columns=["Producto", "Total_Ventas", "Cantidad_Total"])
+            else:
+                df_por_producto = pd.DataFrame()
+            
+            # Datos para exportar
+            query_detalle = """
                 SELECT
                     p.Nombre,
                     pv.Cantidad_vendida,
@@ -326,12 +324,18 @@ def reporte_ventas():
                   AND v.id_tienda = %s
                 ORDER BY v.Fecha DESC, p.Nombre ASC
             """
-            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
-            rows = cursor.fetchall()
-            columns = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
+            cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
+            rows_detalle = cursor.fetchall()
+            if rows_detalle:
+                columns_detalle = ["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"]
+                df_detalle = pd.DataFrame(rows_detalle, columns=columns_detalle)
+            else:
+                df_detalle = pd.DataFrame()
 
-        if not rows:
-            # Mensaje de advertencia con color oscuro
+        # Verificar si hay datos
+        if (rol_usuario == "Administrador" and id_tienda_usar is None and df_por_tienda.empty) or \
+           (rol_usuario == "Administrador" and id_tienda_usar is not None and df_por_producto.empty) or \
+           (rol_usuario != "Administrador" and df_por_producto.empty):
             st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No se encontraron ventas en el rango seleccionado.</div>', unsafe_allow_html=True)
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -343,44 +347,79 @@ def reporte_ventas():
                 st.markdown('</div>', unsafe_allow_html=True)
             return
 
-        # ---- DataFrame ----
-        df = pd.DataFrame(rows, columns=columns)
-
-        df["Cantidad Vendida"] = pd.to_numeric(df["Cantidad Vendida"], errors="coerce").fillna(0)
-        df["Precio Venta"] = pd.to_numeric(df["Precio Venta"], errors="coerce").fillna(0)
-        df["Fecha Venta"] = pd.to_datetime(df["Fecha Venta"], errors="coerce")
+        # ============================================================
+        # GRÁFICOS Y TOTALES
+        # ============================================================
         
-        # Formatear unidad
-        df["unidad"] = df["unidad"].fillna("").astype(str)
-
-        # ➤ CALCULAR TOTAL
-        df["Total"] = (df["Cantidad Vendida"] * df["Precio Venta"]).round(2)
-
-        # ➤ CALCULAR GRAN TOTAL
-        gran_total = df["Total"].sum().round(2)
-
-        # Mostrar tabla
-        st.markdown("---")
-        st.markdown("### 🗂 Detalles de Ventas")
-        
-        # Formatear para mostrar
-        df_mostrar = df.copy()
-        df_mostrar["Cantidad Vendida"] = df_mostrar.apply(
-            lambda x: f"{x['Cantidad Vendida']:.2f} {x['unidad']}" if x['unidad'] else f"{x['Cantidad Vendida']:.2f}", axis=1
-        )
-        df_mostrar["Precio Venta"] = df_mostrar["Precio Venta"].apply(lambda x: f"${x:.2f}")
-        df_mostrar["Total"] = df_mostrar["Total"].apply(lambda x: f"${x:.2f}")
-        df_mostrar["Fecha Venta"] = df_mostrar["Fecha Venta"].dt.strftime("%Y-%m-%d")
-        
-        # Seleccionar columnas a mostrar
-        if rol_usuario == "Administrador":
-            df_mostrar = df_mostrar[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta", "Tienda"]]
+        if rol_usuario == "Administrador" and id_tienda_usar is None:
+            # Todas las tiendas - Gráfico de ventas por tienda
+            st.markdown("### 📊 Ventas por Tienda")
+            
+            # Calcular gran total
+            gran_total = df_por_tienda["Total_Ventas"].sum().round(2)
+            
+            # Crear gráfico de barras
+            fig = px.bar(
+                df_por_tienda,
+                x="Tienda",
+                y="Total_Ventas",
+                title="Total de Ventas por Tienda",
+                color="Total_Ventas",
+                color_continuous_scale="Blues",
+                text=df_por_tienda["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+            )
+            fig.update_traces(textposition='outside')
+            fig.update_layout(
+                xaxis_title="Tienda",
+                yaxis_title="Total de Ventas ($)",
+                height=500,
+                showlegend=False
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Mostrar tabla de ventas por tienda
+            st.markdown("### 🗂 Detalle de Ventas por Tienda")
+            df_mostrar = df_por_tienda.copy()
+            df_mostrar["Total_Ventas"] = df_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+            st.dataframe(df_mostrar, use_container_width=True)
+            
         else:
-            df_mostrar = df_mostrar[["Nombre", "Cantidad Vendida", "Precio Venta", "Total", "Fecha Venta"]]
-        
-        st.dataframe(df_mostrar, use_container_width=True)
+            # Tienda específica o vendedor - Gráfico de ventas por producto
+            if rol_usuario == "Administrador":
+                st.markdown(f"### 📊 Ventas por Producto - {filtro_tienda}")
+            else:
+                st.markdown(f"### 📊 Ventas por Producto - {nombre_tienda}")
+            
+            # Calcular gran total
+            gran_total = df_por_producto["Total_Ventas"].sum().round(2)
+            
+            # Crear gráfico de barras
+            fig = px.bar(
+                df_por_producto,
+                x="Producto",
+                y="Total_Ventas",
+                title="Top 15 Productos Más Vendidos",
+                color="Total_Ventas",
+                color_continuous_scale="Blues",
+                text=df_por_producto["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+            )
+            fig.update_traces(textposition='outside')
+            fig.update_layout(
+                xaxis_title="Producto",
+                yaxis_title="Total de Ventas ($)",
+                xaxis_tickangle=-45,
+                height=500,
+                showlegend=False
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Mostrar tabla de ventas por producto
+            st.markdown("### 🗂 Detalle de Ventas por Producto")
+            df_mostrar = df_por_producto.copy()
+            df_mostrar["Total_Ventas"] = df_mostrar["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+            st.dataframe(df_mostrar, use_container_width=True)
 
-        # ➤ Mostrar GRAN TOTAL debajo - Con recuadro
+        # ➤ Mostrar GRAN TOTAL debajo
         st.markdown("---")
         st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
         st.markdown(f"""
@@ -413,100 +452,33 @@ def reporte_ventas():
 
         st.markdown("---")
 
-        # ➤ Exportar a Excel y PDF
-        st.markdown("### 📁 Exportar ventas filtradas")
+        # ➤ Exportar a Excel (datos detallados)
+        st.markdown("### 📁 Exportar datos")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            # Para Excel, exportar con unidad separada
-            df_excel = df.copy()
-            df_excel["Fecha Venta"] = df_excel["Fecha Venta"].dt.strftime("%Y-%m-%d")
-            df_excel["Total"] = df_excel["Total"].round(2)
-            
-            excel_buffer = BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-                df_excel.to_excel(writer, index=False, sheet_name="ReporteVentas")
-
-            st.download_button(
-                label="⬇️ Descargar Excel",
-                data=excel_buffer.getvalue(),
-                file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-
-        # ➤ Exportar PDF
-        with col2:
-            try:
-                pdf = FPDF()
-                pdf.add_page()
-                pdf.set_auto_page_break(auto=True, margin=15)
-
-                # Título
-                pdf.set_font("Arial", "B", 16)
-                pdf.cell(190, 10, txt="Reporte de Ventas", ln=True, align="C")
-                pdf.ln(5)
+            if not df_detalle.empty:
+                df_excel = df_detalle.copy()
+                if "Fecha Venta" in df_excel.columns:
+                    df_excel["Fecha Venta"] = pd.to_datetime(df_excel["Fecha Venta"]).dt.strftime("%Y-%m-%d")
+                if "Total" not in df_excel.columns:
+                    df_excel["Total"] = df_excel["Cantidad Vendida"] * df_excel["Precio Venta"]
+                    df_excel["Total"] = df_excel["Total"].round(2)
                 
-                # Nombre de la tienda o filtro
-                pdf.set_font("Arial", "I", 10)
-                if rol_usuario == "Administrador":
-                    pdf.cell(190, 8, txt=f"Reporte - {filtro_tienda}", ln=True, align="C")
-                else:
-                    pdf.cell(190, 8, txt=f"Tienda: {nombre_tienda}", ln=True, align="C")
+                excel_buffer = BytesIO()
+                with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                    df_excel.to_excel(writer, index=False, sheet_name="ReporteVentas")
                 
-                pdf.cell(190, 8, txt=f"Periodo: {fecha_inicio} al {fecha_fin}", ln=True, align="C")
-                pdf.ln(5)
-
-                # Definir columnas
-                if rol_usuario == "Administrador":
-                    headers = ["Producto", "Cantidad (Unidad)", "Precio", "Total", "Fecha", "Tienda"]
-                    widths = [55, 25, 20, 20, 30, 40]
-                else:
-                    headers = ["Producto", "Cantidad (Unidad)", "Precio", "Total", "Fecha"]
-                    widths = [70, 30, 25, 25, 40]
-
-                pdf.set_font("Arial", "B", 9)
-                for w, h in zip(widths, headers):
-                    pdf.cell(w, 8, h, 1, 0, "C")
-                pdf.ln(8)
-
-                pdf.set_font("Arial", size=8)
-                for _, row in df.iterrows():
-                    fecha_str = row["Fecha Venta"].strftime("%Y-%m-%d") if pd.notna(row["Fecha Venta"]) else ""
-                    cantidad_con_unidad = f"{row['Cantidad Vendida']:.2f} {row['unidad']}" if row['unidad'] else f"{row['Cantidad Vendida']:.2f}"
-                    
-                    pdf.cell(widths[0], 8, str(row["Nombre"])[:30], 1)
-                    pdf.cell(widths[1], 8, cantidad_con_unidad[:25], 1, 0, "R")
-                    pdf.cell(widths[2], 8, f"${row['Precio Venta']:.2f}", 1, 0, "R")
-                    pdf.cell(widths[3], 8, f"${row['Total']:.2f}", 1, 0, "R")
-                    pdf.cell(widths[4], 8, fecha_str, 1, 0, "C")
-                    
-                    if rol_usuario == "Administrador":
-                        pdf.cell(widths[5], 8, str(row["Tienda"])[:25], 1, 0, "C")
-                    
-                    pdf.ln(6)
-
-                # Total general
-                pdf.set_font("Arial", "B", 12)
-                pdf.ln(5)
-                pdf.cell(190, 10, f"TOTAL GENERAL: ${gran_total:,.2f}", 0, 1, "R")
-
-                pdf_output = pdf.output(dest="S")
-                if isinstance(pdf_output, str):
-                    pdf_bytes = pdf_output.encode("latin-1")
-                else:
-                    pdf_bytes = bytes(pdf_output)
-
                 st.download_button(
-                    label="⬇️ Descargar PDF",
-                    data=pdf_bytes,
-                    file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.pdf",
-                    mime="application/pdf",
+                    label="⬇️ Descargar Excel",
+                    data=excel_buffer.getvalue(),
+                    file_name=f"reporte_ventas_{fecha_inicio}_{fecha_fin}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
-            except Exception as e:
-                st.error(f"Error al generar PDF: {e}")
+            else:
+                st.info("No hay datos para exportar")
 
         # Botón para volver
         st.markdown("---")
