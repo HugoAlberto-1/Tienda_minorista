@@ -47,7 +47,7 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
         
-        /* Botones */
+        /* Botones generales */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -60,6 +60,19 @@ def configurar_estilo():
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
+        }}
+        
+        /* Botones de formulario - Crear Tienda y Crear Usuario */
+        .stForm button {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            border-radius: 8px !important;
+            border: none !important;
+        }}
+        
+        .stForm button:hover {{
+            background-color: {COLOR_SECONDARY} !important;
+            transform: translateY(-1px) !important;
         }}
         
         /* Botón volver - Color gris con texto blanco */
