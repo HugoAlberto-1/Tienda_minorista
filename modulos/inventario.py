@@ -82,7 +82,27 @@ def configurar_estilo():
             margin-bottom: 20px;
         }}
         
-        /* Subtítulo de productos próximos a vencer - ALINEADO A LA IZQUIERDA */
+        /* Contenedor para botón alineado a la derecha */
+        .right-align {{
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }}
+        
+        /* Botón especial para ver productos próximos a vencer - más angosto */
+        .special-button .stButton > button {{
+            background-color: {COLOR_ACCENT} !important;
+            width: auto !important;
+            min-width: 200px !important;
+            padding: 8px 20px !important;
+            font-size: 0.9em !important;
+        }}
+        
+        .special-button .stButton > button:hover {{
+            background-color: {COLOR_SECONDARY} !important;
+        }}
+        
+        /* Subtítulo de productos próximos a vencer */
         .expiry-subtitle {{
             text-align: left;
             color: {COLOR_PRIMARY};
@@ -92,7 +112,6 @@ def configurar_estilo():
             margin-top: 10px;
         }}
         
-        /* Contenedor para selector alineado a la izquierda */
         .left-align {{
             text-align: left;
         }}
@@ -293,33 +312,28 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     """Muestra un selector de período y los productos próximos a vencer"""
     
     st.markdown("---")
-    # Título alineado a la izquierda
     st.markdown('<div class="expiry-subtitle">⏳ Productos próximos a vencer</div>', unsafe_allow_html=True)
     
-    # Selector de período alineado a la izquierda
     st.markdown('<div class="left-align">', unsafe_allow_html=True)
     periodo = st.selectbox(
         "Seleccione el período:",
         ["Todos (incluye vencidos)", "7 días", "15 días", "30 días", "60 días"],
-        index=2  # 15 días por defecto
+        index=2
     )
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Obtener todos los productos con fecha de vencimiento
     productos = obtener_productos_proximos_vencer(id_tienda, filtro_categoria)
     
     if not productos:
         st.info(f"✅ No hay productos con fecha de vencimiento registrada.")
         return
     
-    # Crear DataFrame
     hoy = datetime.now().date()
     data = []
     for prod in productos:
         cod_barra, nombre, unidad, fecha_vencimiento, categoria, cantidad = prod
         dias_restantes = (fecha_vencimiento - hoy).days
         
-        # Filtrar según el período seleccionado
         if periodo == "7 días" and dias_restantes > 7:
             continue
         elif periodo == "15 días" and dias_restantes > 15:
@@ -328,7 +342,6 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
             continue
         elif periodo == "60 días" and dias_restantes > 60:
             continue
-        # "Todos (incluye vencidos)" no filtra
         
         data.append({
             "Código": cod_barra,
@@ -347,7 +360,6 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     df = pd.DataFrame(data)
     df = df.sort_values("Fecha Vencimiento", ascending=True)
     
-    # Mostrar resumen con métricas estilo tarjeta
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -381,22 +393,20 @@ def mostrar_productos_proximos_vencer(id_tienda, filtro_categoria="Todas las cat
     
     st.markdown("---")
     
-    # Función para colorear el texto de la columna "Días Restantes"
     def highlight_dias(val):
         try:
             dias = int(val)
             if dias < 0:
-                return 'color: #dc3545; font-weight: bold;'  # Rojo para vencidos
+                return 'color: #dc3545; font-weight: bold;'
             elif dias <= 7:
-                return 'color: #fd7e14; font-weight: bold;'  # Naranja para urgente
+                return 'color: #fd7e14; font-weight: bold;'
             elif dias <= 15:
-                return 'color: #ffc107; font-weight: bold;'  # Amarillo para próximo
+                return 'color: #ffc107; font-weight: bold;'
             else:
-                return 'color: #28a745; font-weight: bold;'  # Verde para vigente
+                return 'color: #28a745; font-weight: bold;'
         except:
             return ''
     
-    # Aplicar estilo
     def color_dias(s):
         return [highlight_dias(x) for x in s]
     
@@ -422,7 +432,6 @@ def modulo_inventario():
     id_tienda_sesion = st.session_state.get("id_tienda")
     nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
 
-    # Variable para controlar si mostrar productos próximos a vencer
     if "mostrar_vencimiento" not in st.session_state:
         st.session_state["mostrar_vencimiento"] = False
 
@@ -459,7 +468,6 @@ def modulo_inventario():
             st.error("❌ No se pudo conectar a la base de datos.")
             return
     else:
-        # Vendedor: solo su tienda
         id_tienda = id_tienda_sesion
         if not id_tienda:
             st.error("❌ No tienes una tienda asignada.")
@@ -467,20 +475,19 @@ def modulo_inventario():
         
         st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>', unsafe_allow_html=True)
 
-    # Botón para alternar entre inventario y productos próximos a vencer
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Botón especial alineado a la derecha
+    col1, col2 = st.columns([3, 1])
     with col2:
         if not st.session_state["mostrar_vencimiento"]:
-            if st.button("⏳ Ver productos próximos a vencer", use_container_width=True):
+            if st.button("⏳ Ver productos próximos a vencer", use_container_width=True, key="btn_ver_vencimiento"):
                 st.session_state["mostrar_vencimiento"] = True
                 st.rerun()
         else:
-            if st.button("📋 Volver al inventario", use_container_width=True):
+            if st.button("📋 Volver al inventario", use_container_width=True, key="btn_volver_inventario"):
                 st.session_state["mostrar_vencimiento"] = False
                 st.rerun()
 
     if st.session_state["mostrar_vencimiento"]:
-        # Mostrar productos próximos a vencer
         categorias_db = obtener_categorias_db(id_tienda)
         if categorias_db:
             filtro_categoria = st.selectbox(
@@ -493,10 +500,6 @@ def modulo_inventario():
             filtro_categoria = "Todas las categorías"
         mostrar_productos_proximos_vencer(id_tienda, filtro_categoria)
     else:
-        # ============================================================
-        # Filtros de búsqueda para inventario normal
-        # ============================================================
-        
         categorias_db = obtener_categorias_db(id_tienda)
 
         buscador = st.text_input(
@@ -527,7 +530,6 @@ def modulo_inventario():
             else:
                 cursor = conn.cursor()
 
-                # Construir consulta SQL
                 if filtro_categoria == "Todas las categorías":
                     if buscador:
                         cursor.execute("""
@@ -579,7 +581,6 @@ def modulo_inventario():
                     inventario_detalle = []
 
                     for cod_barra, nombre, categoria in productos:
-                        # Compras
                         cursor.execute("""
                             SELECT cantidad_comprada, unidad, fecha_vencimiento
                             FROM ProductoxCompra
@@ -587,7 +588,6 @@ def modulo_inventario():
                         """, (cod_barra, id_tienda))
                         compras = cursor.fetchall()
 
-                        # Determinar unidad principal para carnes y congelados
                         unidad_principal = None
                         if categoria == "Carnes y congelados" and compras:
                             hay_compras_libras = any(c[1] and c[1].lower() in ["libra", "libras", "lb"] for c in compras)
@@ -598,7 +598,6 @@ def modulo_inventario():
                             elif hay_compras_unidades:
                                 unidad_principal = "unidades"
 
-                        # Fecha de vencimiento más reciente
                         fecha_vencimiento = None
                         for compra in compras:
                             if compra[2]:
@@ -608,7 +607,6 @@ def modulo_inventario():
                         total_comprado_lb = sum(convertir_a_libras(c[0], c[1]) for c in compras)
                         total_comprado_unidades = sum(c[0] for c in compras if c[1] and c[1].lower() not in ["libra", "libras", "lb", "quintal", "qq", "arroba"])
 
-                        # Ventas
                         cursor.execute("""
                             SELECT Cantidad_vendida, unidad
                             FROM ProductoxVenta
@@ -624,7 +622,6 @@ def modulo_inventario():
                         
                         fecha_str = fecha_vencimiento.strftime("%Y-%m-%d") if fecha_vencimiento else "—"
 
-                        # Agregar según categoría
                         if categoria == "Granos y productos a granel":
                             inventario_detalle.append({
                                 "Código": cod_barra,
@@ -676,11 +673,8 @@ def modulo_inventario():
                     if df.empty:
                         st.warning(f"⚠️ No hay productos para mostrar.")
                     else:
-                        # Definir orden de columnas
                         columnas_orden = ["Código", "Nombre", "Categoría", "Stock (Quintales)", "Stock (Arrobas)", "Stock (Libras)", "Stock (Unidades)", "Fecha Vencimiento"]
                         df = df[columnas_orden]
-                        
-                        # Ordenar por nombre
                         df = df.sort_values("Nombre", key=lambda x: x.str.lower(), ascending=True)
                         
                         if buscador:
@@ -694,7 +688,6 @@ def modulo_inventario():
                             else:
                                 st.markdown(f'<div class="inventory-subtitle">📋 Inventario por categoría: {filtro_categoria}</div>', unsafe_allow_html=True)
                         
-                        # Mostrar dataframe con estilo claro
                         st.dataframe(df, use_container_width=True)
 
         except Exception as e:
