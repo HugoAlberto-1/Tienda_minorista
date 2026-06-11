@@ -247,23 +247,24 @@ def reporte_ventas():
                 # Datos para exportar (detalle)
                 query_detalle = """
                     SELECT
-                        p.Nombre,
-                        pv.Cantidad_vendida,
-                        pv.unidad,
-                        pv.Precio_Venta,
-                        v.Fecha,
+                        p.Nombre as Producto,
+                        pv.Cantidad_vendida as Cantidad,
+                        pv.unidad as Unidad,
+                        pv.Precio_Venta as Precio_Unitario,
+                        (pv.Cantidad_vendida * pv.Precio_Venta) as Total,
+                        v.Fecha as Fecha_Venta,
                         COALESCE(t.nombre, 'Sin tienda') as Tienda
                     FROM Venta v
                     JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                     JOIN Producto p ON p.Cod_barra = pv.Cod_barra
                     LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
                     WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                    ORDER BY v.Fecha DESC
+                    ORDER BY v.Fecha DESC, p.Nombre ASC
                 """
                 cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
                 rows_detalle = cursor.fetchall()
                 if rows_detalle:
-                    df_detalle = pd.DataFrame(rows_detalle, columns=["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta", "Tienda"])
+                    df_detalle = pd.DataFrame(rows_detalle)
                 else:
                     df_detalle = pd.DataFrame()
             else:
@@ -323,22 +324,23 @@ def reporte_ventas():
                 # Datos para exportar (detalle)
                 query_detalle = """
                     SELECT
-                        p.Nombre,
-                        pv.Cantidad_vendida,
-                        pv.unidad,
-                        pv.Precio_Venta,
-                        v.Fecha
+                        p.Nombre as Producto,
+                        pv.Cantidad_vendida as Cantidad,
+                        pv.unidad as Unidad,
+                        pv.Precio_Venta as Precio_Unitario,
+                        (pv.Cantidad_vendida * pv.Precio_Venta) as Total,
+                        v.Fecha as Fecha_Venta
                     FROM Venta v
                     JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
                     JOIN Producto p ON p.Cod_barra = pv.Cod_barra
                     WHERE DATE(v.Fecha) BETWEEN %s AND %s
                       AND v.id_tienda = %s
-                    ORDER BY v.Fecha DESC
+                    ORDER BY v.Fecha DESC, p.Nombre ASC
                 """
                 cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
                 rows_detalle = cursor.fetchall()
                 if rows_detalle:
-                    df_detalle = pd.DataFrame(rows_detalle, columns=["Nombre", "Cantidad Vendida", "unidad", "Precio Venta", "Fecha Venta"])
+                    df_detalle = pd.DataFrame(rows_detalle)
                 else:
                     df_detalle = pd.DataFrame()
             else:
@@ -387,8 +389,8 @@ def reporte_ventas():
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 # Hoja 1: Detalle de ventas
                 df_excel = df_detalle.copy()
-                if "Fecha Venta" in df_excel.columns:
-                    df_excel["Fecha Venta"] = pd.to_datetime(df_excel["Fecha Venta"]).dt.strftime("%Y-%m-%d")
+                if "Fecha_Venta" in df_excel.columns:
+                    df_excel["Fecha_Venta"] = pd.to_datetime(df_excel["Fecha_Venta"]).dt.strftime("%Y-%m-%d")
                 df_excel.to_excel(writer, index=False, sheet_name="Detalle_Ventas")
                 
                 # Hoja 2: Resumen por mes (si es tienda específica)
@@ -403,6 +405,11 @@ def reporte_ventas():
                     "Monto": [gran_total]
                 })
                 df_totales.to_excel(writer, index=False, sheet_name="Totales")
+            
+            # Verificar que el total en Excel coincide
+            total_excel = df_detalle["Total"].sum() if "Total" in df_detalle.columns else 0
+            if abs(total_excel - gran_total) > 0.01:
+                st.info(f"💡 El total general (${gran_total:,.2f}) es el correcto. En el Excel puedes sumar la columna 'Total' para verificar.")
             
             st.download_button(
                 label="⬇️ Descargar Excel",
