@@ -15,7 +15,8 @@ from modulos.inventario import modulo_inventario
 from modulos.reporte_ventas import reporte_ventas
 from modulos.categoria import modulo_categoria
 from modulos.gestion_admin import modulo_gestion_admin
-from modulos.productos_mas_menos_vendidos import modulo_productos_mas_menos_vendidos  # ✅ IMPORT CORREGIDO
+from modulos.productos_mas_menos_vendidos import modulo_productos_mas_menos_vendidos
+from modulos.reporte_compras import modulo_reporte_compras  # ✅ NUEVO IMPORT
 
 
 def configurar_pagina():
@@ -259,7 +260,8 @@ def menu_principal():
                 with st.container():
                     st.markdown(f'<div style="text-align: center;"><span class="section-title">📊 Consulta tus reportes</span></div>', unsafe_allow_html=True)
                     
-                    col1, col2 = st.columns(2, gap="large")
+                    # Tres columnas para los tres reportes
+                    col1, col2, col3 = st.columns(3, gap="large")
                     
                     with col1:
                         st.markdown(f"""
@@ -274,6 +276,18 @@ def menu_principal():
                             st.rerun()
                     
                     with col2:
+                        st.markdown(f"""
+                            <div class="card" style="padding: 30px;">
+                                <div class="card-icon">📥</div>
+                                <div class="card-title">Reporte de Compras</div>
+                                <div class="card-desc">Análisis detallado de compras</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        if st.button("Ver Reporte de Compras", key="reporte_compras_btn", use_container_width=True):
+                            st.session_state.module = "Reportes_Compras"
+                            st.rerun()
+                    
+                    with col3:
                         st.markdown(f"""
                             <div class="card" style="padding: 30px;">
                                 <div class="card-icon">🏆</div>
@@ -500,7 +514,7 @@ def cargar_modulo():
     modulo_solicitado = st.session_state.get("module", "")
     
     # Módulos permitidos para Administrador
-    modulos_permitidos_admin = ["Inventario", "Reportes_Ventas", "productomasvendido", "GestionAdmin"]
+    modulos_permitidos_admin = ["Inventario", "Reportes_Ventas", "productomasvendido", "GestionAdmin", "Reportes_Compras"]
     
     # 🔥 CORRECCIÓN: Si no hay módulo seleccionado, mostrar menú principal
     if modulo_solicitado == "" or modulo_solicitado is None:
@@ -537,8 +551,10 @@ def cargar_modulo():
         modulo_categoria()
     elif st.session_state.module == "GestionAdmin":
         modulo_gestion_admin()
-    elif st.session_state.module == "productomasvendido":  # ✅ NUEVA RUTA
-        modulo_productos_mas_menos_vendidos()  # ✅ FUNCIÓN CORREGIDA
+    elif st.session_state.module == "productomasvendido":
+        modulo_productos_mas_menos_vendidos()
+    elif st.session_state.module == "Reportes_Compras":  # ✅ NUEVA RUTA
+        modulo_reporte_compras()
     else:
         menu_principal()
 
