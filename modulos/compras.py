@@ -97,7 +97,7 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
-        /* ✅ FORZAR COLOR OSCURO EN RADIO BUTTONS (Propia / Global) */
+        /* FORZAR COLOR OSCURO EN RADIO BUTTONS (Propia / Global) */
         .stRadio div[role="radiogroup"] label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
@@ -138,6 +138,11 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
+        .stNumberInput > div > div > button {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+        }}
+        
         .stDateInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -161,7 +166,12 @@ def configurar_estilo():
         }}
         
         .stSelectbox > div > div:disabled {{
-            background-color: #6c757d !important;
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+        }}
+        
+        .stSelectbox > div > div:disabled > div {{
+            color: white !important;
         }}
         
         .stButton > button {{
