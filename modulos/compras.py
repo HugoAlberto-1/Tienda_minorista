@@ -91,12 +91,13 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
+        /* Labels en color oscuro */
         .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
         
-        /* Forzar color oscuro en radio buttons */
+        /* Radio buttons en color oscuro */
         .stRadio label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
@@ -105,15 +106,16 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK} !important;
         }}
         
-        .stRadio div[role="radiogroup"] div {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
+        /* ============================================================
+           TODOS LOS INPUTS EN AZUL
+           ============================================================ */
         
+        /* Inputs de texto - azul */
         .stTextInput > div > div > input {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
-            background-color: {COLOR_BUTTON};
-            color: white !important;
             padding: 10px 15px;
         }}
         
@@ -121,16 +123,31 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
+        /* Inputs de número - azul */
         .stNumberInput > div > div > input {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
-            background-color: {COLOR_BUTTON};
-            color: white !important;
             padding: 10px 15px;
         }}
         
+        .stNumberInput > div > div > input::placeholder {{
+            color: rgba(255,255,255,0.7) !important;
+        }}
+        
+        /* Inputs de fecha - azul */
+        .stDateInput > div > div > input {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            border-radius: 8px;
+            border: 1px solid {COLOR_BORDER};
+            padding: 10px 15px;
+        }}
+        
+        /* Selectores - azul */
         .stSelectbox > div > div {{
-            background-color: {COLOR_BUTTON};
+            background-color: {COLOR_PRIMARY} !important;
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
         }}
@@ -143,13 +160,12 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        .stDateInput > div > div > input {{
-            background-color: {COLOR_BUTTON};
-            color: white !important;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
+        /* Selector deshabilitado - gris */
+        .stSelectbox > div > div:disabled {{
+            background-color: #6c757d !important;
         }}
         
+        /* Botones */
         .stButton > button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -267,14 +283,12 @@ def modulo_compras():
         st.session_state["form_data_codigo_barras"] = ""
 
     # ============================================================
-    # 🆕 TIPO DE COMPRA (Propia / Global) - TEXTO OSCURO FORZADO
+    # TIPO DE COMPRA (Propia / Global)
     # ============================================================
-    # Título "Tipo de Compra" en color oscuro
     st.markdown('<p style="color: #1a1a1a; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">📋 Tipo de Compra</p>', unsafe_allow_html=True)
     
     col_tipo1, col_tipo2 = st.columns(2)
     with col_tipo1:
-        # Label "Seleccione el tipo de compra:" en color oscuro
         st.markdown('<p style="color: #1a1a1a; font-weight: 400; margin-bottom: 5px;">Seleccione el tipo de compra:</p>', unsafe_allow_html=True)
         tipo_compra = st.radio(
             "",
