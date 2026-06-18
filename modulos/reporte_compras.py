@@ -227,7 +227,7 @@ def reporte_compras():
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.warning("No hay datos en el período seleccionado.")
+                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No hay datos de compras en el período seleccionado.</div>', unsafe_allow_html=True)
                 return
                 
         else:
@@ -279,7 +279,7 @@ def reporte_compras():
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.warning("No hay datos de compras en el período seleccionado para esta tienda.")
+                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No hay datos de compras en el período seleccionado para esta tienda.</div>', unsafe_allow_html=True)
                 return
 
         # ============================================================
