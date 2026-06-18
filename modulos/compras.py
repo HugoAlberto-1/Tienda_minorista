@@ -381,7 +381,7 @@ def modulo_compras():
     unidad = st.session_state["form_data"]["unidad"]
 
     precio_compra = st.number_input(
-        "💰 Precio de compra",
+        "💰 Precio de compra unitario",
         min_value=0.01,
         step=0.01,
         key="form_data_precio_compra",
