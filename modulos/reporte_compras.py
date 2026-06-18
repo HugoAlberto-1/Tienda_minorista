@@ -164,19 +164,22 @@ def reporte_compras():
 
         # ============================================================
         # Obtener el TOTAL GENERAL desde la base de datos
+        # JOIN con Compra para obtener la fecha
         # ============================================================
         if id_tienda_usar is None:
             query_total = """
                 SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
                 FROM ProductoxCompra pc
-                WHERE DATE(pc.fecha_compra) BETWEEN %s AND %s
+                JOIN Compra c ON pc.Id_compra = c.Id_compra
+                WHERE DATE(c.Fecha) BETWEEN %s AND %s
             """
             cursor.execute(query_total, (fecha_inicio, fecha_fin))
         else:
             query_total = """
                 SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
                 FROM ProductoxCompra pc
-                WHERE DATE(pc.fecha_compra) BETWEEN %s AND %s
+                JOIN Compra c ON pc.Id_compra = c.Id_compra
+                WHERE DATE(c.Fecha) BETWEEN %s AND %s
                   AND pc.id_tienda = %s
             """
             cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar))
@@ -196,8 +199,9 @@ def reporte_compras():
                     COALESCE(t.nombre, 'Sin tienda') as Tienda,
                     COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras
                 FROM ProductoxCompra pc
+                JOIN Compra c ON pc.Id_compra = c.Id_compra
                 LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
-                WHERE DATE(pc.fecha_compra) BETWEEN %s AND %s
+                WHERE DATE(c.Fecha) BETWEEN %s AND %s
                 GROUP BY t.nombre
                 ORDER BY Total_Compras DESC
             """
@@ -234,24 +238,25 @@ def reporte_compras():
             # TIENDA ESPECÍFICA - Compras por mes
             st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
             
-            # Consulta para compras mensuales
+            # Consulta para compras mensuales (JOIN con Compra)
             query = """
                 SELECT 
                     CONCAT(
-                        CASE MONTH(pc.fecha_compra)
+                        CASE MONTH(c.Fecha)
                             WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
                             WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
                             WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
                             WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
                         END,
-                        ' ', YEAR(pc.fecha_compra)
+                        ' ', YEAR(c.Fecha)
                     ) as Nombre_Mes,
                     COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras
                 FROM ProductoxCompra pc
-                WHERE DATE(pc.fecha_compra) BETWEEN %s AND %s
+                JOIN Compra c ON pc.Id_compra = c.Id_compra
+                WHERE DATE(c.Fecha) BETWEEN %s AND %s
                   AND pc.id_tienda = %s
-                GROUP BY YEAR(pc.fecha_compra), MONTH(pc.fecha_compra)
-                ORDER BY YEAR(pc.fecha_compra) ASC, MONTH(pc.fecha_compra) ASC
+                GROUP BY YEAR(c.Fecha), MONTH(c.Fecha)
+                ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
             """
             cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
             rows = cursor.fetchall()
