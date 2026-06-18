@@ -159,12 +159,27 @@ def reporte_compras():
         return
 
     # ============================================================
-    # 🆕 FILTRO POR TIPO DE COMPRA
+    # FILTRO POR TIPO DE COMPRA
     # ============================================================
-    tipo_compra_filtro = st.selectbox(
-        "📋 Filtrar por tipo de compra:",
-        ["Todos", "Propia", "Global"]
-    )
+    # Primero verificamos si la columna existe, si no, ocultamos el filtro
+    try:
+        conn_test = obtener_conexion()
+        cursor_test = conn_test.cursor()
+        cursor_test.execute("SHOW COLUMNS FROM Compra LIKE 'Tipo_Compra'")
+        columna_existe = cursor_test.fetchone() is not None
+        cursor_test.close()
+        conn_test.close()
+        
+        if columna_existe:
+            tipo_compra_filtro = st.selectbox(
+                "📋 Filtrar por tipo de compra:",
+                ["Todos", "Propia", "Global"]
+            )
+        else:
+            tipo_compra_filtro = "Todos"
+            st.info("ℹ️ La columna 'Tipo_Compra' no existe en la tabla Compra. Mostrando todas las compras.")
+    except:
+        tipo_compra_filtro = "Todos"
 
     try:
         con = obtener_conexion()
@@ -174,7 +189,7 @@ def reporte_compras():
         # Obtener el TOTAL GENERAL desde la base de datos
         # ============================================================
         if id_tienda_usar is None:
-            if tipo_compra_filtro == "Todos":
+            if tipo_compra_filtro == "Todos" or not columna_existe:
                 query_total = """
                     SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
                     FROM ProductoxCompra pc
@@ -192,7 +207,7 @@ def reporte_compras():
                 """
                 cursor.execute(query_total, (fecha_inicio, fecha_fin, tipo_compra_filtro))
         else:
-            if tipo_compra_filtro == "Todos":
+            if tipo_compra_filtro == "Todos" or not columna_existe:
                 query_total = """
                     SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
                     FROM ProductoxCompra pc
@@ -222,20 +237,21 @@ def reporte_compras():
         
         if id_tienda_usar is None:
             # TODAS LAS TIENDAS - Compras por tienda
-            if tipo_compra_filtro == "Todos":
+            if tipo_compra_filtro == "Todos" or not columna_existe:
                 query = """
                     SELECT 
                         COALESCE(t.nombre, 'Sin tienda') as Tienda,
-                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
-                        c.Tipo_Compra
+                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras
                     FROM ProductoxCompra pc
                     JOIN Compra c ON pc.Id_compra = c.Id_compra
                     LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
                     WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                    GROUP BY t.nombre, c.Tipo_Compra
+                    GROUP BY t.nombre
                     ORDER BY Total_Compras DESC
                 """
                 cursor.execute(query, (fecha_inicio, fecha_fin))
+                rows = cursor.fetchall()
+                tiene_tipo = False
             else:
                 query = """
                     SELECT 
@@ -251,23 +267,39 @@ def reporte_compras():
                     ORDER BY Total_Compras DESC
                 """
                 cursor.execute(query, (fecha_inicio, fecha_fin, tipo_compra_filtro))
-            
-            rows = cursor.fetchall()
+                rows = cursor.fetchall()
+                tiene_tipo = True
             
             if rows:
-                df = pd.DataFrame(rows, columns=["Tienda", "Total_Compras", "Tipo_Compra"])
-                df["Total_Compras"] = df["Total_Compras"].astype(float)
+                if tiene_tipo:
+                    df = pd.DataFrame(rows, columns=["Tienda", "Total_Compras", "Tipo_Compra"])
+                    df["Total_Compras"] = df["Total_Compras"].astype(float)
+                    
+                    st.markdown("### 📊 Compras por Tienda")
+                    fig = px.bar(
+                        df,
+                        x="Tienda",
+                        y="Total_Compras",
+                        title="Total de Compras por Tienda",
+                        color="Tipo_Compra",
+                        color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
+                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
+                    )
+                else:
+                    df = pd.DataFrame(rows, columns=["Tienda", "Total_Compras"])
+                    df["Total_Compras"] = df["Total_Compras"].astype(float)
+                    
+                    st.markdown("### 📊 Compras por Tienda")
+                    fig = px.bar(
+                        df,
+                        x="Tienda",
+                        y="Total_Compras",
+                        title="Total de Compras por Tienda",
+                        color="Total_Compras",
+                        color_continuous_scale="Blues",
+                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
+                    )
                 
-                st.markdown("### 📊 Compras por Tienda")
-                fig = px.bar(
-                    df,
-                    x="Tienda",
-                    y="Total_Compras",
-                    title="Total de Compras por Tienda",
-                    color="Tipo_Compra",
-                    color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
-                    text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
-                )
                 fig.update_traces(textposition='outside')
                 fig.update_layout(
                     xaxis_title="Tienda",
@@ -283,8 +315,7 @@ def reporte_compras():
             # TIENDA ESPECÍFICA - Compras por mes
             st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
             
-            # Consulta para compras mensuales
-            if tipo_compra_filtro == "Todos":
+            if tipo_compra_filtro == "Todos" or not columna_existe:
                 query = """
                     SELECT 
                         CONCAT(
@@ -296,16 +327,17 @@ def reporte_compras():
                             END,
                             ' ', YEAR(c.Fecha)
                         ) as Nombre_Mes,
-                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
-                        c.Tipo_Compra
+                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras
                     FROM ProductoxCompra pc
                     JOIN Compra c ON pc.Id_compra = c.Id_compra
                     WHERE DATE(c.Fecha) BETWEEN %s AND %s
                       AND pc.id_tienda = %s
-                    GROUP BY YEAR(c.Fecha), MONTH(c.Fecha), c.Tipo_Compra
+                    GROUP BY YEAR(c.Fecha), MONTH(c.Fecha)
                     ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
                 """
                 cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
+                rows = cursor.fetchall()
+                tiene_tipo = False
             else:
                 query = """
                     SELECT 
@@ -329,24 +361,38 @@ def reporte_compras():
                     ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
                 """
                 cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
-            
-            rows = cursor.fetchall()
+                rows = cursor.fetchall()
+                tiene_tipo = True
             
             if rows:
-                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras", "Tipo_Compra"])
-                df["Total_Compras"] = df["Total_Compras"].astype(float)
+                if tiene_tipo:
+                    df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras", "Tipo_Compra"])
+                    df["Total_Compras"] = df["Total_Compras"].astype(float)
+                    
+                    fig = px.bar(
+                        df,
+                        x="Nombre_Mes",
+                        y="Total_Compras",
+                        title="Total de Compras por Mes",
+                        color="Tipo_Compra",
+                        color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
+                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}"),
+                        barmode="group"
+                    )
+                else:
+                    df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras"])
+                    df["Total_Compras"] = df["Total_Compras"].astype(float)
+                    
+                    fig = px.bar(
+                        df,
+                        x="Nombre_Mes",
+                        y="Total_Compras",
+                        title="Total de Compras por Mes",
+                        color="Total_Compras",
+                        color_continuous_scale="Blues",
+                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
+                    )
                 
-                # Gráfico de barras por mes y tipo
-                fig = px.bar(
-                    df,
-                    x="Nombre_Mes",
-                    y="Total_Compras",
-                    title="Total de Compras por Mes",
-                    color="Tipo_Compra",
-                    color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
-                    text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}"),
-                    barmode="group"
-                )
                 fig.update_traces(textposition='outside')
                 fig.update_layout(
                     xaxis_title="Mes",
