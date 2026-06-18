@@ -173,32 +173,44 @@ def reporte_compras():
         # ============================================================
         # Obtener el TOTAL GENERAL desde la base de datos
         # ============================================================
-        if tipo_compra_filtro == "Todos":
-            tipo_condicion = ""
-            tipo_param = ()
-        else:
-            tipo_condicion = "AND c.Tipo_Compra = %s"
-            tipo_param = (tipo_compra_filtro,)
-
         if id_tienda_usar is None:
-            query_total = f"""
-                SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
-                FROM ProductoxCompra pc
-                JOIN Compra c ON pc.Id_compra = c.Id_compra
-                WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                {tipo_condicion}
-            """
-            cursor.execute(query_total, (fecha_inicio, fecha_fin) + tipo_param)
+            if tipo_compra_filtro == "Todos":
+                query_total = """
+                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                """
+                cursor.execute(query_total, (fecha_inicio, fecha_fin))
+            else:
+                query_total = """
+                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND c.Tipo_Compra = %s
+                """
+                cursor.execute(query_total, (fecha_inicio, fecha_fin, tipo_compra_filtro))
         else:
-            query_total = f"""
-                SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
-                FROM ProductoxCompra pc
-                JOIN Compra c ON pc.Id_compra = c.Id_compra
-                WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                  AND pc.id_tienda = %s
-                {tipo_condicion}
-            """
-            cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar) + tipo_param)
+            if tipo_compra_filtro == "Todos":
+                query_total = """
+                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND pc.id_tienda = %s
+                """
+                cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar))
+            else:
+                query_total = """
+                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND pc.id_tienda = %s
+                      AND c.Tipo_Compra = %s
+                """
+                cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
         
         total_row = cursor.fetchone()
         gran_total = float(total_row[0]) if total_row else 0
@@ -210,20 +222,36 @@ def reporte_compras():
         
         if id_tienda_usar is None:
             # TODAS LAS TIENDAS - Compras por tienda
-            query = f"""
-                SELECT 
-                    COALESCE(t.nombre, 'Sin tienda') as Tienda,
-                    COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
-                    c.Tipo_Compra
-                FROM ProductoxCompra pc
-                JOIN Compra c ON pc.Id_compra = c.Id_compra
-                LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
-                WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                {tipo_condicion}
-                GROUP BY t.nombre, c.Tipo_Compra
-                ORDER BY Total_Compras DESC
-            """
-            cursor.execute(query, (fecha_inicio, fecha_fin) + tipo_param)
+            if tipo_compra_filtro == "Todos":
+                query = """
+                    SELECT 
+                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
+                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
+                        c.Tipo_Compra
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                    GROUP BY t.nombre, c.Tipo_Compra
+                    ORDER BY Total_Compras DESC
+                """
+                cursor.execute(query, (fecha_inicio, fecha_fin))
+            else:
+                query = """
+                    SELECT 
+                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
+                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
+                        c.Tipo_Compra
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND c.Tipo_Compra = %s
+                    GROUP BY t.nombre, c.Tipo_Compra
+                    ORDER BY Total_Compras DESC
+                """
+                cursor.execute(query, (fecha_inicio, fecha_fin, tipo_compra_filtro))
+            
             rows = cursor.fetchall()
             
             if rows:
@@ -256,27 +284,133 @@ def reporte_compras():
             st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
             
             # Consulta para compras mensuales
-            query = f"""
-                SELECT 
-                    CONCAT(
-                        CASE MONTH(c.Fecha)
-                            WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
-                            WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
-                            WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
-                            WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
-                        END,
-                        ' ', YEAR(c.Fecha)
-                    ) as Nombre_Mes,
-                    COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
-                    c.Tipo_Compra
-                FROM ProductoxCompra pc
-                JOIN Compra c ON pc.Id_compra = c.Id_compra
-                WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                  AND pc.id_tienda = %s
-                {tipo_condicion}
-                GROUP BY YEAR(c.Fecha), MONTH(c.Fecha), c.Tipo_Compra
-                ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
-            """
-            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar) + tipo_param)
+            if tipo_compra_filtro == "Todos":
+                query = """
+                    SELECT 
+                        CONCAT(
+                            CASE MONTH(c.Fecha)
+                                WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
+                                WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
+                                WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
+                                WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
+                            END,
+                            ' ', YEAR(c.Fecha)
+                        ) as Nombre_Mes,
+                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
+                        c.Tipo_Compra
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND pc.id_tienda = %s
+                    GROUP BY YEAR(c.Fecha), MONTH(c.Fecha), c.Tipo_Compra
+                    ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
+                """
+                cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
+            else:
+                query = """
+                    SELECT 
+                        CONCAT(
+                            CASE MONTH(c.Fecha)
+                                WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
+                                WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
+                                WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
+                                WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
+                            END,
+                            ' ', YEAR(c.Fecha)
+                        ) as Nombre_Mes,
+                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
+                        c.Tipo_Compra
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND pc.id_tienda = %s
+                      AND c.Tipo_Compra = %s
+                    GROUP BY YEAR(c.Fecha), MONTH(c.Fecha), c.Tipo_Compra
+                    ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
+                """
+                cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
+            
             rows = cursor.fetchall()
             
+            if rows:
+                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras", "Tipo_Compra"])
+                df["Total_Compras"] = df["Total_Compras"].astype(float)
+                
+                # Gráfico de barras por mes y tipo
+                fig = px.bar(
+                    df,
+                    x="Nombre_Mes",
+                    y="Total_Compras",
+                    title="Total de Compras por Mes",
+                    color="Tipo_Compra",
+                    color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
+                    text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}"),
+                    barmode="group"
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(
+                    xaxis_title="Mes",
+                    yaxis_title="Total de Compras ($)",
+                    height=500,
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No hay datos de compras en el período seleccionado para esta tienda.</div>', unsafe_allow_html=True)
+                return
+
+        # ============================================================
+        # TOTAL GENERAL
+        # ============================================================
+        
+        st.markdown("---")
+        st.markdown("## 💰 TOTAL GENERAL DE COMPRAS")
+        st.markdown(f"""
+        <div style='
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        '>
+            <div style='
+                font-size: 2.5em;
+                font-weight: bold;
+                color: #ffd700;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                letter-spacing: 2px;
+            '>
+                ${gran_total:,.2f}
+            </div>
+            <div style='
+                font-size: 0.9em;
+                color: rgba(255,255,255,0.8);
+                margin-top: 8px;
+            '>
+                Total de compras del período
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Botón para volver
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
+            if st.button("🔙 Volver al Menú Principal", use_container_width=True):
+                st.session_state["module"] = None
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"❌ Error al generar el reporte: {e}")
+
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "con" in locals():
+            con.close()
+
+
+def modulo_reporte_compras():
+    reporte_compras()
