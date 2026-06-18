@@ -253,6 +253,26 @@ def modulo_compras():
     if "form_data_codigo_barras" not in st.session_state:
         st.session_state["form_data_codigo_barras"] = ""
 
+    # ============================================================
+    # 🆕 TIPO DE COMPRA (Propia / Global)
+    # ============================================================
+    st.markdown("### 📋 Tipo de Compra")
+    col_tipo1, col_tipo2 = st.columns(2)
+    with col_tipo1:
+        tipo_compra = st.radio(
+            "Seleccione el tipo de compra:",
+            ["Propia", "Global"],
+            horizontal=True,
+            key="tipo_compra"
+        )
+    with col_tipo2:
+        if tipo_compra == "Propia":
+            st.info("🏪 Compra para esta tienda")
+        else:
+            st.info("🌎 Compra global para todas las tiendas")
+
+    st.markdown("---")
+
     if st.session_state.get("_reset_form_next_run"):
         st.session_state["_reset_form_next_run"] = False
         st.session_state["form_data"] = {
@@ -478,10 +498,10 @@ def modulo_compras():
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     id_empleado = st.session_state["id_empleado"]
 
-                    # Insertar la compra
+                    # 🆕 Insertar la compra con el tipo de compra
                     cursor.execute(
-                        "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda) VALUES (%s, %s, %s, %s)",
-                        (nuevo_id, fecha, id_empleado, id_tienda),
+                        "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda, Tipo_Compra) VALUES (%s, %s, %s, %s, %s)",
+                        (nuevo_id, fecha, id_empleado, id_tienda, tipo_compra),
                     )
 
                     # Insertar los productos de la compra
@@ -509,7 +529,7 @@ def modulo_compras():
                         )
 
                     conn.commit()
-                    st.success(f"📦 Compra registrada exitosamente con ID {nuevo_id}.")
+                    st.success(f"📦 Compra registrada exitosamente con ID {nuevo_id} (Tipo: {tipo_compra}).")
                     st.session_state["productos_seleccionados"] = []
                     st.session_state["_reset_form_next_run"] = True
                     st.rerun()
