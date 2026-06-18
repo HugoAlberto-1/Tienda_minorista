@@ -91,9 +91,20 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
+        /* Estilos para labels - color oscuro */
         .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
+        }}
+        
+        /* Estilos para radio buttons - color oscuro */
+        .stRadio label {{
+            color: {COLOR_TEXT_DARK} !important;
+            font-weight: 500 !important;
+        }}
+        
+        .stRadio div[role="radiogroup"] label {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         
         .stTextInput > div > div > input {{
@@ -157,6 +168,16 @@ def configurar_estilo():
         
         hr {{
             border-color: {COLOR_BORDER};
+        }}
+        
+        /* Info box dentro del formulario */
+        .stAlert {{
+            background-color: {COLOR_HOVER} !important;
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        .stAlert div {{
+            color: {COLOR_TEXT_DARK} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -254,22 +275,26 @@ def modulo_compras():
         st.session_state["form_data_codigo_barras"] = ""
 
     # ============================================================
-    # 🆕 TIPO DE COMPRA (Propia / Global)
+    # 🆕 TIPO DE COMPRA (Propia / Global) - con textos en color oscuro
     # ============================================================
-    st.markdown("### 📋 Tipo de Compra")
+    st.markdown('<p style="color: #1a1a1a; font-weight: 500; margin-bottom: 10px;">📋 Tipo de Compra</p>', unsafe_allow_html=True)
+    
     col_tipo1, col_tipo2 = st.columns(2)
     with col_tipo1:
+        # Radio con label oculto y texto personalizado
+        st.markdown('<p style="color: #1a1a1a; font-weight: 400; margin-bottom: 5px;">Seleccione el tipo de compra:</p>', unsafe_allow_html=True)
         tipo_compra = st.radio(
-            "Seleccione el tipo de compra:",
+            "",
             ["Propia", "Global"],
             horizontal=True,
-            key="tipo_compra"
+            key="tipo_compra",
+            label_visibility="collapsed"
         )
     with col_tipo2:
         if tipo_compra == "Propia":
-            st.info("🏪 Compra para esta tienda")
+            st.markdown('<div class="info-box" style="color: #1a1a1a;">🏪 Compra para esta tienda</div>', unsafe_allow_html=True)
         else:
-            st.info("🌎 Compra global para todas las tiendas")
+            st.markdown('<div class="info-box" style="color: #1a1a1a;">🌎 Compra global para todas las tiendas</div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -498,7 +523,7 @@ def modulo_compras():
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     id_empleado = st.session_state["id_empleado"]
 
-                    # 🆕 Insertar la compra con el tipo de compra
+                    # Insertar la compra con el tipo de compra
                     cursor.execute(
                         "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda, Tipo_Compra) VALUES (%s, %s, %s, %s, %s)",
                         (nuevo_id, fecha, id_empleado, id_tienda, tipo_compra),
