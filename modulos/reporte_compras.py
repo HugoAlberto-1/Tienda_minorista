@@ -98,7 +98,6 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
         
-        /* Dataframe */
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
         }}
@@ -364,11 +363,22 @@ def reporte_compras():
         rows_detalle = cursor.fetchall()
         
         if rows_detalle:
-            # Determinar columnas según el número de campos
-            if len(rows_detalle[0]) == 9:
+            # Detectar el número de columnas
+            num_cols = len(rows_detalle[0])
+            
+            if num_cols == 9:
+                # Sin Tipo_Compra, con Tienda
                 df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total", "Tienda"])
-            else:
+            elif num_cols == 10:
+                # Con Tipo_Compra y Tienda
                 df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total", "Tienda", "Tipo Compra"])
+            elif num_cols == 8:
+                # Sin Tipo_Compra y sin Tienda (vendedor)
+                df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total"])
+            else:
+                # Por si acaso
+                df_detalle = pd.DataFrame(rows_detalle)
+                st.warning(f"⚠️ Número inesperado de columnas: {num_cols}")
             
             # Formatear fechas
             df_detalle["Fecha"] = pd.to_datetime(df_detalle["Fecha"]).dt.strftime("%Y-%m-%d")
