@@ -97,20 +97,23 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
         
-        /* Radio buttons en color oscuro */
-        .stRadio label {{
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
+        /* ✅ FORZAR COLOR OSCURO EN RADIO BUTTONS (Propia / Global) */
         .stRadio div[role="radiogroup"] label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
+        .stRadio div[role="radiogroup"] div {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        .stRadio div[role="radiogroup"] span {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
         /* ============================================================
-           TODOS LOS INPUTS EN AZUL (FORZADO)
+           TODOS LOS INPUTS EN AZUL
            ============================================================ */
         
-        /* Inputs de texto - azul forzado */
         .stTextInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -123,7 +126,6 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
-        /* Inputs de número - azul forzado */
         .stNumberInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -136,7 +138,6 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
-        /* Inputs de fecha - azul forzado */
         .stDateInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -145,7 +146,6 @@ def configurar_estilo():
             padding: 10px 15px !important;
         }}
         
-        /* Selectores - azul forzado */
         .stSelectbox > div > div {{
             background-color: {COLOR_PRIMARY} !important;
             border-radius: 8px !important;
@@ -160,12 +160,10 @@ def configurar_estilo():
             fill: white !important;
         }}
         
-        /* Selector deshabilitado - gris */
         .stSelectbox > div > div:disabled {{
             background-color: #6c757d !important;
         }}
         
-        /* Botones */
         .stButton > button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -524,19 +522,16 @@ def modulo_compras():
                 st.error("❌ No hay productos agregados.")
             else:
                 try:
-                    # Obtener el próximo ID disponible (global)
                     nuevo_id = obtener_proximo_id_compra(cursor)
 
                     fecha = datetime.now().strftime("%Y-%m-%d")
                     id_empleado = st.session_state["id_empleado"]
 
-                    # Insertar la compra con el tipo de compra
                     cursor.execute(
                         "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda, Tipo_Compra) VALUES (%s, %s, %s, %s, %s)",
                         (nuevo_id, fecha, id_empleado, id_tienda, tipo_compra),
                     )
 
-                    # Insertar los productos de la compra
                     for prod in st.session_state["productos_seleccionados"]:
                         cursor.execute(
                             """
