@@ -43,7 +43,7 @@ def configurar_estilo():
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0;
-            color: {COLOR_TEXT_DARK};
+            color: {COLOR_TEXT_DARK} !important;
         }}
         
         .product-card {{
@@ -91,19 +91,21 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
         
-        /* Estilos para labels - color oscuro */
         .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
         
-        /* Estilos para radio buttons - color oscuro */
+        /* Forzar color oscuro en radio buttons */
         .stRadio label {{
             color: {COLOR_TEXT_DARK} !important;
-            font-weight: 500 !important;
         }}
         
         .stRadio div[role="radiogroup"] label {{
+            color: {COLOR_TEXT_DARK} !important;
+        }}
+        
+        .stRadio div[role="radiogroup"] div {{
             color: {COLOR_TEXT_DARK} !important;
         }}
         
@@ -168,16 +170,6 @@ def configurar_estilo():
         
         hr {{
             border-color: {COLOR_BORDER};
-        }}
-        
-        /* Info box dentro del formulario */
-        .stAlert {{
-            background-color: {COLOR_HOVER} !important;
-            color: {COLOR_TEXT_DARK} !important;
-        }}
-        
-        .stAlert div {{
-            color: {COLOR_TEXT_DARK} !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -275,13 +267,14 @@ def modulo_compras():
         st.session_state["form_data_codigo_barras"] = ""
 
     # ============================================================
-    # 🆕 TIPO DE COMPRA (Propia / Global) - con textos en color oscuro
+    # 🆕 TIPO DE COMPRA (Propia / Global) - TEXTO OSCURO FORZADO
     # ============================================================
-    st.markdown('<p style="color: #1a1a1a; font-weight: 500; margin-bottom: 10px;">📋 Tipo de Compra</p>', unsafe_allow_html=True)
+    # Título "Tipo de Compra" en color oscuro
+    st.markdown('<p style="color: #1a1a1a; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">📋 Tipo de Compra</p>', unsafe_allow_html=True)
     
     col_tipo1, col_tipo2 = st.columns(2)
     with col_tipo1:
-        # Radio con label oculto y texto personalizado
+        # Label "Seleccione el tipo de compra:" en color oscuro
         st.markdown('<p style="color: #1a1a1a; font-weight: 400; margin-bottom: 5px;">Seleccione el tipo de compra:</p>', unsafe_allow_html=True)
         tipo_compra = st.radio(
             "",
@@ -292,9 +285,9 @@ def modulo_compras():
         )
     with col_tipo2:
         if tipo_compra == "Propia":
-            st.markdown('<div class="info-box" style="color: #1a1a1a;">🏪 Compra para esta tienda</div>', unsafe_allow_html=True)
+            st.markdown('<div style="background: #e8f0fe; padding: 12px; border-radius: 8px; border-left: 4px solid #1e3a5f; color: #1a1a1a;">🏪 Compra para esta tienda</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="info-box" style="color: #1a1a1a;">🌎 Compra global para todas las tiendas</div>', unsafe_allow_html=True)
+            st.markdown('<div style="background: #e8f0fe; padding: 12px; border-radius: 8px; border-left: 4px solid #1e3a5f; color: #1a1a1a;">🌎 Compra global para todas las tiendas</div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
