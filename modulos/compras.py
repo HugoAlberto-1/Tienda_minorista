@@ -107,49 +107,49 @@ def configurar_estilo():
         }}
         
         /* ============================================================
-           TODOS LOS INPUTS EN AZUL
+           TODOS LOS INPUTS EN AZUL (FORZADO)
            ============================================================ */
         
-        /* Inputs de texto - azul */
+        /* Inputs de texto - azul forzado */
         .stTextInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-            padding: 10px 15px;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+            padding: 10px 15px !important;
         }}
         
         .stTextInput > div > div > input::placeholder {{
             color: rgba(255,255,255,0.7) !important;
         }}
         
-        /* Inputs de número - azul */
+        /* Inputs de número - azul forzado */
         .stNumberInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-            padding: 10px 15px;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+            padding: 10px 15px !important;
         }}
         
         .stNumberInput > div > div > input::placeholder {{
             color: rgba(255,255,255,0.7) !important;
         }}
         
-        /* Inputs de fecha - azul */
+        /* Inputs de fecha - azul forzado */
         .stDateInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-            padding: 10px 15px;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+            padding: 10px 15px !important;
         }}
         
-        /* Selectores - azul */
+        /* Selectores - azul forzado */
         .stSelectbox > div > div {{
             background-color: {COLOR_PRIMARY} !important;
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
         }}
         
         .stSelectbox > div > div > div {{
@@ -383,7 +383,7 @@ def modulo_compras():
     unidad = st.session_state["form_data"]["unidad"]
 
     precio_compra = st.number_input(
-        "💰 Precio de compra unitario",
+        "💰 Precio de compra",
         min_value=0.01,
         step=0.01,
         key="form_data_precio_compra",
