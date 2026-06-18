@@ -97,6 +97,49 @@ def configurar_estilo():
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
+        
+        /* Dataframe */
+        .stDataFrame {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] {{
+            background-color: {COLOR_CARD} !important;
+            border-radius: 12px !important;
+            border: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] table {{
+            background-color: {COLOR_CARD} !important;
+        }}
+        
+        [data-testid="stDataFrame"] th {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            padding: 12px 8px !important;
+        }}
+        
+        [data-testid="stDataFrame"] td {{
+            color: {COLOR_TEXT} !important;
+            text-align: center !important;
+            padding: 10px 8px !important;
+            background-color: {COLOR_CARD} !important;
+            border-bottom: 1px solid {COLOR_BORDER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
+            background-color: #f8f9fa !important;
+        }}
+        
+        [data-testid="stDataFrame"] tr:hover td {{
+            background-color: {COLOR_HOVER} !important;
+        }}
+        
+        [data-testid="stDataFrame"] td div {{
+            color: {COLOR_TEXT} !important;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -161,7 +204,6 @@ def reporte_compras():
     # ============================================================
     # FILTRO POR TIPO DE COMPRA
     # ============================================================
-    # Primero verificamos si la columna existe, si no, ocultamos el filtro
     try:
         conn_test = obtener_conexion()
         cursor_test = conn_test.cursor()
@@ -232,11 +274,116 @@ def reporte_compras():
         gran_total = round(gran_total, 2)
 
         # ============================================================
-        # CONSULTA PRINCIPAL - Compras agrupadas
+        # CONSULTA PARA DETALLE DE COMPRAS (TABLA)
+        # ============================================================
+        if id_tienda_usar is None:
+            if tipo_compra_filtro == "Todos" or not columna_existe:
+                query_detalle = """
+                    SELECT 
+                        c.Id_compra,
+                        c.Fecha,
+                        pc.cod_barra,
+                        p.Nombre as Producto,
+                        pc.cantidad_comprada,
+                        pc.unidad,
+                        pc.Precio_Compra,
+                        (pc.cantidad_comprada * pc.Precio_Compra) as Total,
+                        COALESCE(t.nombre, 'Sin tienda') as Tienda
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
+                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                    ORDER BY c.Fecha DESC
+                """
+                cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
+            else:
+                query_detalle = """
+                    SELECT 
+                        c.Id_compra,
+                        c.Fecha,
+                        pc.cod_barra,
+                        p.Nombre as Producto,
+                        pc.cantidad_comprada,
+                        pc.unidad,
+                        pc.Precio_Compra,
+                        (pc.cantidad_comprada * pc.Precio_Compra) as Total,
+                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
+                        c.Tipo_Compra
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
+                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND c.Tipo_Compra = %s
+                    ORDER BY c.Fecha DESC
+                """
+                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, tipo_compra_filtro))
+        else:
+            if tipo_compra_filtro == "Todos" or not columna_existe:
+                query_detalle = """
+                    SELECT 
+                        c.Id_compra,
+                        c.Fecha,
+                        pc.cod_barra,
+                        p.Nombre as Producto,
+                        pc.cantidad_comprada,
+                        pc.unidad,
+                        pc.Precio_Compra,
+                        (pc.cantidad_comprada * pc.Precio_Compra) as Total
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND pc.id_tienda = %s
+                    ORDER BY c.Fecha DESC
+                """
+                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
+            else:
+                query_detalle = """
+                    SELECT 
+                        c.Id_compra,
+                        c.Fecha,
+                        pc.cod_barra,
+                        p.Nombre as Producto,
+                        pc.cantidad_comprada,
+                        pc.unidad,
+                        pc.Precio_Compra,
+                        (pc.cantidad_comprada * pc.Precio_Compra) as Total,
+                        c.Tipo_Compra
+                    FROM ProductoxCompra pc
+                    JOIN Compra c ON pc.Id_compra = c.Id_compra
+                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
+                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+                      AND pc.id_tienda = %s
+                      AND c.Tipo_Compra = %s
+                    ORDER BY c.Fecha DESC
+                """
+                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
+        
+        rows_detalle = cursor.fetchall()
+        
+        if rows_detalle:
+            # Determinar columnas según el número de campos
+            if len(rows_detalle[0]) == 9:
+                df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total", "Tienda"])
+            else:
+                df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total", "Tienda", "Tipo Compra"])
+            
+            # Formatear fechas
+            df_detalle["Fecha"] = pd.to_datetime(df_detalle["Fecha"]).dt.strftime("%Y-%m-%d")
+            
+            # Formatear valores monetarios
+            df_detalle["Precio Unitario"] = df_detalle["Precio Unitario"].apply(lambda x: f"${x:.2f}")
+            df_detalle["Total"] = df_detalle["Total"].apply(lambda x: f"${x:.2f}")
+        else:
+            df_detalle = pd.DataFrame()
+
+        # ============================================================
+        # CONSULTA PRINCIPAL - Compras agrupadas (GRÁFICO)
         # ============================================================
         
         if id_tienda_usar is None:
-            # TODAS LAS TIENDAS - Compras por tienda
             if tipo_compra_filtro == "Todos" or not columna_existe:
                 query = """
                     SELECT 
@@ -307,14 +454,8 @@ def reporte_compras():
                     height=500,
                 )
                 st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No hay datos de compras en el período seleccionado.</div>', unsafe_allow_html=True)
-                return
                 
         else:
-            # TIENDA ESPECÍFICA - Compras por mes
-            st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
-            
             if tipo_compra_filtro == "Todos" or not columna_existe:
                 query = """
                     SELECT 
@@ -369,6 +510,7 @@ def reporte_compras():
                     df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras", "Tipo_Compra"])
                     df["Total_Compras"] = df["Total_Compras"].astype(float)
                     
+                    st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
                     fig = px.bar(
                         df,
                         x="Nombre_Mes",
@@ -383,6 +525,7 @@ def reporte_compras():
                     df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras"])
                     df["Total_Compras"] = df["Total_Compras"].astype(float)
                     
+                    st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
                     fig = px.bar(
                         df,
                         x="Nombre_Mes",
@@ -400,9 +543,14 @@ def reporte_compras():
                     height=500,
                 )
                 st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.markdown('<div style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">⚠️ No hay datos de compras en el período seleccionado para esta tienda.</div>', unsafe_allow_html=True)
-                return
+
+        # ============================================================
+        # TABLA DE DETALLE DE COMPRAS
+        # ============================================================
+        if not df_detalle.empty:
+            st.markdown("---")
+            st.markdown("### 📋 Detalle de Compras")
+            st.dataframe(df_detalle, use_container_width=True)
 
         # ============================================================
         # TOTAL GENERAL
