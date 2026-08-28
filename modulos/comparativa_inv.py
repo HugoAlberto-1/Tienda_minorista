@@ -125,6 +125,57 @@ def configurar_estilo():
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
         }}
+
+        .evaluador-title {{
+            color: {COLOR_PRIMARY};
+            font-size: 1.25em;
+            font-weight: 700;
+            margin-top: 18px;
+            margin-bottom: 4px;
+        }}
+
+        .evaluador-subtitle {{
+            color: #6b7280;
+            font-size: 0.92em;
+            margin-bottom: 14px;
+        }}
+
+        .evaluador-label {{
+            color: {COLOR_PRIMARY};
+            font-weight: 700;
+            font-size: 0.92em;
+            margin-bottom: 7px;
+        }}
+
+        .aviso-caro {{
+            background-color: #fff4e5;
+            border: 1px solid #f0ad4e;
+            border-left: 5px solid #f0ad4e;
+            color: #7a4b00;
+            padding: 13px 15px;
+            border-radius: 10px;
+            margin-top: 12px;
+        }}
+
+        .aviso-optimo {{
+            background-color: #eaf7ee;
+            border: 1px solid #28a745;
+            border-left: 5px solid #28a745;
+            color: #155724;
+            padding: 13px 15px;
+            border-radius: 10px;
+            margin-top: 12px;
+        }}
+
+        .aviso-neutral {{
+            background-color: #eef4fb;
+            border: 1px solid #7aa7d9;
+            border-left: 5px solid #7aa7d9;
+            color: #214d75;
+            padding: 13px 15px;
+            border-radius: 10px;
+            margin-top: 12px;
+        }}
         </style>
         """,
         unsafe_allow_html=True
@@ -630,6 +681,298 @@ def mostrar_tabla_comparativa(tabla, nombres_tiendas):
 
 
 # ============================================================
+# 🧮 OBTENER PRECIO VERDE ACTUAL DE UN PRODUCTO
+# ============================================================
+def obtener_precio_verde_producto(codigo_producto, tiendas):
+    """
+    Obtiene exactamente la misma referencia usada por la tabla:
+    la última compra registrada de ese producto en cada tienda activa
+    y, entre esas últimas compras, toma el menor precio.
+    """
+    datos_producto = obtener_datos_comparativa(
+        codigo_filtro=codigo_producto
+    )
+
+    if datos_producto is None or len(datos_producto) == 0:
+        return None, None
+
+    tabla_producto = preparar_tabla_comparativa(
+        datos_producto,
+        tiendas
+    )
+
+    if tabla_producto.empty:
+        return None, None
+
+    nombres_tiendas = []
+    for tienda in tiendas:
+        nombre = tienda.get("nombre")
+        if nombre and nombre not in nombres_tiendas:
+            nombres_tiendas.append(nombre)
+
+    fila = tabla_producto.iloc[0]
+
+    precios = {}
+
+    for nombre_tienda in nombres_tiendas:
+        if nombre_tienda not in tabla_producto.columns:
+            continue
+
+        valor = fila.get(nombre_tienda)
+
+        try:
+            if pd.notna(valor):
+                precios[nombre_tienda] = float(valor)
+        except (TypeError, ValueError):
+            continue
+
+    if not precios:
+        return None, None
+
+    precio_verde = min(precios.values())
+    tienda_verde = min(precios, key=precios.get)
+
+    return precio_verde, tienda_verde
+
+
+# ============================================================
+# 🧾 EVALUAR NUEVO PROVEEDOR
+# ============================================================
+def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
+    """
+    Herramienta temporal para comparar un precio ofrecido por un nuevo
+    proveedor contra el precio verde actual.
+
+    No guarda información ni modifica la base de datos.
+    """
+    if not tiendas or not catalogo_productos:
+        return
+
+    st.markdown("---")
+
+    st.markdown(
+        '<div class="evaluador-title">🧮 Evaluar nuevo proveedor</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="evaluador-subtitle">'
+        'Compara un nuevo precio contra el mejor precio actual registrado para el producto.'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    etiquetas_productos = {}
+
+    for producto in catalogo_productos:
+        codigo = str(producto.get("Codigo", "")).strip()
+        nombre = str(producto.get("Producto", "")).strip()
+
+        if codigo and nombre:
+            etiquetas_productos[codigo] = (
+                f"{nombre}  |  Código: {codigo}"
+            )
+
+    opciones_codigos = list(etiquetas_productos.keys())
+
+    col_producto, col_precio, col_extra, col_total = st.columns(
+        [1.55, 1, 1, 1]
+    )
+
+    # --------------------------------------------------------
+    # PRODUCTO
+    # --------------------------------------------------------
+    with col_producto:
+        st.markdown(
+            '<div class="evaluador-label">Nombre del producto</div>',
+            unsafe_allow_html=True
+        )
+
+        codigo_evaluar = st.selectbox(
+            "Nombre del producto a evaluar",
+            options=opciones_codigos,
+            index=None,
+            placeholder="Escribe nombre o código...",
+            format_func=lambda codigo: etiquetas_productos.get(
+                codigo,
+                str(codigo)
+            ),
+            label_visibility="collapsed",
+            key="evaluador_producto"
+        )
+
+    precio_verde = None
+    tienda_verde = None
+
+    if codigo_evaluar is not None:
+        precio_verde, tienda_verde = obtener_precio_verde_producto(
+            codigo_evaluar,
+            tiendas
+        )
+
+    # --------------------------------------------------------
+    # PRECIO UNITARIO
+    # --------------------------------------------------------
+    with col_precio:
+        st.markdown(
+            '<div class="evaluador-label">Precio unitario</div>',
+            unsafe_allow_html=True
+        )
+
+        precio_unitario = st.number_input(
+            "Precio unitario nuevo",
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            format="%.2f",
+            disabled=(
+                codigo_evaluar is None
+                or precio_verde is None
+            ),
+            label_visibility="collapsed",
+            key="evaluador_precio_unitario"
+        )
+
+        if precio_verde is not None:
+            st.caption(
+                f"Actual: ${precio_verde:,.2f}"
+            )
+
+    # El resto de campos solo se habilita si el precio unitario
+    # propuesto es estrictamente menor al precio verde actual.
+    habilitar_costos = (
+        precio_verde is not None
+        and precio_unitario > 0
+        and precio_unitario < precio_verde
+    )
+
+    # --------------------------------------------------------
+    # COSTO EXTRA
+    # --------------------------------------------------------
+    with col_extra:
+        st.markdown(
+            '<div class="evaluador-label">Costo extra</div>',
+            unsafe_allow_html=True
+        )
+
+        costo_extra = st.number_input(
+            "Costo extra",
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            format="%.2f",
+            disabled=not habilitar_costos,
+            label_visibility="collapsed",
+            key="evaluador_costo_extra"
+        )
+
+    # --------------------------------------------------------
+    # COSTO TOTAL AUTOMÁTICO
+    # --------------------------------------------------------
+    costo_total = (
+        precio_unitario + costo_extra
+        if habilitar_costos
+        else 0.0
+    )
+
+    with col_total:
+        st.markdown(
+            '<div class="evaluador-label">Costo total</div>',
+            unsafe_allow_html=True
+        )
+
+        st.text_input(
+            "Costo total calculado",
+            value=(
+                f"${costo_total:,.2f}"
+                if habilitar_costos
+                else "$0.00"
+            ),
+            disabled=True,
+            label_visibility="collapsed"
+        )
+
+    # --------------------------------------------------------
+    # MENSAJES DE DECISIÓN
+    # --------------------------------------------------------
+    if codigo_evaluar is None:
+        return
+
+    if precio_verde is None:
+        st.markdown(
+            '<div class="aviso-neutral">'
+            'ℹ️ Este producto no tiene una compra registrada en las tiendas activas, '
+            'por lo que todavía no existe un precio de referencia para compararlo.'
+            '</div>',
+            unsafe_allow_html=True
+        )
+        return
+
+    if precio_unitario <= 0:
+        return
+
+    nombre_producto = etiquetas_productos.get(
+        codigo_evaluar,
+        str(codigo_evaluar)
+    ).split("  |  Código:")[0]
+
+    if precio_unitario > precio_verde:
+        st.markdown(
+            f'<div class="aviso-caro">'
+            f'⚠️ <strong>Este proveedor es más caro que el actual.</strong> '
+            f'Para <strong>{nombre_producto}</strong>, el nuevo precio unitario '
+            f'es <strong>${precio_unitario:,.2f}</strong>, mientras que el mejor '
+            f'precio actual es <strong>${precio_verde:,.2f}</strong> '
+            f'en <strong>{tienda_verde}</strong>.'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+        return
+
+    if precio_unitario == precio_verde:
+        st.markdown(
+            f'<div class="aviso-neutral">'
+            f'ℹ️ El nuevo precio unitario es igual al mejor precio actual '
+            f'(<strong>${precio_verde:,.2f}</strong>). No representa una mejora '
+            f'y cualquier costo extra podría volverlo más caro.'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+        return
+
+    # Si el precio unitario sí era menor, se evalúa ahora el costo total.
+    if costo_total < precio_verde:
+        ahorro = precio_verde - costo_total
+
+        st.markdown(
+            f'<div class="aviso-optimo">'
+            f'✅ <strong>Este nuevo proveedor es la mejor opción para '
+            f'{nombre_producto}.</strong> '
+            f'El costo total calculado del nuevo proveedor es '
+            f'<strong>${costo_total:,.2f}</strong>, menor que el mejor costo '
+            f'actual de <strong>${precio_verde:,.2f}</strong> en '
+            f'<strong>{tienda_verde}</strong>. '
+            f'Se sugiere considerar comprar este producto al nuevo proveedor. '
+            f'La diferencia favorable es de '
+            f'<strong>${ahorro:,.2f}</strong> por unidad.'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    else:
+        st.markdown(
+            f'<div class="aviso-caro">'
+            f'⚠️ <strong>El precio unitario es menor, pero el costo total ya no conviene.</strong> '
+            f'Al sumar el costo extra, el nuevo proveedor queda en '
+            f'<strong>${costo_total:,.2f}</strong>, frente al mejor precio actual '
+            f'de <strong>${precio_verde:,.2f}</strong> en '
+            f'<strong>{tienda_verde}</strong>.'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+
+# ============================================================
 # ⭐ MÓDULO PRINCIPAL
 # ============================================================
 def modulo_comparativa_precios():
@@ -880,6 +1223,14 @@ def modulo_comparativa_precios():
                     "— = esa tienda no tiene una compra registrada "
                     "para ese producto."
                 )
+
+    # --------------------------------------------------------
+    # 🧮 EVALUADOR TEMPORAL DE NUEVO PROVEEDOR
+    # --------------------------------------------------------
+    mostrar_evaluador_nuevo_proveedor(
+        tiendas,
+        catalogo_productos
+    )
 
     # --------------------------------------------------------
     # 🔙 VOLVER
