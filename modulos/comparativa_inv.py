@@ -7,10 +7,7 @@ from config.conexion import obtener_conexion
 # 🎨 ESTILOS DEL MÓDULO
 # ============================================================
 def configurar_estilo():
-    """
-    Configuración visual del módulo de Comparativa de Inventario.
-    Mantiene los mismos colores utilizados en los demás módulos.
-    """
+    """Configuración visual del módulo de Comparativa de Costos"""
 
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
@@ -22,21 +19,13 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
 
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <style>
 
-        /* ============================================================
-           FONDO GENERAL
-           ============================================================ */
         .stApp {{
             background-color: {COLOR_BG};
         }}
 
-
-        /* ============================================================
-           TÍTULO PRINCIPAL
-           ============================================================ */
         .comparativa-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -45,10 +34,6 @@ def configurar_estilo():
             margin-bottom: 10px;
         }}
 
-
-        /* ============================================================
-           SUBTÍTULO
-           ============================================================ */
         .comparativa-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
@@ -56,23 +41,15 @@ def configurar_estilo():
             margin-bottom: 25px;
         }}
 
-
-        /* ============================================================
-           CAJA INFORMATIVA
-           ============================================================ */
         .info-box {{
             background: {COLOR_HOVER};
-            padding: 14px 16px;
+            padding: 15px;
             border-radius: 8px;
             border-left: 4px solid {COLOR_PRIMARY};
             margin: 15px 0 25px 0;
             color: {COLOR_TEXT_DARK};
         }}
 
-
-        /* ============================================================
-           TÍTULO DE SECCIÓN
-           ============================================================ */
         .section-title {{
             color: {COLOR_PRIMARY};
             font-size: 1.4em;
@@ -81,19 +58,14 @@ def configurar_estilo():
             margin-bottom: 5px;
         }}
 
-
         .section-description {{
             color: #666666;
             font-size: 0.95em;
             margin-bottom: 20px;
         }}
 
-
-        /* ============================================================
-           LEYENDA DEL PRECIO MÁS BAJO
-           ============================================================ */
         .legend-box {{
-            background-color: #ffffff;
+            background-color: {COLOR_CARD};
             border: 1px solid {COLOR_BORDER};
             border-radius: 10px;
             padding: 12px 15px;
@@ -113,10 +85,6 @@ def configurar_estilo():
             margin-right: 8px;
         }}
 
-
-        /* ============================================================
-           TABLA
-           ============================================================ */
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
         }}
@@ -143,10 +111,6 @@ def configurar_estilo():
             text-align: center !important;
         }}
 
-
-        /* ============================================================
-           BOTONES
-           ============================================================ */
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -161,10 +125,6 @@ def configurar_estilo():
             transform: translateY(-1px);
         }}
 
-
-        /* ============================================================
-           BOTÓN VOLVER
-           ============================================================ */
         .volver-btn button {{
             background-color: #6c757d !important;
             color: white !important;
@@ -177,23 +137,16 @@ def configurar_estilo():
         }}
 
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
 
 # ============================================================
-# 🗄️ OBTENER DATOS DE COMPRAS
+# 🗄️ OBTENER DATOS PARA LA COMPARATIVA
 # ============================================================
 def obtener_datos_comparativa():
     """
-    Obtiene todos los precios unitarios registrados de los productos
-    comprados por las diferentes tiendas.
-
-    Los datos se ordenan desde la compra más reciente hasta la más antigua.
-
-    Posteriormente, en Pandas, se conserva únicamente el precio de compra
-    MÁS RECIENTE de cada producto en cada tienda.
+    Obtiene los precios unitarios de compra registrados
+    para cada producto en cada tienda.
     """
 
     conn = obtener_conexion()
@@ -215,19 +168,14 @@ def obtener_datos_comparativa():
                 c.Fecha AS Fecha,
                 c.Id_compra AS Id_Compra
             FROM ProductoxCompra pc
-
             JOIN Compra c
                 ON pc.Id_compra = c.Id_compra
-
             JOIN Producto p
                 ON pc.cod_barra = p.Cod_barra
                 AND pc.id_tienda = p.id_tienda
-
             JOIN tienda t
                 ON pc.id_tienda = t.id_tienda
-
             WHERE t.activo = 1
-
             ORDER BY
                 c.Fecha DESC,
                 c.Id_compra DESC
@@ -258,59 +206,34 @@ def obtener_datos_comparativa():
 # ============================================================
 def preparar_tabla_comparativa(datos):
     """
-    Convierte los registros de compras en una tabla comparativa.
+    Crea una tabla donde:
 
-    FILAS:
-        Productos
-
-    COLUMNAS:
-        Tiendas
-
-    VALORES:
-        Precio unitario de compra más reciente.
-
-    El código de barras se utiliza internamente para identificar
-    correctamente el mismo producto entre diferentes tiendas.
+    Filas = Productos
+    Columnas = Tiendas
+    Valores = Precio unitario de la compra más reciente
     """
 
     if not datos:
         return pd.DataFrame()
 
-    # ------------------------------------------------------------
-    # Convertir datos provenientes de MySQL a DataFrame
-    # ------------------------------------------------------------
     df = pd.DataFrame(datos)
 
     if df.empty:
         return pd.DataFrame()
 
-    # ------------------------------------------------------------
-    # Asegurar que el precio sea numérico
-    # ------------------------------------------------------------
+    # Convertir precios a valores numéricos
     df["Precio_Unitario"] = pd.to_numeric(
         df["Precio_Unitario"],
         errors="coerce"
     )
 
-    # ------------------------------------------------------------
-    # Convertir fecha correctamente
-    # ------------------------------------------------------------
+    # Convertir fechas
     df["Fecha"] = pd.to_datetime(
         df["Fecha"],
         errors="coerce"
     )
 
-    # ------------------------------------------------------------
-    # Ordenar:
-    #
-    # 1. Producto
-    # 2. Tienda
-    # 3. Fecha más reciente
-    # 4. ID de compra más reciente
-    #
-    # Esto permite posteriormente quedarnos solamente con
-    # la compra más reciente.
-    # ------------------------------------------------------------
+    # Ordenar para que la compra más reciente quede primero
     df = df.sort_values(
         by=[
             "Codigo",
@@ -326,91 +249,42 @@ def preparar_tabla_comparativa(datos):
         ]
     )
 
-    # ------------------------------------------------------------
-    # Conservar solamente la compra MÁS RECIENTE
-    # de cada producto en cada tienda.
-    #
-    # Ejemplo:
-    #
-    # Arroz - Tienda A
-    #
-    # 01/08 → $0.40
-    # 10/08 → $0.45
-    # 20/08 → $0.38
-    #
-    # Se utilizará:
-    #
-    # 20/08 → $0.38
-    # ------------------------------------------------------------
+    # Quedarnos únicamente con la compra más reciente
+    # de cada producto en cada tienda
     df_ultimos_precios = df.drop_duplicates(
         subset=[
             "Codigo",
             "Id_Tienda"
         ],
         keep="first"
-    )
+    ).copy()
 
-    # ------------------------------------------------------------
-    # Crear identificador del producto.
-    #
-    # El código de barras se mantiene internamente para evitar
-    # confundir productos que puedan tener nombres parecidos.
-    # ------------------------------------------------------------
-    df_ultimos_precios["Producto_Mostrar"] = (
-        df_ultimos_precios["Producto"]
-    )
-
-    # ------------------------------------------------------------
-    # Convertir la información a formato comparativo.
-    #
-    # Antes:
-    #
-    # Producto    Tienda      Precio
-    # Arroz       Tienda A    0.40
-    # Arroz       Tienda B    0.45
-    #
-    #
-    # Después:
-    #
-    # Producto    Tienda A    Tienda B
-    # Arroz       0.40        0.45
-    # ------------------------------------------------------------
+    # Crear tabla comparativa
     tabla = df_ultimos_precios.pivot_table(
         index=[
             "Codigo",
-            "Producto_Mostrar"
+            "Producto"
         ],
         columns="Tienda",
         values="Precio_Unitario",
         aggfunc="first"
     )
 
-    # ------------------------------------------------------------
-    # Quitar el nombre interno del índice de columnas
-    # ------------------------------------------------------------
     tabla.columns.name = None
 
-    # ------------------------------------------------------------
-    # Regresar Código y Producto como columnas normales
-    # ------------------------------------------------------------
     tabla = tabla.reset_index()
 
-    # ------------------------------------------------------------
-    # Renombrar para que sea entendible para el usuario
-    # ------------------------------------------------------------
     tabla = tabla.rename(
         columns={
-            "Codigo": "Código",
-            "Producto_Mostrar": "Producto"
+            "Codigo": "Código"
         }
     )
 
-    # ------------------------------------------------------------
-    # Ordenar productos alfabéticamente
-    # ------------------------------------------------------------
+    # Ordenar alfabéticamente por producto
     tabla = tabla.sort_values(
         by="Producto",
-        key=lambda columna: columna.astype(str).str.lower()
+        key=lambda x: x.astype(str).str.lower(),
+        ascending=True
     )
 
     tabla = tabla.reset_index(drop=True)
@@ -419,48 +293,32 @@ def preparar_tabla_comparativa(datos):
 
 
 # ============================================================
-# 🟢 RESALTAR EL PRECIO MÁS BAJO
+# 🟢 RESALTAR PRECIO MÁS BAJO
 # ============================================================
 def resaltar_precio_menor(fila):
     """
-    Resalta con fondo verde el precio unitario más bajo
-    encontrado entre las tiendas para cada producto.
+    Resalta el menor precio de cada producto.
 
-    Si dos o más tiendas tienen exactamente el mismo
-    precio mínimo, todas serán resaltadas.
+    Si existe empate entre dos o más tiendas,
+    todos los precios mínimos quedan resaltados.
     """
 
     estilos = [""] * len(fila)
 
-    # ------------------------------------------------------------
-    # Las primeras dos columnas NO son precios:
-    #
-    # 0 = Código
-    # 1 = Producto
-    #
-    # Por eso solamente analizamos desde la columna 2.
-    # ------------------------------------------------------------
+    # Código y Producto son las primeras dos columnas.
+    # Las demás columnas representan tiendas.
     precios = pd.to_numeric(
         fila.iloc[2:],
         errors="coerce"
     )
 
-    # ------------------------------------------------------------
-    # Si ninguna tienda tiene precio registrado,
-    # no hacemos ningún resaltado.
-    # ------------------------------------------------------------
-    if precios.dropna().empty:
+    precios_validos = precios.dropna()
+
+    if precios_validos.empty:
         return estilos
 
-    # ------------------------------------------------------------
-    # Encontrar el precio mínimo de la fila
-    # ------------------------------------------------------------
-    precio_minimo = precios.min()
+    precio_minimo = precios_validos.min()
 
-    # ------------------------------------------------------------
-    # Aplicar estilo solamente a las tiendas que tengan
-    # el precio mínimo.
-    # ------------------------------------------------------------
     for posicion, precio in enumerate(
         precios,
         start=2
@@ -479,17 +337,15 @@ def resaltar_precio_menor(fila):
 
 
 # ============================================================
-# 💲 FORMATO DE PRECIOS
+# 💰 FORMATO MONEDA
 # ============================================================
 def formato_moneda(valor):
     """
-    Muestra los precios como moneda.
+    Convierte:
+    0.4 -> $0.40
 
-    Ejemplo:
-        0.4  → $0.40
-
-    Si la tienda nunca ha comprado ese producto:
-        NaN → —
+    Si no existe precio:
+    NaN -> —
     """
 
     if pd.isna(valor):
@@ -506,9 +362,6 @@ def formato_moneda(valor):
 # 📋 MOSTRAR TABLA
 # ============================================================
 def mostrar_tabla_comparativa(tabla):
-    """
-    Aplica formato y estilos a la tabla comparativa.
-    """
 
     if tabla.empty:
 
@@ -519,55 +372,43 @@ def mostrar_tabla_comparativa(tabla):
 
         return
 
-    # ------------------------------------------------------------
-    # Identificar las columnas correspondientes a tiendas
-    # ------------------------------------------------------------
     columnas_tiendas = [
         columna
         for columna in tabla.columns
         if columna not in ["Código", "Producto"]
     ]
 
-    # ------------------------------------------------------------
-    # Crear tabla estilizada
-    # ------------------------------------------------------------
-    tabla_estilizada = (
-        tabla.style
-
-        # Resaltar el precio mínimo por producto
-        .apply(
-            resaltar_precio_menor,
-            axis=1
-        )
-
-        # Formatear solamente columnas de tiendas como moneda
-        .format(
-            {
-                columna: formato_moneda
-                for columna in columnas_tiendas
-            },
-            na_rep="—"
-        )
-
-        # Alinear contenido
-        .set_properties(
-            subset=columnas_tiendas,
-            **{
-                "text-align": "center"
-            }
-        )
-
-        .set_properties(
-            subset=["Código", "Producto"],
-            **{
-                "text-align": "left"
-            }
-        )
+    # Aplicar estilos
+    tabla_estilizada = tabla.style.apply(
+        resaltar_precio_menor,
+        axis=1
     )
 
-    # ------------------------------------------------------------
-    # Mostrar tabla
-    # ------------------------------------------------------------
+    # Formato monetario
+    tabla_estilizada = tabla_estilizada.format(
+        {
+            columna: formato_moneda
+            for columna in columnas_tiendas
+        },
+        na_rep="—"
+    )
+
+    # Centrar precios
+    tabla_estilizada = tabla_estilizada.set_properties(
+        subset=columnas_tiendas,
+        **{
+            "text-align": "center"
+        }
+    )
+
+    # Alinear Código y Producto a la izquierda
+    tabla_estilizada = tabla_estilizada.set_properties(
+        subset=["Código", "Producto"],
+        **{
+            "text-align": "left"
+        }
+    )
+
     st.dataframe(
         tabla_estilizada,
         use_container_width=True,
@@ -576,85 +417,35 @@ def mostrar_tabla_comparativa(tabla):
 
 
 # ============================================================
-# 🏪 OBTENER NÚMERO DE TIENDAS ACTIVAS
-# ============================================================
-def obtener_total_tiendas_activas():
-    """
-    Obtiene la cantidad de tiendas activas.
-    Solo se usa para mostrar información general.
-    """
-
-    conn = obtener_conexion()
-
-    if not conn:
-        return 0
-
-    cursor = conn.cursor()
-
-    try:
-
-        cursor.execute(
-            """
-            SELECT COUNT(*)
-            FROM tienda
-            WHERE activo = 1
-            """
-        )
-
-        resultado = cursor.fetchone()
-
-        return int(resultado[0]) if resultado else 0
-
-    except Exception:
-
-        return 0
-
-    finally:
-
-        cursor.close()
-        conn.close()
-
-
-# ============================================================
 # ⭐ MÓDULO PRINCIPAL
 # ============================================================
 def modulo_comparativa_inv():
 
-    # ------------------------------------------------------------
-    # Aplicar estilos
-    # ------------------------------------------------------------
     configurar_estilo()
 
-    # ------------------------------------------------------------
-    # Título
-    # ------------------------------------------------------------
+    # ============================================================
+    # TÍTULO
+    # ============================================================
+
     st.markdown(
-        """
-        <div class="comparativa-title">
-            💰 Comparativa de Costos
-        </div>
-        """,
+        '<div class="comparativa-title">💰 Comparativa de Costos</div>',
         unsafe_allow_html=True
     )
 
     st.markdown(
-        """
-        <div class="comparativa-subtitle">
-            Comparación del precio unitario de compra de productos
-            entre las diferentes tiendas
-        </div>
-        """,
+        '<div class="comparativa-subtitle">Comparación del precio unitario de compra de productos entre las diferentes tiendas</div>',
         unsafe_allow_html=True
     )
+
 
     # ============================================================
     # 🔐 VERIFICAR SESIÓN
     # ============================================================
+
     if not st.session_state.get("logueado"):
 
         st.error(
-            "❌ No has iniciado sesión. "
-            "Inicia sesión primero."
+            "❌ No has iniciado sesión. Inicia sesión primero."
         )
 
         st.markdown("---")
@@ -663,7 +454,6 @@ def modulo_comparativa_inv():
             "⬅ Volver al menú principal",
             use_container_width=True
         ):
-
             st.session_state["module"] = None
             st.rerun()
 
@@ -671,8 +461,9 @@ def modulo_comparativa_inv():
 
 
     # ============================================================
-    # 👑 VERIFICAR QUE SEA ADMINISTRADOR
+    # 👑 SOLO ADMINISTRADOR
     # ============================================================
+
     rol_usuario = st.session_state.get(
         "nivel_usuario",
         ""
@@ -692,7 +483,6 @@ def modulo_comparativa_inv():
             "⬅ Volver al menú principal",
             use_container_width=True
         ):
-
             st.session_state["module"] = None
             st.rerun()
 
@@ -700,44 +490,30 @@ def modulo_comparativa_inv():
 
 
     # ============================================================
-    # ℹ️ EXPLICACIÓN DE LA TABLA
+    # ℹ️ INFORMACIÓN
     # ============================================================
+
     st.markdown(
-        """
-        <div class="info-box">
-            📌 <strong>¿Qué muestra esta tabla?</strong><br><br>
-
-            Para cada producto se muestra el
-            <strong>precio unitario de la compra más reciente</strong>
-            registrada por cada tienda.
-
-            Esto permite comparar rápidamente qué tienda está
-            consiguiendo cada producto a un menor costo.
-        </div>
-        """,
+        '<div class="info-box">'
+        '📌 <strong>¿Qué muestra esta tabla?</strong><br><br>'
+        'Para cada producto se muestra el <strong>precio unitario de la compra más reciente</strong> registrada por cada tienda.<br><br>'
+        'Esto permite comparar rápidamente qué tienda está consiguiendo cada producto a un menor costo.'
+        '</div>',
         unsafe_allow_html=True
     )
 
 
     # ============================================================
-    # 📊 TÍTULO DE PRIMERA TABLA
+    # 📊 PRIMERA TABLA
     # ============================================================
+
     st.markdown(
-        """
-        <div class="section-title">
-            📊 Comparativa de precios por tienda
-        </div>
-        """,
+        '<div class="section-title">📊 Comparativa de precios por tienda</div>',
         unsafe_allow_html=True
     )
 
     st.markdown(
-        """
-        <div class="section-description">
-            Las filas representan productos y las columnas representan
-            las tiendas activas del sistema.
-        </div>
-        """,
+        '<div class="section-description">Las filas representan productos y las columnas representan las tiendas activas del sistema.</div>',
         unsafe_allow_html=True
     )
 
@@ -745,23 +521,21 @@ def modulo_comparativa_inv():
     # ============================================================
     # 🟢 LEYENDA
     # ============================================================
-    st.markdown(
-        """
-        <div class="legend-box">
-            <span class="legend-color"></span>
 
-            <strong>Mejor precio:</strong>
-            la celda resaltada indica el precio unitario
-            más bajo registrado para ese producto.
-        </div>
-        """,
+    st.markdown(
+        '<div class="legend-box">'
+        '<span class="legend-color"></span>'
+        '<strong>Mejor precio:</strong> '
+        'la celda resaltada indica el precio unitario más bajo registrado para ese producto.'
+        '</div>',
         unsafe_allow_html=True
     )
 
 
     # ============================================================
-    # ⏳ CARGAR INFORMACIÓN
+    # ⏳ CARGAR DATOS
     # ============================================================
+
     with st.spinner(
         "Cargando comparativa de precios..."
     ):
@@ -770,8 +544,9 @@ def modulo_comparativa_inv():
 
 
     # ============================================================
-    # ❌ ERROR DE CONEXIÓN
+    # ERROR DE CONEXIÓN
     # ============================================================
+
     if datos is None:
 
         st.error(
@@ -779,9 +554,11 @@ def modulo_comparativa_inv():
             "de la base de datos."
         )
 
+
     # ============================================================
-    # ℹ️ NO HAY DATOS
+    # SIN DATOS
     # ============================================================
+
     elif len(datos) == 0:
 
         st.info(
@@ -789,9 +566,11 @@ def modulo_comparativa_inv():
             "para realizar la comparativa."
         )
 
+
     # ============================================================
-    # ✅ GENERAR COMPARATIVA
+    # MOSTRAR DATOS
     # ============================================================
+
     else:
 
         tabla_comparativa = preparar_tabla_comparativa(
@@ -807,9 +586,6 @@ def modulo_comparativa_inv():
 
         else:
 
-            # ----------------------------------------------------
-            # Información general
-            # ----------------------------------------------------
             total_productos = len(
                 tabla_comparativa
             )
@@ -829,8 +605,9 @@ def modulo_comparativa_inv():
 
 
             # ====================================================
-            # 📌 PEQUEÑO RESUMEN
+            # MÉTRICAS
             # ====================================================
+
             col1, col2 = st.columns(2)
 
             with col1:
@@ -852,16 +629,14 @@ def modulo_comparativa_inv():
 
 
             # ====================================================
-            # 📋 MOSTRAR TABLA
+            # TABLA
             # ====================================================
+
             mostrar_tabla_comparativa(
                 tabla_comparativa
             )
 
 
-            # ====================================================
-            # ℹ️ ACLARACIÓN
-            # ====================================================
             st.caption(
                 "— significa que esa tienda no tiene una compra "
                 "registrada para ese producto."
@@ -869,8 +644,9 @@ def modulo_comparativa_inv():
 
 
     # ============================================================
-    # 🔙 VOLVER AL MENÚ PRINCIPAL
+    # 🔙 VOLVER
     # ============================================================
+
     st.markdown("---")
 
     col1, col2, col3 = st.columns(
@@ -879,11 +655,6 @@ def modulo_comparativa_inv():
 
     with col2:
 
-        st.markdown(
-            '<div class="volver-btn">',
-            unsafe_allow_html=True
-        )
-
         if st.button(
             "🔙 Volver al menú principal",
             use_container_width=True
@@ -891,13 +662,6 @@ def modulo_comparativa_inv():
 
             st.session_state["module"] = None
 
-            st.session_state[
-                "macro_modulo"
-            ] = None
+            st.session_state["macro_modulo"] = None
 
             st.rerun()
-
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True
-        )
