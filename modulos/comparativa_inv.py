@@ -740,9 +740,7 @@ def obtener_precio_verde_producto(codigo_producto, tiendas):
 # ============================================================
 def reiniciar_campos_evaluador():
     """
-    Cada vez que cambia el producto, se eliminan los valores temporales
-    del producto anterior para que Precio unitario y Costo extra vuelvan
-    a quedar vacíos.
+    Limpia los valores temporales del evaluador.
     """
     st.session_state.pop("evaluador_precio_unitario", None)
     st.session_state.pop("evaluador_costo_extra", None)
@@ -751,9 +749,6 @@ def reiniciar_campos_evaluador():
 # ============================================================
 # 🧩 FRAGMENTO DEL EVALUADOR
 # ============================================================
-# Si la versión de Streamlit soporta st.fragment, los cambios realizados
-# dentro de estas cajas solo recalculan esta sección y no toda la página.
-# En versiones antiguas, la función sigue funcionando normalmente.
 _fragment = st.fragment if hasattr(st, "fragment") else (lambda func: func)
 
 
@@ -798,6 +793,8 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
 
     opciones_codigos = list(etiquetas_productos.keys())
 
+    # Las 4 columnas existen para conservar el diseño,
+    # pero Costo extra y Costo total NO se dibujan hasta validar el precio.
     col_producto, col_precio, col_extra, col_total = st.columns(
         [1.55, 1, 1, 1]
     )
@@ -821,9 +818,22 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
                 str(codigo)
             ),
             label_visibility="collapsed",
-            key="evaluador_producto",
-            on_change=reiniciar_campos_evaluador
+            key="evaluador_producto"
         )
+
+    # --------------------------------------------------------
+    # REINICIO REAL AL CAMBIAR DE PRODUCTO
+    # --------------------------------------------------------
+    # Se compara el producto actual contra el último producto evaluado.
+    # Si cambió, se limpian Precio unitario y Costo extra ANTES de crear
+    # esos widgets, evitando que aparezca el valor del producto anterior.
+    producto_anterior = st.session_state.get(
+        "evaluador_producto_anterior"
+    )
+
+    if codigo_evaluar != producto_anterior:
+        reiniciar_campos_evaluador()
+        st.session_state["evaluador_producto_anterior"] = codigo_evaluar
 
     precio_verde = None
     tienda_verde = None
@@ -863,9 +873,10 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
                 f"Actual: ${precio_verde:,.2f}"
             )
 
-    # Costo extra solo se habilita si el precio nuevo YA fue digitado
-    # y es estrictamente menor que el valor verde de referencia.
-    habilitar_costos = (
+    # --------------------------------------------------------
+    # VALIDAR PRECIO UNITARIO
+    # --------------------------------------------------------
+    precio_unitario_valido = (
         precio_verde is not None
         and precio_unitario is not None
         and precio_unitario > 0
@@ -873,63 +884,61 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
     )
 
     # --------------------------------------------------------
-    # COSTO EXTRA
+    # COSTO EXTRA Y COSTO TOTAL
     # --------------------------------------------------------
-    with col_extra:
-        st.markdown(
-            '<div class="evaluador-label">Costo extra</div>',
-            unsafe_allow_html=True
-        )
-
-        costo_extra = st.number_input(
-            "Costo extra",
-            min_value=0.0,
-            value=None,
-            step=0.01,
-            format="%.2f",
-            placeholder="Digite el costo extra",
-            disabled=not habilitar_costos,
-            label_visibility="collapsed",
-            key="evaluador_costo_extra"
-        )
-
-    # --------------------------------------------------------
-    # COSTO TOTAL
-    # --------------------------------------------------------
-    # El total NO existe mientras Costo extra siga vacío.
+    # IMPORTANTE:
+    # Estas dos cajas NO aparecen mientras el precio unitario:
+    # - esté vacío
+    # - sea igual al actual
+    # - sea mayor al actual
+    #
+    # Solo aparecen cuando el precio unitario nuevo ya fue validado
+    # como MENOR que el valor verde.
+    costo_extra = None
     costo_total = None
 
-    if (
-        habilitar_costos
-        and costo_extra is not None
-    ):
-        costo_total = (
-            float(precio_unitario)
-            + float(costo_extra)
-        )
+    if precio_unitario_valido:
+        with col_extra:
+            st.markdown(
+                '<div class="evaluador-label">Costo extra</div>',
+                unsafe_allow_html=True
+            )
 
-    with col_total:
-        st.markdown(
-            '<div class="evaluador-label">Costo total</div>',
-            unsafe_allow_html=True
-        )
+            costo_extra = st.number_input(
+                "Costo extra",
+                min_value=0.0,
+                value=None,
+                step=0.01,
+                format="%.2f",
+                placeholder="Digite el costo extra",
+                label_visibility="collapsed",
+                key="evaluador_costo_extra"
+            )
 
-        # Se usa un campo visual bloqueado. Permanecerá vacío hasta que
-        # el usuario haya terminado de ingresar el costo extra.
-        total_mostrar = (
-            f"${costo_total:,.2f}"
-            if costo_total is not None
-            else ""
-        )
+        if costo_extra is not None:
+            costo_total = (
+                float(precio_unitario)
+                + float(costo_extra)
+            )
 
-        st.text_input(
-            "Costo total calculado",
-            value=total_mostrar,
-            placeholder="Se calcula al terminar",
-            disabled=True,
-            label_visibility="collapsed",
-            key=f"evaluador_total_visual_{codigo_evaluar}_{total_mostrar}"
-        )
+        with col_total:
+            st.markdown(
+                '<div class="evaluador-label">Costo total</div>',
+                unsafe_allow_html=True
+            )
+
+            st.text_input(
+                "Costo total calculado",
+                value=(
+                    f"${costo_total:,.2f}"
+                    if costo_total is not None
+                    else ""
+                ),
+                placeholder="Se calcula al terminar",
+                disabled=True,
+                label_visibility="collapsed",
+                key=f"evaluador_total_visual_{codigo_evaluar}"
+            )
 
     # --------------------------------------------------------
     # MENSAJES DE DECISIÓN
@@ -947,8 +956,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # Mientras no se haya terminado de ingresar Precio unitario,
-    # no se muestra ninguna decisión.
+    # Mientras Precio unitario esté vacío, no mostramos mensajes.
     if precio_unitario is None or precio_unitario <= 0:
         return
 
@@ -957,9 +965,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         str(codigo_evaluar)
     ).split("  |  Código:")[0]
 
-    # CASO 1:
-    # El precio unitario nuevo es más caro que el valor verde.
-    # Se muestra el aviso de inmediato y NO se habilitan los demás costos.
+    # Si el precio nuevo es mayor, avisar y NO mostrar los otros campos.
     if precio_unitario > precio_verde:
         st.markdown(
             f'<div class="aviso-caro">'
@@ -973,7 +979,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # Si es igual, tampoco se habilitan costos porque no existe mejora inicial.
+    # Si es igual, tampoco se muestran Costo extra ni Costo total.
     if precio_unitario == precio_verde:
         st.markdown(
             f'<div class="aviso-neutral">'
@@ -984,15 +990,13 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # CASO 2:
-    # Si Precio unitario es menor, NO mostramos recomendación todavía.
-    # Esperamos obligatoriamente a que Costo extra tenga un valor y el
-    # Costo total ya haya sido calculado.
+    # Si el precio unitario es menor, NO se recomienda cambiar todavía.
+    # Primero esperamos a que el usuario termine de ingresar Costo extra
+    # y exista un Costo total.
     if costo_total is None:
         return
 
-    # CASO 3:
-    # Solo después de tener el Costo total se decide si conviene cambiar.
+    # Solo aquí, después de calcular el Costo total, se emite la decisión.
     if costo_total < precio_verde:
         ahorro = precio_verde - costo_total
 
