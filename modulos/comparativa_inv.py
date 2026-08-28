@@ -822,9 +822,10 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         precio_unitario = st.number_input(
             "Precio unitario nuevo",
             min_value=0.0,
-            value=0.0,
+            value=None,
             step=0.01,
             format="%.2f",
+            placeholder="Digite el precio",
             disabled=(
                 codigo_evaluar is None
                 or precio_verde is None
@@ -842,6 +843,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
     # propuesto es estrictamente menor al precio verde actual.
     habilitar_costos = (
         precio_verde is not None
+        and precio_unitario is not None
         and precio_unitario > 0
         and precio_unitario < precio_verde
     )
@@ -858,9 +860,10 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         costo_extra = st.number_input(
             "Costo extra",
             min_value=0.0,
-            value=0.0,
+            value=None,
             step=0.01,
             format="%.2f",
+            placeholder="Digite el costo extra",
             disabled=not habilitar_costos,
             label_visibility="collapsed",
             key="evaluador_costo_extra"
@@ -869,10 +872,15 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
     # --------------------------------------------------------
     # COSTO TOTAL AUTOMÁTICO
     # --------------------------------------------------------
+    costo_extra_completado = (
+        habilitar_costos
+        and costo_extra is not None
+    )
+
     costo_total = (
-        precio_unitario + costo_extra
-        if habilitar_costos
-        else 0.0
+        float(precio_unitario) + float(costo_extra)
+        if costo_extra_completado
+        else None
     )
 
     with col_total:
@@ -885,9 +893,10 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
             "Costo total calculado",
             value=(
                 f"${costo_total:,.2f}"
-                if habilitar_costos
-                else "$0.00"
+                if costo_total is not None
+                else ""
             ),
+            placeholder="Se calcula automáticamente",
             disabled=True,
             label_visibility="collapsed"
         )
@@ -908,7 +917,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    if precio_unitario <= 0:
+    if precio_unitario is None or precio_unitario <= 0:
         return
 
     nombre_producto = etiquetas_productos.get(
@@ -940,7 +949,13 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # Si el precio unitario sí era menor, se evalúa ahora el costo total.
+    # Si el precio unitario sí era menor, esperamos a que el usuario
+    # termine de ingresar el costo extra. Hasta entonces NO se calcula
+    # el total ni se muestra recomendación.
+    if costo_total is None:
+        return
+
+    # Con el costo extra ya ingresado, se evalúa el costo total.
     if costo_total < precio_verde:
         ahorro = precio_verde - costo_total
 
