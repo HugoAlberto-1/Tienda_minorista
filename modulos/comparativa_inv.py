@@ -235,6 +235,19 @@ def preparar_tabla_comparativa(datos, tiendas):
     if df.empty:
         return pd.DataFrame()
 
+    # Seguridad adicional: trabajar únicamente con tiendas activas recibidas
+    # desde obtener_tiendas_activas(), incluso si en el futuro cambia la consulta.
+    ids_tiendas_activas = {
+        tienda.get("id_tienda")
+        for tienda in tiendas
+        if tienda.get("id_tienda") is not None
+    }
+    if ids_tiendas_activas and "Id_Tienda" in df.columns:
+        df = df[df["Id_Tienda"].isin(ids_tiendas_activas)].copy()
+
+    if df.empty:
+        return pd.DataFrame()
+
     columnas_necesarias = [
         "Codigo", "Producto", "Precio_Unitario_Compra",
         "Id_Tienda", "Tienda", "Fecha", "Id_Compra"
@@ -304,12 +317,10 @@ def preparar_tabla_comparativa(datos, tiendas):
         tabla = tabla[tiene_algun_precio].copy()
         precios_num = precios_num[tiene_algun_precio]
 
-        # 🆕 Columna explícita con la tienda más barata (además del resaltado
-        # visual). Si solo una tienda compró el producto, no hay comparación
-        # real todavía.
-        conteo_tiendas = precios_num.notna().sum(axis=1)
+        # Columna con la tienda activa que tiene el menor precio unitario
+        # de compra. Aunque el producto solo exista en una tienda, se muestra
+        # siempre el nombre de esa tienda.
         tabla["🏆 Tienda más barata"] = precios_num.idxmin(axis=1)
-        tabla.loc[conteo_tiendas < 2, "🏆 Tienda más barata"] = "— (solo 1 tienda)"
 
     if "Producto" in tabla.columns:
         tabla = tabla.sort_values(
@@ -496,17 +507,6 @@ def modulo_comparativa_precios():
             if tabla_comparativa.empty:
                 st.info("ℹ️ No existen datos suficientes para generar la comparativa.")
             else:
-                total_productos = len(tabla_comparativa)
-                total_tiendas = len(nombres_tiendas)
-
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric(label="📦 Productos comparados", value=total_productos)
-                with col2:
-                    st.metric(label="🏪 Tiendas activas", value=total_tiendas)
-
-                st.markdown("---")
-
                 mostrar_tabla_comparativa(tabla_comparativa, nombres_tiendas)
 
                 st.caption("🟢 Verde = menor precio UNITARIO DE COMPRA registrado para ese producto.")
