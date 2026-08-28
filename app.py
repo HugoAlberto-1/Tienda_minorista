@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'modulos'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "modulos"))
 
 import streamlit as st
 from login import login, verificar_usuario
@@ -18,15 +18,14 @@ from modulos.categoria import modulo_categoria
 from modulos.gestion_admin import modulo_gestion_admin
 from modulos.productos_mas_menos_vendidos import modulo_productos_mas_menos_vendidos
 from modulos.reporte_compras import modulo_reporte_compras
-
-# ============================================================
-# 🆕 NUEVO MÓDULO: COMPARATIVA DE COSTOS
-# ============================================================
 from modulos.comparativa_inv import modulo_comparativa_inv
 
 
+# ============================================================
+# 🎨 CONFIGURACIÓN GENERAL DE LA PÁGINA
+# ============================================================
+
 def configurar_pagina():
-    """Configuración de la página con CSS personalizado"""
 
     st.set_page_config(
         page_title="Sistema de Inventario",
@@ -35,39 +34,21 @@ def configurar_pagina():
         initial_sidebar_state="collapsed"
     )
 
-    # ============================================================
-    # 🎨 PALETA DE COLORES
-    # ============================================================
-
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_ACCENT = "#3a7ca5"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
-    COLOR_TEXT = "#333333"
     COLOR_TEXT_LIGHT = "#666666"
     COLOR_HOVER = "#e8f0fe"
-
-    # ============================================================
-    # 🎨 CSS PERSONALIZADO
-    # ============================================================
 
     st.markdown(
         f"""
         <style>
 
-        /* ============================================================
-           FONDO GENERAL
-           ============================================================ */
-
         .stApp {{
             background-color: {COLOR_BG};
         }}
-
-
-        /* ============================================================
-           TÍTULOS
-           ============================================================ */
 
         .main-title {{
             text-align: center;
@@ -77,14 +58,12 @@ def configurar_pagina():
             margin-bottom: 20px;
         }}
 
-
         .subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 30px;
         }}
-
 
         .welcome-text {{
             text-align: center;
@@ -97,10 +76,39 @@ def configurar_pagina():
             border-left: 4px solid {COLOR_PRIMARY};
         }}
 
+        .macro-card {{
+            background: {COLOR_CARD};
+            border-radius: 12px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+            min-height: 145px;
+        }}
 
-        /* ============================================================
-           TARJETAS PEQUEÑAS
-           ============================================================ */
+        .macro-card:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: {COLOR_PRIMARY};
+        }}
+
+        .macro-icon {{
+            font-size: 2.5em;
+            margin-bottom: 12px;
+        }}
+
+        .macro-title {{
+            font-size: 1.2em;
+            font-weight: 600;
+            color: {COLOR_PRIMARY};
+            margin-bottom: 8px;
+        }}
+
+        .macro-desc {{
+            color: {COLOR_TEXT_LIGHT};
+            font-size: 0.85em;
+        }}
 
         .card {{
             background: {COLOR_CARD};
@@ -110,9 +118,8 @@ def configurar_pagina():
             transition: all 0.3s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             border: 1px solid #e0e0e0;
-            height: 100%;
+            min-height: 160px;
         }}
-
 
         .card:hover {{
             transform: translateY(-3px);
@@ -120,12 +127,10 @@ def configurar_pagina():
             border-color: {COLOR_ACCENT};
         }}
 
-
         .card-icon {{
             font-size: 2.2em;
             margin-bottom: 10px;
         }}
-
 
         .card-title {{
             font-size: 1.1em;
@@ -134,71 +139,11 @@ def configurar_pagina():
             margin-bottom: 8px;
         }}
 
-
         .card-desc {{
             color: {COLOR_TEXT_LIGHT};
             font-size: 0.8em;
             line-height: 1.3;
         }}
-
-
-        /* ============================================================
-           TARJETAS GRANDES - MACRO MÓDULOS
-           ============================================================ */
-
-        .macro-card {{
-            background: {COLOR_CARD};
-            border-radius: 12px;
-            padding: 25px 20px;
-            text-align: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid #e0e0e0;
-            cursor: pointer;
-            min-height: 150px;
-        }}
-
-
-        .macro-card:hover {{
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            border-color: {COLOR_PRIMARY};
-        }}
-
-
-        .macro-icon {{
-            font-size: 2.5em;
-            margin-bottom: 12px;
-        }}
-
-
-        .macro-title {{
-            font-size: 1.2em;
-            font-weight: 600;
-            color: {COLOR_PRIMARY};
-            margin-bottom: 8px;
-        }}
-
-
-        .macro-desc {{
-            color: {COLOR_TEXT_LIGHT};
-            font-size: 0.85em;
-        }}
-
-
-        /* ============================================================
-           SECCIÓN DE SUBMENÚ
-           ============================================================ */
-
-        .macro-section {{
-            background: {COLOR_CARD};
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid #e0e0e0;
-        }}
-
 
         .section-title {{
             font-size: 1.3em;
@@ -209,13 +154,7 @@ def configurar_pagina():
             border-bottom: 2px solid {COLOR_ACCENT};
             padding-bottom: 10px;
             display: inline-block;
-            width: auto;
         }}
-
-
-        /* ============================================================
-           BOTONES
-           ============================================================ */
 
         .stButton > button {{
             border-radius: 8px;
@@ -226,24 +165,75 @@ def configurar_pagina():
             border: none;
         }}
 
-
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
         }}
 
-
-        /* ============================================================
-           TÍTULOS DE SECCIÓN
-           ============================================================ */
-
-        .section-header {{
-            text-align: center;
-            margin-bottom: 25px;
-        }}
-
         </style>
         """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# 🧩 FUNCIONES AUXILIARES PARA TARJETAS
+# ============================================================
+
+def mostrar_macro_tarjeta(icono, titulo, descripcion):
+    """
+    Muestra una tarjeta grande del menú principal.
+
+    El HTML se construye en una sola línea para evitar
+    que Streamlit lo interprete como bloque de código.
+    """
+
+    html = (
+        '<div class="macro-card">'
+        f'<div class="macro-icon">{icono}</div>'
+        f'<div class="macro-title">{titulo}</div>'
+        f'<div class="macro-desc">{descripcion}</div>'
+        '</div>'
+    )
+
+    st.markdown(
+        html,
+        unsafe_allow_html=True
+    )
+
+
+def mostrar_tarjeta(icono, titulo, descripcion):
+    """
+    Muestra una tarjeta de los submenús.
+    """
+
+    html = (
+        '<div class="card">'
+        f'<div class="card-icon">{icono}</div>'
+        f'<div class="card-title">{titulo}</div>'
+        f'<div class="card-desc">{descripcion}</div>'
+        '</div>'
+    )
+
+    st.markdown(
+        html,
+        unsafe_allow_html=True
+    )
+
+
+def mostrar_titulo_seccion(texto):
+    """
+    Título centrado para los submenús.
+    """
+
+    html = (
+        '<div style="text-align:center;">'
+        f'<span class="section-title">{texto}</span>'
+        '</div>'
+    )
+
+    st.markdown(
+        html,
         unsafe_allow_html=True
     )
 
@@ -259,7 +249,7 @@ def menu_principal():
     with st.container():
 
         # ============================================================
-        # 🔐 OBTENER INFORMACIÓN DEL USUARIO
+        # DATOS DEL USUARIO
         # ============================================================
 
         rol_usuario = st.session_state.get(
@@ -279,73 +269,51 @@ def menu_principal():
 
 
         # ============================================================
-        # 🏪 TÍTULO PRINCIPAL
+        # ENCABEZADO
         # ============================================================
 
         st.markdown(
-            f"""
-            <div class="main-title">
-                🛒 {nombre_tienda}
-            </div>
-            """,
+            f'<div class="main-title">🛒 {nombre_tienda}</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f'<div class="welcome-text">✨ Bienvenida, {nombre_empleado} ✨</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            '<div class="subtitle">Gestiona tu negocio de manera eficiente</div>',
             unsafe_allow_html=True
         )
 
 
         # ============================================================
-        # 👋 MENSAJE DE BIENVENIDA
-        # ============================================================
-
-        st.markdown(
-            f"""
-            <div class="welcome-text">
-                ✨ Bienvenida, {nombre_empleado} ✨
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            """
-            <div class="subtitle">
-                Gestiona tu negocio de manera eficiente
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-
-        # ============================================================
-        # 🔐 CREAR MACRO MÓDULO SI NO EXISTE
+        # INICIALIZAR MACRO MÓDULO
         # ============================================================
 
         if "macro_modulo" not in st.session_state:
-
             st.session_state["macro_modulo"] = None
 
 
         # ============================================================
-        # 👑 MENÚ PARA ADMINISTRADOR
+        # 👑 MENÚ ADMINISTRADOR
         # ============================================================
 
         if rol_usuario == "Administrador":
 
             # ========================================================
-            # 🏠 MENÚ PRINCIPAL DEL ADMINISTRADOR
+            # PANEL PRINCIPAL ADMIN
             # ========================================================
 
             if st.session_state["macro_modulo"] is None:
 
-                st.info(
-                    "👑 Panel de Administrador"
-                )
+                st.info("👑 Panel de Administrador")
 
 
                 # ====================================================
                 # PRIMERA FILA
-                #
-                # 📦 Inventario Global
-                # 💰 Comparativa de Costos
+                # Inventario + Comparativa
                 # ====================================================
 
                 col1, col2 = st.columns(
@@ -354,31 +322,16 @@ def menu_principal():
                 )
 
 
-                # ====================================================
-                # 📦 INVENTARIO GLOBAL
-                # ====================================================
+                # ----------------------------------------------------
+                # INVENTARIO GLOBAL
+                # ----------------------------------------------------
 
                 with col1:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                📦
-                            </div>
-
-                            <div class="macro-title">
-                                Inventario Global
-                            </div>
-
-                            <div class="macro-desc">
-                                Ver inventario de todas las tiendas
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "📦",
+                        "Inventario Global",
+                        "Ver inventario de todas las tiendas"
                     )
 
                     if st.button(
@@ -387,36 +340,20 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state.module = "Inventario"
-
+                        st.session_state["module"] = "Inventario"
                         st.rerun()
 
 
-                # ====================================================
-                # 💰 COMPARATIVA DE COSTOS
-                # ====================================================
+                # ----------------------------------------------------
+                # COMPARATIVA DE COSTOS
+                # ----------------------------------------------------
 
                 with col2:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                💰
-                            </div>
-
-                            <div class="macro-title">
-                                Comparativa de Costos
-                            </div>
-
-                            <div class="macro-desc">
-                                Comparar precios unitarios entre tiendas
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "💰",
+                        "Comparativa de Costos",
+                        "Comparar precios unitarios entre tiendas"
                     )
 
                     if st.button(
@@ -425,20 +362,17 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state.module = "ComparativaInv"
-
+                        st.session_state["module"] = "ComparativaInv"
                         st.rerun()
 
 
-                # Separación visual entre filas
+                # Separación entre filas
                 st.markdown("<br>", unsafe_allow_html=True)
 
 
                 # ====================================================
                 # SEGUNDA FILA
-                #
-                # 👑 Administración
-                # 📊 Reportes Globales
+                # Administración + Reportes
                 # ====================================================
 
                 col3, col4 = st.columns(
@@ -447,31 +381,16 @@ def menu_principal():
                 )
 
 
-                # ====================================================
-                # 👑 ADMINISTRACIÓN
-                # ====================================================
+                # ----------------------------------------------------
+                # ADMINISTRACIÓN
+                # ----------------------------------------------------
 
                 with col3:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                👑
-                            </div>
-
-                            <div class="macro-title">
-                                Administración
-                            </div>
-
-                            <div class="macro-desc">
-                                Gestionar tiendas y usuarios
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "👑",
+                        "Administración",
+                        "Gestionar tiendas y usuarios"
                     )
 
                     if st.button(
@@ -480,36 +399,20 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state.module = "GestionAdmin"
-
+                        st.session_state["module"] = "GestionAdmin"
                         st.rerun()
 
 
-                # ====================================================
-                # 📊 REPORTES GLOBALES
-                # ====================================================
+                # ----------------------------------------------------
+                # REPORTES GLOBALES
+                # ----------------------------------------------------
 
                 with col4:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                📊
-                            </div>
-
-                            <div class="macro-title">
-                                Reportes Globales
-                            </div>
-
-                            <div class="macro-desc">
-                                Reportes de ventas de todas las tiendas
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "📊",
+                        "Reportes Globales",
+                        "Reportes de ventas de todas las tiendas"
                     )
 
                     if st.button(
@@ -518,171 +421,100 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state[
-                            "macro_modulo"
-                        ] = "reportes"
-
+                        st.session_state["macro_modulo"] = "reportes"
                         st.rerun()
 
 
             # ========================================================
-            # 📊 SUBMENÚ DE REPORTES DEL ADMINISTRADOR
+            # REPORTES ADMINISTRADOR
             # ========================================================
 
             elif st.session_state["macro_modulo"] == "reportes":
 
-                with st.container():
+                mostrar_titulo_seccion(
+                    "📊 Consulta tus reportes"
+                )
 
-                    st.markdown(
-                        """
-                        <div style="text-align: center;">
-                            <span class="section-title">
-                                📊 Consulta tus reportes
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                col1, col2, col3 = st.columns(
+                    3,
+                    gap="large"
+                )
+
+
+                # ----------------------------------------------------
+                # REPORTE VENTAS
+                # ----------------------------------------------------
+
+                with col1:
+
+                    mostrar_tarjeta(
+                        "📈",
+                        "Reporte de Ventas",
+                        "Análisis detallado de ventas"
                     )
 
+                    if st.button(
+                        "Ver Reporte",
+                        key="reporte_ventas_btn",
+                        use_container_width=True
+                    ):
 
-                    # =================================================
-                    # TRES COLUMNAS PARA LOS REPORTES
-                    # =================================================
+                        st.session_state["module"] = "Reportes_Ventas"
+                        st.rerun()
 
-                    col1, col2, col3 = st.columns(
-                        3,
-                        gap="large"
+
+                # ----------------------------------------------------
+                # REPORTE COMPRAS
+                # ----------------------------------------------------
+
+                with col2:
+
+                    mostrar_tarjeta(
+                        "📥",
+                        "Reporte de Compras",
+                        "Análisis detallado de compras"
                     )
 
+                    if st.button(
+                        "Ver Reporte de Compras",
+                        key="reporte_compras_btn",
+                        use_container_width=True
+                    ):
 
-                    # =================================================
-                    # 📈 REPORTE DE VENTAS
-                    # =================================================
-
-                    with col1:
-
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    📈
-                                </div>
-
-                                <div class="card-title">
-                                    Reporte de Ventas
-                                </div>
-
-                                <div class="card-desc">
-                                    Análisis detallado de ventas
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Ver Reporte",
-                            key="reporte_ventas_btn",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Reportes_Ventas"
-
-                            st.rerun()
+                        st.session_state["module"] = "Reportes_Compras"
+                        st.rerun()
 
 
-                    # =================================================
-                    # 📥 REPORTE DE COMPRAS
-                    # =================================================
+                # ----------------------------------------------------
+                # PRODUCTOS MÁS / MENOS VENDIDOS
+                # ----------------------------------------------------
 
-                    with col2:
+                with col3:
 
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    📥
-                                </div>
-
-                                <div class="card-title">
-                                    Reporte de Compras
-                                </div>
-
-                                <div class="card-desc">
-                                    Análisis detallado de compras
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Ver Reporte de Compras",
-                            key="reporte_compras_btn",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Reportes_Compras"
-
-                            st.rerun()
-
-
-                    # =================================================
-                    # 🏆 PRODUCTOS MÁS Y MENOS VENDIDOS
-                    # =================================================
-
-                    with col3:
-
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    🏆
-                                </div>
-
-                                <div class="card-title">
-                                    Productos más y menos vendidos
-                                </div>
-
-                                <div class="card-desc">
-                                    Productos más populares
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Ver Ranking",
-                            key="top_30_btn",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "productomasvendido"
-
-                            st.rerun()
-
-
-                    st.markdown(
-                        "</div>",
-                        unsafe_allow_html=True
+                    mostrar_tarjeta(
+                        "🏆",
+                        "Productos más y menos vendidos",
+                        "Productos más populares"
                     )
+
+                    if st.button(
+                        "Ver Ranking",
+                        key="top_30_btn",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "productomasvendido"
+                        st.rerun()
 
 
         # ============================================================
-        # 👩‍💼 MENÚ PARA VENDEDOR
+        # 👩‍💼 MENÚ VENDEDOR
         # ============================================================
 
         else:
 
             # ========================================================
-            # MENÚ PRINCIPAL DEL VENDEDOR
+            # PANEL PRINCIPAL VENDEDOR
             # ========================================================
 
             if st.session_state["macro_modulo"] is None:
@@ -697,31 +529,16 @@ def menu_principal():
                 )
 
 
-                # ====================================================
-                # ✏️ INGRESAR INFORMACIÓN
-                # ====================================================
+                # ----------------------------------------------------
+                # INGRESAR INFORMACIÓN
+                # ----------------------------------------------------
 
                 with col1:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                ✏️
-                            </div>
-
-                            <div class="macro-title">
-                                Ingresa nueva información
-                            </div>
-
-                            <div class="macro-desc">
-                                Registra productos, empleados y categorías
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "✏️",
+                        "Ingresa nueva información",
+                        "Registra productos, empleados y categorías"
                     )
 
                     if st.button(
@@ -730,38 +547,20 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state[
-                            "macro_modulo"
-                        ] = "registro"
-
+                        st.session_state["macro_modulo"] = "registro"
                         st.rerun()
 
 
-                # ====================================================
-                # 💸 TRANSACCIONES
-                # ====================================================
+                # ----------------------------------------------------
+                # TRANSACCIONES
+                # ----------------------------------------------------
 
                 with col2:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                💸
-                            </div>
-
-                            <div class="macro-title">
-                                Compra y vende productos
-                            </div>
-
-                            <div class="macro-desc">
-                                Registra tus compras y ventas diarias
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "💸",
+                        "Compra y vende productos",
+                        "Registra tus compras y ventas diarias"
                     )
 
                     if st.button(
@@ -770,10 +569,7 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state[
-                            "macro_modulo"
-                        ] = "transacciones"
-
+                        st.session_state["macro_modulo"] = "transacciones"
                         st.rerun()
 
 
@@ -787,31 +583,16 @@ def menu_principal():
                 )
 
 
-                # ====================================================
-                # 📋 INVENTARIO
-                # ====================================================
+                # ----------------------------------------------------
+                # INVENTARIO
+                # ----------------------------------------------------
 
                 with col3:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                📋
-                            </div>
-
-                            <div class="macro-title">
-                                Consulta tu inventario
-                            </div>
-
-                            <div class="macro-desc">
-                                Visualiza el stock actual de productos
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "📋",
+                        "Consulta tu inventario",
+                        "Visualiza el stock actual de productos"
                     )
 
                     if st.button(
@@ -820,36 +601,20 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state.module = "Inventario"
-
+                        st.session_state["module"] = "Inventario"
                         st.rerun()
 
 
-                # ====================================================
-                # 📊 REPORTES
-                # ====================================================
+                # ----------------------------------------------------
+                # REPORTES
+                # ----------------------------------------------------
 
                 with col4:
 
-                    st.markdown(
-                        """
-                        <div class="macro-card">
-
-                            <div class="macro-icon">
-                                📊
-                            </div>
-
-                            <div class="macro-title">
-                                Consulta tus reportes
-                            </div>
-
-                            <div class="macro-desc">
-                                Analiza ventas y productos más vendidos
-                            </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    mostrar_macro_tarjeta(
+                        "📊",
+                        "Consulta tus reportes",
+                        "Analiza ventas y productos más vendidos"
                     )
 
                     if st.button(
@@ -858,454 +623,255 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state[
-                            "macro_modulo"
-                        ] = "reportes"
-
+                        st.session_state["macro_modulo"] = "reportes"
                         st.rerun()
 
 
             # ========================================================
-            # ✏️ SUBMENÚ REGISTRO
+            # SUBMENÚ REGISTRO
             # ========================================================
 
             elif st.session_state["macro_modulo"] == "registro":
 
-                with st.container():
+                mostrar_titulo_seccion(
+                    "✏️ Registra información"
+                )
 
-                    st.markdown(
-                        """
-                        <div style="text-align: center;">
-                            <span class="section-title">
-                                ✏️ Registra información
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                col1, col2, col3, col4 = st.columns(4)
+
+
+                # ----------------------------------------------------
+                # PRODUCTO
+                # ----------------------------------------------------
+
+                with col1:
+
+                    mostrar_tarjeta(
+                        "📦",
+                        "Nuevo Producto",
+                        "Registra productos en el sistema"
                     )
 
+                    if st.button(
+                        "Agregar",
+                        key="btn_producto",
+                        use_container_width=True
+                    ):
 
-                    col1, col2, col3, col4 = st.columns(4)
-
-
-                    # =================================================
-                    # 📦 NUEVO PRODUCTO
-                    # =================================================
-
-                    with col1:
-
-                        st.markdown(
-                            """
-                            <div class="card">
-
-                                <div class="card-icon">
-                                    📦
-                                </div>
-
-                                <div class="card-title">
-                                    Nuevo Producto
-                                </div>
-
-                                <div class="card-desc">
-                                    Registra productos en el sistema
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Agregar",
-                            key="btn_producto",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Producto"
-
-                            st.rerun()
+                        st.session_state["module"] = "Producto"
+                        st.rerun()
 
 
-                    # =================================================
-                    # ✏️ EDITAR PRODUCTO
-                    # =================================================
+                # ----------------------------------------------------
+                # EDITAR PRODUCTO
+                # ----------------------------------------------------
 
-                    with col2:
+                with col2:
 
-                        st.markdown(
-                            """
-                            <div class="card">
-
-                                <div class="card-icon">
-                                    ✏️
-                                </div>
-
-                                <div class="card-title">
-                                    Editar Producto
-                                </div>
-
-                                <div class="card-desc">
-                                    Modifica información de productos
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Editar",
-                            key="btn_editar",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Editar"
-
-                            st.rerun()
-
-
-                    # =================================================
-                    # 👩‍💼 NUEVA SOCIA
-                    # =================================================
-
-                    with col3:
-
-                        st.markdown(
-                            """
-                            <div class="card">
-
-                                <div class="card-icon">
-                                    👩‍💼
-                                </div>
-
-                                <div class="card-title">
-                                    Nueva Socia
-                                </div>
-
-                                <div class="card-desc">
-                                    Registra nuevas usuarias
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Registrar",
-                            key="btn_empleado",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Empleado"
-
-                            st.rerun()
-
-
-                    # =================================================
-                    # 📁 CATEGORÍAS
-                    # =================================================
-
-                    with col4:
-
-                        st.markdown(
-                            """
-                            <div class="card">
-
-                                <div class="card-icon">
-                                    📁
-                                </div>
-
-                                <div class="card-title">
-                                    Gestionar Categorías
-                                </div>
-
-                                <div class="card-desc">
-                                    Administra categorías de productos
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Gestionar",
-                            key="btn_categoria",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Categoria"
-
-                            st.rerun()
-
-
-                    st.markdown(
-                        "</div>",
-                        unsafe_allow_html=True
+                    mostrar_tarjeta(
+                        "✏️",
+                        "Editar Producto",
+                        "Modifica información de productos"
                     )
+
+                    if st.button(
+                        "Editar",
+                        key="btn_editar",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Editar"
+                        st.rerun()
+
+
+                # ----------------------------------------------------
+                # EMPLEADO
+                # ----------------------------------------------------
+
+                with col3:
+
+                    mostrar_tarjeta(
+                        "👩‍💼",
+                        "Nueva Socia",
+                        "Registra nuevas usuarias"
+                    )
+
+                    if st.button(
+                        "Registrar",
+                        key="btn_empleado",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Empleado"
+                        st.rerun()
+
+
+                # ----------------------------------------------------
+                # CATEGORÍAS
+                # ----------------------------------------------------
+
+                with col4:
+
+                    mostrar_tarjeta(
+                        "📁",
+                        "Gestionar Categorías",
+                        "Administra categorías de productos"
+                    )
+
+                    if st.button(
+                        "Gestionar",
+                        key="btn_categoria",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Categoria"
+                        st.rerun()
 
 
             # ========================================================
-            # 💸 SUBMENÚ TRANSACCIONES
+            # SUBMENÚ TRANSACCIONES
             # ========================================================
 
             elif st.session_state["macro_modulo"] == "transacciones":
 
-                with st.container():
+                mostrar_titulo_seccion(
+                    "💸 Haz una compra o una venta"
+                )
 
-                    st.markdown(
-                        """
-                        <div style="text-align: center;">
-                            <span class="section-title">
-                                💸 Haz una compra o una venta
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                col1, col2 = st.columns(
+                    2,
+                    gap="large"
+                )
+
+
+                # ----------------------------------------------------
+                # VENTA
+                # ----------------------------------------------------
+
+                with col1:
+
+                    mostrar_tarjeta(
+                        "🛒",
+                        "Realizar Venta",
+                        "Registra una nueva venta de productos"
                     )
 
+                    if st.button(
+                        "Iniciar Venta",
+                        key="venta_btn",
+                        use_container_width=True
+                    ):
 
-                    col1, col2 = st.columns(
-                        2,
-                        gap="large"
+                        st.session_state["module"] = "Ventas"
+                        st.rerun()
+
+
+                # ----------------------------------------------------
+                # COMPRA
+                # ----------------------------------------------------
+
+                with col2:
+
+                    mostrar_tarjeta(
+                        "📥",
+                        "Realizar Compra",
+                        "Registra una nueva compra de productos"
                     )
 
+                    if st.button(
+                        "Iniciar Compra",
+                        key="compra_btn",
+                        use_container_width=True
+                    ):
 
-                    # =================================================
-                    # 🛒 REALIZAR VENTA
-                    # =================================================
-
-                    with col1:
-
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    🛒
-                                </div>
-
-                                <div class="card-title">
-                                    Realizar Venta
-                                </div>
-
-                                <div class="card-desc">
-                                    Registra una nueva venta de productos
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Iniciar Venta",
-                            key="venta_btn",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Ventas"
-
-                            st.rerun()
-
-
-                    # =================================================
-                    # 📥 REALIZAR COMPRA
-                    # =================================================
-
-                    with col2:
-
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    📥
-                                </div>
-
-                                <div class="card-title">
-                                    Realizar Compra
-                                </div>
-
-                                <div class="card-desc">
-                                    Registra una nueva compra de productos
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Iniciar Compra",
-                            key="compra_btn",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Compras"
-
-                            st.rerun()
-
-
-                    st.markdown(
-                        "</div>",
-                        unsafe_allow_html=True
-                    )
+                        st.session_state["module"] = "Compras"
+                        st.rerun()
 
 
             # ========================================================
-            # 📊 SUBMENÚ REPORTES DEL VENDEDOR
+            # SUBMENÚ REPORTES
             # ========================================================
 
             elif st.session_state["macro_modulo"] == "reportes":
 
-                with st.container():
+                mostrar_titulo_seccion(
+                    "📊 Consulta tus reportes"
+                )
 
-                    st.markdown(
-                        """
-                        <div style="text-align: center;">
-                            <span class="section-title">
-                                📊 Consulta tus reportes
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                col1, col2, col3 = st.columns(
+                    3,
+                    gap="large"
+                )
+
+
+                # ----------------------------------------------------
+                # REPORTE VENTAS
+                # ----------------------------------------------------
+
+                with col1:
+
+                    mostrar_tarjeta(
+                        "📈",
+                        "Reporte de Ventas",
+                        "Análisis detallado de ventas"
                     )
 
+                    if st.button(
+                        "Ver Reporte",
+                        key="reporte_ventas_btn_vendedor",
+                        use_container_width=True
+                    ):
 
-                    # =================================================
-                    # TRES COLUMNAS
-                    # =================================================
+                        st.session_state["module"] = "Reportes_Ventas"
+                        st.rerun()
 
-                    col1, col2, col3 = st.columns(
-                        3,
-                        gap="large"
+
+                # ----------------------------------------------------
+                # REPORTE COMPRAS
+                # ----------------------------------------------------
+
+                with col2:
+
+                    mostrar_tarjeta(
+                        "📥",
+                        "Reporte de Compras",
+                        "Análisis detallado de compras"
                     )
 
+                    if st.button(
+                        "Ver Reporte de Compras",
+                        key="reporte_compras_btn_vendedor",
+                        use_container_width=True
+                    ):
 
-                    # =================================================
-                    # 📈 REPORTE VENTAS
-                    # =================================================
-
-                    with col1:
-
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    📈
-                                </div>
-
-                                <div class="card-title">
-                                    Reporte de Ventas
-                                </div>
-
-                                <div class="card-desc">
-                                    Análisis detallado de ventas
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Ver Reporte",
-                            key="reporte_ventas_btn_vendedor",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Reportes_Ventas"
-
-                            st.rerun()
+                        st.session_state["module"] = "Reportes_Compras"
+                        st.rerun()
 
 
-                    # =================================================
-                    # 📥 REPORTE COMPRAS
-                    # =================================================
+                # ----------------------------------------------------
+                # RANKING
+                # ----------------------------------------------------
 
-                    with col2:
+                with col3:
 
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    📥
-                                </div>
-
-                                <div class="card-title">
-                                    Reporte de Compras
-                                </div>
-
-                                <div class="card-desc">
-                                    Análisis detallado de compras
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Ver Reporte de Compras",
-                            key="reporte_compras_btn_vendedor",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "Reportes_Compras"
-
-                            st.rerun()
-
-
-                    # =================================================
-                    # 🏆 PRODUCTOS MÁS / MENOS VENDIDOS
-                    # =================================================
-
-                    with col3:
-
-                        st.markdown(
-                            """
-                            <div class="card" style="padding: 30px;">
-
-                                <div class="card-icon">
-                                    🏆
-                                </div>
-
-                                <div class="card-title">
-                                    Productos más y menos vendidos
-                                </div>
-
-                                <div class="card-desc">
-                                    Productos más populares
-                                </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if st.button(
-                            "Ver Ranking",
-                            key="top_30_btn_vendedor",
-                            use_container_width=True
-                        ):
-
-                            st.session_state.module = "productomasvendido"
-
-                            st.rerun()
-
-
-                    st.markdown(
-                        "</div>",
-                        unsafe_allow_html=True
+                    mostrar_tarjeta(
+                        "🏆",
+                        "Productos más y menos vendidos",
+                        "Productos más populares"
                     )
+
+                    if st.button(
+                        "Ver Ranking",
+                        key="top_30_btn_vendedor",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "productomasvendido"
+                        st.rerun()
 
 
         # ============================================================
-        # 🔙 BOTÓN PARA VOLVER ATRÁS EN SUBMENÚ
+        # 🔙 BOTÓN VOLVER DE LOS SUBMENÚS
         # ============================================================
 
         if st.session_state["macro_modulo"]:
@@ -1317,10 +883,7 @@ def menu_principal():
                 use_container_width=True
             ):
 
-                st.session_state[
-                    "macro_modulo"
-                ] = None
-
+                st.session_state["macro_modulo"] = None
                 st.rerun()
 
 
@@ -1341,7 +904,7 @@ def menu_principal():
                 use_container_width=True
             ):
 
-                for key in [
+                claves_sesion = [
                     "logueado",
                     "usuario",
                     "module",
@@ -1351,10 +914,11 @@ def menu_principal():
                     "nivel_usuario",
                     "id_empleado",
                     "id_tienda"
-                ]:
+                ]
+
+                for key in claves_sesion:
 
                     if key in st.session_state:
-
                         del st.session_state[key]
 
                 st.success(
@@ -1364,15 +928,11 @@ def menu_principal():
                 st.rerun()
 
 
-# ─────────────────────────────────────────────
-# 🔄 ROUTER DE MÓDULOS CON VERIFICACIÓN DE ROL
-# ─────────────────────────────────────────────
+# ============================================================
+# 🔄 ROUTER DE MÓDULOS
+# ============================================================
 
 def cargar_modulo():
-
-    # ============================================================
-    # 🔐 DATOS DE SESIÓN
-    # ============================================================
 
     rol = st.session_state.get(
         "nivel_usuario",
@@ -1386,150 +946,129 @@ def cargar_modulo():
 
 
     # ============================================================
-    # 👑 MÓDULOS PERMITIDOS PARA ADMINISTRADOR
+    # MÓDULOS PERMITIDOS PARA ADMINISTRADOR
     # ============================================================
 
     modulos_permitidos_admin = [
-
         "Inventario",
-
-        # 🆕 NUEVO MÓDULO
         "ComparativaInv",
-
         "Reportes_Ventas",
-
         "productomasvendido",
-
         "GestionAdmin",
-
         "Reportes_Compras"
     ]
 
 
     # ============================================================
-    # 🏠 SI NO HAY MÓDULO → MENÚ PRINCIPAL
+    # SI NO HAY MÓDULO → MENÚ PRINCIPAL
     # ============================================================
 
-    if (
-        modulo_solicitado == ""
-        or modulo_solicitado is None
-    ):
+    if modulo_solicitado == "" or modulo_solicitado is None:
 
         menu_principal()
-
         return
 
 
     # ============================================================
-    # ⛔ VERIFICACIÓN DE ACCESO PARA ADMINISTRADOR
+    # SEGURIDAD ADMINISTRADOR
     # ============================================================
 
     if (
         rol == "Administrador"
-        and modulo_solicitado
-        not in modulos_permitidos_admin
+        and modulo_solicitado not in modulos_permitidos_admin
     ):
 
         st.warning(
             "⚠️ No tienes acceso a este módulo como Administrador."
         )
 
-        st.session_state[
-            "macro_modulo"
-        ] = None
+        st.session_state["macro_modulo"] = None
 
         if "module" in st.session_state:
-
-            del st.session_state[
-                "module"
-            ]
+            del st.session_state["module"]
 
         st.rerun()
-
         return
 
 
     # ============================================================
-    # 🔀 ROUTER DE MÓDULOS
+    # ROUTER
     # ============================================================
 
-    if st.session_state.module == "Ventas":
+    if modulo_solicitado == "Ventas":
 
         modulo_ventas()
 
 
-    elif st.session_state.module == "Compras":
+    elif modulo_solicitado == "Compras":
 
         modulo_compras()
 
 
-    elif st.session_state.module == "Producto":
+    elif modulo_solicitado == "Producto":
 
         modulo_producto()
 
 
-    elif st.session_state.module == "Editar":
+    elif modulo_solicitado == "Editar":
 
         modulo_editar_producto()
 
 
-    elif st.session_state.module == "Dashboard":
+    elif modulo_solicitado == "Dashboard":
 
         dashboard()
 
 
-    elif st.session_state.module == "Empleado":
+    elif modulo_solicitado == "Empleado":
 
         modulo_empleado()
 
 
-    elif st.session_state.module == "Inventario":
+    elif modulo_solicitado == "Inventario":
 
         modulo_inventario()
 
 
-    # ============================================================
-    # 🆕 COMPARATIVA DE COSTOS
-    # ============================================================
-
-    elif st.session_state.module == "ComparativaInv":
+    elif modulo_solicitado == "ComparativaInv":
 
         modulo_comparativa_inv()
 
 
-    elif st.session_state.module == "Reportes_Ventas":
+    elif modulo_solicitado == "Reportes_Ventas":
 
         reporte_ventas()
 
 
-    elif st.session_state.module == "Categoria":
+    elif modulo_solicitado == "Categoria":
 
         modulo_categoria()
 
 
-    elif st.session_state.module == "GestionAdmin":
+    elif modulo_solicitado == "GestionAdmin":
 
         modulo_gestion_admin()
 
 
-    elif st.session_state.module == "productomasvendido":
+    elif modulo_solicitado == "productomasvendido":
 
         modulo_productos_mas_menos_vendidos()
 
 
-    elif st.session_state.module == "Reportes_Compras":
+    elif modulo_solicitado == "Reportes_Compras":
 
         modulo_reporte_compras()
 
 
     else:
 
+        st.session_state["module"] = None
         menu_principal()
 
 
-# ─────────────────────────────────────────────
+# ============================================================
 # 🟢 MAIN APP
-# ─────────────────────────────────────────────
+# ============================================================
 
 def app():
 
