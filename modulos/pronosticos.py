@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 
 from datetime import datetime, timedelta
 from config.conexion import obtener_conexion
@@ -38,6 +37,19 @@ UNIDADES_PESO = [
     "arroba",
     "arrobas",
 ]
+
+
+# ============================================================
+# PARÁMETROS FIJOS DEL MODELO DE REORDEN
+#
+# Antes eran configurables desde la pantalla principal, pero en la
+# práctica casi no cambian y solo agregaban ruido visual. Se dejan
+# aquí como constantes: si en algún momento necesitas ajustarlos,
+# basta con modificar estos dos valores.
+# ============================================================
+
+DIAS_REPOSICION = 7   # días que tarda en llegar un pedido nuevo
+DIAS_SEGURIDAD = 7    # colchón adicional de días de inventario
 
 
 # ============================================================
@@ -1065,8 +1077,40 @@ def construir_analisis(
 
 
 # ============================================================
-# TABLA GENERAL EN FORMATO HORIZONTAL
+# MATRIZ PRODUCTO x TIENDA (VISTA PRINCIPAL)
 # ============================================================
+
+# Etiquetas amigables -> columna real del análisis.
+# El orden de este diccionario define el orden en el multiselect.
+MAPA_INDICADORES = {
+    "Stock actual": "Stock",
+    "Duración estimada": "Cobertura",
+    "% Rotación": "Rotación %",
+    "Rotación (nivel)": "Nivel rotación",
+    "Punto de reorden": "Punto reorden",
+    "Cuánto comprar": "Compra sugerida",
+    "Recomendación": "Acción",
+    "Tendencia": "Tendencia",
+    "Próximo reorden": "Próximo reorden",
+}
+
+# Indicadores que representan una cantidad de producto y por lo
+# tanto deben mostrarse con su unidad (lb / uds).
+INDICADORES_CANTIDAD = [
+    "Stock actual",
+    "Punto de reorden",
+    "Cuánto comprar",
+]
+
+INDICADORES_DEFAULT = [
+    "Stock actual",
+    "Duración estimada",
+    "% Rotación",
+    "Punto de reorden",
+    "Cuánto comprar",
+    "Recomendación",
+]
+
 
 def construir_tabla_general(
     df,
@@ -1078,11 +1122,11 @@ def construir_tabla_general(
 
     Ejemplo:
 
-    ID | Producto |
-    Tienda 1 - Stock |
-    Tienda 1 - Cobertura |
-    Cerro de Dios - Stock |
-    Cerro de Dios - Cobertura
+    Producto |
+    Tienda 1 - Stock actual |
+    Tienda 1 - Duración estimada |
+    Tienda 2 - Stock actual |
+    Tienda 2 - Duración estimada
     """
 
     if df.empty:
@@ -1103,19 +1147,6 @@ def construir_tabla_general(
 
     resultado = productos_base.copy()
 
-    mapa_indicadores = {
-        "Stock": "Stock",
-        "Cobertura": "Cobertura",
-        "Rotación": "Nivel rotación",
-        "Rotación %": "Rotación %",
-        "Pronóstico 30 días": "Pronóstico 30d",
-        "Punto de reorden": "Punto reorden",
-        "Compra sugerida": "Compra sugerida",
-        "Próximo reorden": "Próximo reorden",
-        "Tendencia": "Tendencia",
-        "Estado / Acción": "Acción",
-    }
-
     for tienda in tiendas_seleccionadas:
 
         df_tienda = df[
@@ -1124,7 +1155,7 @@ def construir_tabla_general(
 
         for indicador in indicadores:
 
-            columna_origen = mapa_indicadores[indicador]
+            columna_origen = MAPA_INDICADORES[indicador]
 
             temp = df_tienda[
                 [
@@ -1137,13 +1168,7 @@ def construir_tabla_general(
 
             nombre_columna = f"{tienda} | {indicador}"
 
-            # Formato especial para cantidades
-            if indicador in [
-                "Stock",
-                "Pronóstico 30 días",
-                "Punto de reorden",
-                "Compra sugerida",
-            ]:
+            if indicador in INDICADORES_CANTIDAD:
                 temp[nombre_columna] = temp.apply(
                     lambda r: formatear_cantidad(
                         r[columna_origen],
@@ -1152,7 +1177,7 @@ def construir_tabla_general(
                     axis=1,
                 )
 
-            elif indicador == "Rotación %":
+            elif indicador == "% Rotación":
                 temp[nombre_columna] = temp[
                     columna_origen
                 ].apply(
@@ -1242,7 +1267,46 @@ def preparar_tabla_decision(df):
         "Acción",
     ]
 
-    return tabla[columnas]
+    return tabla[columnas].rename(columns={"Acción": "Recomendación"})
+
+
+def preparar_tabla_limpieza(df):
+    """
+    Tabla enfocada en responder una sola pregunta por producto/tienda:
+    ¿sigue teniendo sentido seguir vendiendo esto, o se debería retirar?
+    """
+
+    if df.empty:
+        return pd.DataFrame()
+
+    tabla = df.copy()
+
+    tabla["Stock actual"] = tabla.apply(
+        lambda r: formatear_cantidad(
+            r["Stock"],
+            r["Medida"]
+        ),
+        axis=1,
+    )
+
+    tabla["¿Sigue vendiendo?"] = np.where(
+        tabla["Demanda diaria"] > 0,
+        "Sí, pero muy poco",
+        "No",
+    )
+
+    columnas = [
+        "Producto",
+        "Código",
+        "Tienda",
+        "Stock actual",
+        "Última venta",
+        "Días sin vender",
+        "¿Sigue vendiendo?",
+        "Acción",
+    ]
+
+    return tabla[columnas].rename(columns={"Acción": "Recomendación"})
 
 
 # ============================================================
@@ -1260,210 +1324,6 @@ def tarjeta_resumen(icono, valor, etiqueta):
         """,
         unsafe_allow_html=True,
     )
-
-
-# ============================================================
-# GRÁFICAS
-# ============================================================
-
-def mostrar_graficas(df):
-    if df.empty:
-        st.info("No hay información para generar gráficas.")
-        return
-
-    st.markdown(
-        '<div class="section-title">📊 Análisis visual</div>',
-        unsafe_allow_html=True
-    )
-
-    opcion = st.selectbox(
-        "Gráfica:",
-        [
-            "Productos con mayor demanda",
-            "Productos con menor rotación",
-            "Compra sugerida por tienda",
-            "Productos en alerta por tienda",
-        ],
-        key="grafica_pronosticos",
-    )
-
-    # --------------------------------------------------------
-    # Mayor demanda
-    # --------------------------------------------------------
-    if opcion == "Productos con mayor demanda":
-
-        graf = (
-            df.groupby(["Producto"], as_index=False)
-            ["Pronóstico 30d"]
-            .sum()
-            .sort_values(
-                "Pronóstico 30d",
-                ascending=False
-            )
-            .head(15)
-        )
-
-        fig = px.bar(
-            graf,
-            x="Pronóstico 30d",
-            y="Producto",
-            orientation="h",
-            title="Top 15 - Demanda pronosticada próximos 30 días",
-            text_auto=".2f",
-        )
-
-        fig.update_layout(
-            yaxis={"categoryorder": "total ascending"},
-            height=500,
-            xaxis_title="Cantidad pronosticada",
-            yaxis_title="Producto",
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-    # --------------------------------------------------------
-    # Menor rotación
-    # --------------------------------------------------------
-    elif opcion == "Productos con menor rotación":
-
-        graf = df[
-            np.isfinite(df["Cobertura días"]) &
-            (df["Stock"] > 0)
-        ].copy()
-
-        graf = (
-            graf
-            .sort_values(
-                "Cobertura días",
-                ascending=False
-            )
-            .head(15)
-        )
-
-        if graf.empty:
-            st.info(
-                "No hay productos suficientes para esta gráfica."
-            )
-        else:
-            graf["Etiqueta"] = (
-                graf["Producto"] +
-                " - " +
-                graf["Tienda"]
-            )
-
-            fig = px.bar(
-                graf,
-                x="Cobertura días",
-                y="Etiqueta",
-                orientation="h",
-                title="Productos con mayor cobertura / menor movimiento",
-                text_auto=".1f",
-            )
-
-            fig.update_layout(
-                yaxis={
-                    "categoryorder": "total ascending"
-                },
-                height=550,
-                xaxis_title="Días estimados de inventario",
-                yaxis_title="",
-            )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True
-            )
-
-    # --------------------------------------------------------
-    # Compra por tienda
-    # --------------------------------------------------------
-    elif opcion == "Compra sugerida por tienda":
-
-        graf = (
-            df.groupby(
-                "Tienda",
-                as_index=False
-            )["Compra sugerida"]
-            .sum()
-            .sort_values(
-                "Compra sugerida",
-                ascending=False
-            )
-        )
-
-        fig = px.bar(
-            graf,
-            x="Tienda",
-            y="Compra sugerida",
-            title="Volumen sugerido de reposición por tienda",
-            text_auto=".2f",
-        )
-
-        fig.update_layout(
-            height=450,
-            xaxis_title="Tienda",
-            yaxis_title="Cantidad base",
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-        st.caption(
-            "ℹ️ Esta gráfica suma cantidades base. "
-            "Los productos por peso se manejan en libras y los demás "
-            "en unidades; úsala principalmente para comparar tendencias "
-            "dentro de cada tienda."
-        )
-
-    # --------------------------------------------------------
-    # Alertas por tienda
-    # --------------------------------------------------------
-    else:
-
-        df_alertas = df[
-            df["Acción"] != "🟢 Mantener"
-        ].copy()
-
-        if df_alertas.empty:
-            st.success(
-                "✅ No hay alertas de inventario."
-            )
-            return
-
-        graf = (
-            df_alertas
-            .groupby(
-                ["Tienda", "Acción"]
-            )
-            .size()
-            .reset_index(name="Productos")
-        )
-
-        fig = px.bar(
-            graf,
-            x="Tienda",
-            y="Productos",
-            color="Acción",
-            barmode="group",
-            title="Alertas de inventario por tienda",
-            text_auto=True,
-        )
-
-        fig.update_layout(
-            height=500,
-            xaxis_title="Tienda",
-            yaxis_title="Cantidad de productos",
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
 
 
 # ============================================================
@@ -1628,7 +1488,7 @@ def modulo_pronosticos():
             "de compra a la forma real en que trabajas."
         )
 
-        p1, p2, p3, p4 = st.columns(4)
+        p1, p2 = st.columns(2)
 
         with p1:
             dias_historial = st.selectbox(
@@ -1643,33 +1503,6 @@ def modulo_pronosticos():
             )
 
         with p2:
-            dias_reposicion = st.number_input(
-                "Tiempo de reposición",
-                min_value=1,
-                max_value=90,
-                value=7,
-                step=1,
-                help=(
-                    "Cuántos días suelen pasar desde "
-                    "que decides comprar hasta tener "
-                    "el producto disponible."
-                ),
-            )
-
-        with p3:
-            dias_seguridad = st.number_input(
-                "Stock de seguridad",
-                min_value=0,
-                max_value=90,
-                value=7,
-                step=1,
-                help=(
-                    "Días adicionales de inventario "
-                    "que deseas conservar como protección."
-                ),
-            )
-
-        with p4:
             cobertura_objetivo = st.number_input(
                 "Cobertura objetivo",
                 min_value=7,
@@ -1689,6 +1522,12 @@ def modulo_pronosticos():
             value=90,
             step=15,
             format="%d días",
+        )
+
+        st.caption(
+            f"ℹ️ El punto de reorden asume un tiempo de reposición fijo "
+            f"de {DIAS_REPOSICION} días y un stock de seguridad fijo de "
+            f"{DIAS_SEGURIDAD} días."
         )
 
     fecha_fin = datetime.now().date()
@@ -1777,8 +1616,8 @@ def modulo_pronosticos():
         ventas=ventas,
         fecha_fin=fecha_fin,
         dias_historial=dias_historial,
-        dias_reposicion=dias_reposicion,
-        dias_seguridad=dias_seguridad,
+        dias_reposicion=DIAS_REPOSICION,
+        dias_seguridad=DIAS_SEGURIDAD,
         cobertura_objetivo=cobertura_objetivo,
         dias_limpieza=dias_limpieza,
     )
@@ -1942,29 +1781,22 @@ def modulo_pronosticos():
         )
 
     # ========================================================
-    # GRÁFICAS
-    # ========================================================
-
-    st.markdown("---")
-
-    mostrar_graficas(
-        df_filtrado
-    )
-
-    # ========================================================
-    # TABLA GENERAL CONFIGURABLE
+    # MATRIZ PRINCIPAL: PRODUCTO x TIENDA
     # ========================================================
 
     st.markdown("---")
 
     st.markdown(
-        '<div class="section-title">📋 Inventario y rotación por producto</div>',
+        '<div class="section-title">📋 Punto de reorden y compra sugerida por tienda</div>',
         unsafe_allow_html=True
     )
 
     st.caption(
-        "Selecciona únicamente las tiendas y datos que quieras "
-        "comparar. Así evitamos mostrar una tabla demasiado saturada."
+        "Esta es la vista principal para decidir cuánto comprar: cada "
+        "fila es un producto, y puedes comparar tienda por tienda su "
+        "stock, rotación, punto de reorden y cuánto conviene comprar. "
+        "Así es fácil notar cuando un mismo producto rota distinto de "
+        "una tienda a otra."
     )
 
     nombres_tiendas = (
@@ -1985,30 +1817,12 @@ def modulo_pronosticos():
             key="tiendas_visibles_pronostico",
         )
 
-    indicadores_disponibles = [
-        "Stock",
-        "Cobertura",
-        "Rotación",
-        "Rotación %",
-        "Pronóstico 30 días",
-        "Punto de reorden",
-        "Compra sugerida",
-        "Próximo reorden",
-        "Tendencia",
-        "Estado / Acción",
-    ]
-
     with controles2:
 
         indicadores_visibles = st.multiselect(
             "👁️ Información visible",
-            options=indicadores_disponibles,
-            default=[
-                "Stock",
-                "Cobertura",
-                "Rotación",
-                "Estado / Acción",
-            ],
+            options=list(MAPA_INDICADORES.keys()),
+            default=INDICADORES_DEFAULT,
             key="indicadores_visibles_pronostico",
         )
 
@@ -2042,26 +1856,25 @@ def modulo_pronosticos():
     ):
         st.markdown(
             """
-            **Stock:** cantidad que existe actualmente.
+            **Stock actual:** cantidad que existe actualmente en esa tienda.
 
-            **Cobertura:** aproximadamente cuánto tiempo durará
-            ese inventario al ritmo de venta pronosticado.
+            **Duración estimada:** aproximadamente cuánto tiempo durará
+            ese inventario al ritmo de venta pronosticado (equivalente
+            a "compré 10 y me duraron 5 meses").
 
-            **Rotación:** indica qué tan rápido se mueve el producto.
-
-            **Rotación %:** porcentaje del stock actual que se
-            espera vender durante los próximos 30 días.
-            Puede superar 100 %, lo cual indica que el stock actual
-            no sería suficiente para cubrir la demanda pronosticada.
+            **% Rotación:** porcentaje del stock actual que se espera
+            vender durante los próximos 30 días. Puede superar 100 %,
+            lo cual indica que el stock actual no alcanzaría para cubrir
+            la demanda pronosticada.
 
             **Punto de reorden:** nivel de inventario en el cual
             conviene volver a comprar.
 
-            **Compra sugerida:** cantidad estimada necesaria para
+            **Cuánto comprar:** cantidad estimada necesaria para
             alcanzar la cobertura objetivo.
 
-            **Próximo reorden:** tiempo aproximado que falta para
-            alcanzar el punto de reorden.
+            **Recomendación:** acción sugerida para ese producto en
+            esa tienda específica.
             """
         )
 
@@ -2074,6 +1887,12 @@ def modulo_pronosticos():
     st.markdown(
         '<div class="section-title">🧠 Centro de decisiones</div>',
         unsafe_allow_html=True
+    )
+
+    st.caption(
+        "Los mismos productos de la tabla de arriba, ahora agrupados "
+        "por la acción recomendada — útil cuando quieres trabajar "
+        "una lista a la vez (por ejemplo, todo lo que hay que comprar hoy)."
     )
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
@@ -2176,7 +1995,8 @@ def modulo_pronosticos():
         else:
             st.warning(
                 "Estos productos tienen más inventario del "
-                "necesario respecto a su ritmo actual de venta."
+                "necesario respecto a su ritmo actual de venta "
+                "en esa tienda."
             )
 
             st.dataframe(
@@ -2240,12 +2060,11 @@ def modulo_pronosticos():
         else:
 
             st.error(
-                "Estos productos tienen inventario pero presentan "
-                "movimiento insuficiente o llevan demasiado tiempo "
-                "sin venderse."
+                "Estos productos tienen inventario pero llevan "
+                "demasiado tiempo sin venderse en esa tienda."
             )
 
-            tabla_limpieza = preparar_tabla_decision(
+            tabla_limpieza = preparar_tabla_limpieza(
                 datos
             )
 
@@ -2332,14 +2151,21 @@ def modulo_pronosticos():
             **Punto de reorden = demanda diaria ×
             (tiempo de reposición + stock de seguridad)**
 
-            Actualmente:
+            Se utilizan valores fijos para mantener la pantalla simple:
 
-            - Tiempo de reposición: **{dias_reposicion} días**
-            - Seguridad: **{dias_seguridad} días**
+            - Tiempo de reposición: **{DIAS_REPOSICION} días**
+            - Stock de seguridad: **{DIAS_SEGURIDAD} días**
+
+            Si en tu operación estos tiempos varían mucho de un
+            producto a otro (por ejemplo, proveedores distintos con
+            tiempos de entrega distintos), lo ideal a futuro sería
+            registrarlos por producto o por proveedor en la base de
+            datos; por ahora se manejan como un promedio general para
+            todos los productos y tiendas.
 
             ---
 
-            ### Compra sugerida
+            ### Cuánto comprar
 
             El sistema estima cuánto inventario debería existir para
             cubrir:
@@ -2356,7 +2182,7 @@ def modulo_pronosticos():
 
             Un producto puede aparecer para limpieza cuando tiene
             inventario y lleva aproximadamente **{dias_limpieza} días**
-            sin ventas suficientes.
+            sin ventas suficientes en esa tienda.
 
             ---
 
