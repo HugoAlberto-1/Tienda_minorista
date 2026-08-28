@@ -18,7 +18,7 @@ from modulos.categoria import modulo_categoria
 from modulos.gestion_admin import modulo_gestion_admin
 from modulos.productos_mas_menos_vendidos import modulo_productos_mas_menos_vendidos
 from modulos.reporte_compras import modulo_reporte_compras
-from modulos.comparativa_inv import modulo_comparativa_inv
+from modulos.comparativa_inv import modulo_comparativa_precios
 from modulos.pronosticos import modulo_pronosticos
 
 
@@ -1078,7 +1078,7 @@ def cargar_modulo():
 
     elif modulo_solicitado == "ComparativaInv":
 
-        modulo_comparativa_inv()
+        modulo_comparativa_precios()
 
 
     elif modulo_solicitado == "Reportes_Ventas":
