@@ -1112,100 +1112,70 @@ INDICADORES_DEFAULT = [
 ]
 
 
-def construir_tabla_general(
-    df,
-    tiendas_seleccionadas,
+def construir_tabla_indicadores(
+    df_subset,
+    columna_fila,
     indicadores,
+    columnas_extra=None,
+    orden_por=None,
+    ascendente=True,
 ):
     """
-    Una fila por producto y columnas dinámicas por tienda.
+    Arma una tabla ya formateada a partir de un subconjunto que
+    representa UNA sola tienda o UN solo producto:
 
-    Ejemplo:
-
-    Producto |
-    Tienda 1 - Stock actual |
-    Tienda 1 - Duración estimada |
-    Tienda 2 - Stock actual |
-    Tienda 2 - Duración estimada
+    - Si df_subset ya está filtrado a una tienda, usa
+      columna_fila="Producto" -> una fila por producto de esa tienda.
+    - Si df_subset ya está filtrado a un producto, usa
+      columna_fila="Tienda" -> una fila por tienda donde existe
+      ese producto, para poder compararlas entre sí.
     """
 
-    if df.empty:
+    if df_subset.empty:
         return pd.DataFrame()
 
-    columnas_base = [
-        "Código",
-        "Producto",
-        "Categoría",
-    ]
+    df_subset = df_subset.copy()
 
-    productos_base = (
-        df[columnas_base]
-        .drop_duplicates(subset=["Código", "Producto"])
-        .sort_values("Producto")
-        .reset_index(drop=True)
-    )
+    if orden_por is not None and orden_por in df_subset.columns:
+        df_subset = df_subset.sort_values(
+            orden_por,
+            ascending=ascendente
+        )
+    else:
+        df_subset = df_subset.sort_values(columna_fila)
 
-    resultado = productos_base.copy()
+    df_subset = df_subset.reset_index(drop=True)
 
-    for tienda in tiendas_seleccionadas:
+    columnas_extra = columnas_extra or []
 
-        df_tienda = df[
-            df["Tienda"] == tienda
-        ].copy()
+    resultado = df_subset[[columna_fila] + columnas_extra].copy()
 
-        for indicador in indicadores:
+    for indicador in indicadores:
 
-            columna_origen = MAPA_INDICADORES[indicador]
+        columna_origen = MAPA_INDICADORES[indicador]
 
-            temp = df_tienda[
-                [
-                    "Código",
-                    "Producto",
-                    columna_origen,
-                    "Medida"
-                ]
-            ].copy()
-
-            nombre_columna = f"{tienda} | {indicador}"
-
-            if indicador in INDICADORES_CANTIDAD:
-                temp[nombre_columna] = temp.apply(
-                    lambda r: formatear_cantidad(
-                        r[columna_origen],
-                        r["Medida"]
-                    ),
-                    axis=1,
-                )
-
-            elif indicador == "% Rotación":
-                temp[nombre_columna] = temp[
-                    columna_origen
-                ].apply(
-                    lambda x: (
-                        f"{x:.1f}%"
-                        if x < 999
-                        else ">999%"
-                    )
-                )
-
-            else:
-                temp[nombre_columna] = temp[
-                    columna_origen
-                ]
-
-            temp = temp[
-                [
-                    "Código",
-                    "Producto",
-                    nombre_columna
-                ]
-            ]
-
-            resultado = resultado.merge(
-                temp,
-                on=["Código", "Producto"],
-                how="left"
+        if indicador in INDICADORES_CANTIDAD:
+            resultado[indicador] = df_subset.apply(
+                lambda r: formatear_cantidad(
+                    r[columna_origen],
+                    r["Medida"]
+                ),
+                axis=1,
             )
+
+        elif indicador == "% Rotación":
+            resultado[indicador] = df_subset[
+                columna_origen
+            ].apply(
+                lambda x: (
+                    f"{x:.1f}%"
+                    if x < 999
+                    else ">999%"
+                )
+            )
+
+        else:
+            resultado[indicador] = df_subset[columna_origen]
 
     return resultado
 
@@ -1324,100 +1294,6 @@ def tarjeta_resumen(icono, valor, etiqueta):
         """,
         unsafe_allow_html=True,
     )
-
-
-# ============================================================
-# DETALLE DE PRODUCTO
-# ============================================================
-
-def mostrar_detalle_producto(df):
-    st.markdown(
-        '<div class="section-title">🔎 Análisis individual de producto</div>',
-        unsafe_allow_html=True
-    )
-
-    if df.empty:
-        return
-
-    productos = sorted(
-        df["Producto"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-    producto = st.selectbox(
-        "Selecciona un producto:",
-        productos,
-        key="detalle_producto_pronostico",
-    )
-
-    detalle = df[
-        df["Producto"] == producto
-    ].copy()
-
-    for _, fila in detalle.iterrows():
-
-        st.markdown(
-            f"#### 🏪 {fila['Tienda']}"
-        )
-
-        c1, c2, c3, c4 = st.columns(4)
-
-        with c1:
-            st.metric(
-                "Stock",
-                formatear_cantidad(
-                    fila["Stock"],
-                    fila["Medida"]
-                )
-            )
-
-        with c2:
-            st.metric(
-                "Cobertura",
-                fila["Cobertura"]
-            )
-
-        with c3:
-            st.metric(
-                "Pronóstico 30 días",
-                formatear_cantidad(
-                    fila["Pronóstico 30d"],
-                    fila["Medida"]
-                )
-            )
-
-        with c4:
-            st.metric(
-                "Compra sugerida",
-                formatear_cantidad(
-                    fila["Compra sugerida"],
-                    fila["Medida"]
-                )
-            )
-
-        st.markdown(
-            f"""
-            <div class="decision-card">
-                <strong>Rotación:</strong> {fila['Nivel rotación']}
-                &nbsp;&nbsp; | &nbsp;&nbsp;
-                <strong>Rotación proyectada:</strong> {fila['Rotación %']:.1f}%
-                <br>
-                <strong>Punto de reorden:</strong>
-                {formatear_cantidad(fila['Punto reorden'], fila['Medida'])}
-                &nbsp;&nbsp; | &nbsp;&nbsp;
-                <strong>Próximo reorden:</strong> {fila['Próximo reorden']}
-                <br>
-                <strong>Tendencia:</strong> {fila['Tendencia']}
-                &nbsp;&nbsp; | &nbsp;&nbsp;
-                <strong>Última venta:</strong> {fila['Última venta']}
-                <br><br>
-                <strong>Sugerencia:</strong> {fila['Acción']}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
 
 # ============================================================
@@ -1781,7 +1657,7 @@ def modulo_pronosticos():
         )
 
     # ========================================================
-    # MATRIZ PRINCIPAL: PRODUCTO x TIENDA
+    # VISTA POR TIENDA: TODOS LOS PRODUCTOS DE UNA TIENDA
     # ========================================================
 
     st.markdown("---")
@@ -1792,11 +1668,9 @@ def modulo_pronosticos():
     )
 
     st.caption(
-        "Esta es la vista principal para decidir cuánto comprar: cada "
-        "fila es un producto, y puedes comparar tienda por tienda su "
-        "stock, rotación, punto de reorden y cuánto conviene comprar. "
-        "Así es fácil notar cuando un mismo producto rota distinto de "
-        "una tienda a otra."
+        "Elige una tienda a la vez para ver, producto por producto, su "
+        "stock, rotación, punto de reorden y cuánto conviene comprar "
+        "en esa tienda."
     )
 
     nombres_tiendas = (
@@ -1806,57 +1680,59 @@ def modulo_pronosticos():
         .tolist()
     )
 
-    controles1, controles2 = st.columns(2)
-
-    with controles1:
-
-        tiendas_visibles = st.multiselect(
-            "🏪 Tiendas visibles",
-            options=nombres_tiendas,
-            default=nombres_tiendas,
-            key="tiendas_visibles_pronostico",
+    if not nombres_tiendas:
+        st.info(
+            "No hay tiendas disponibles con los filtros actuales."
         )
-
-    with controles2:
-
-        indicadores_visibles = st.multiselect(
-            "👁️ Información visible",
-            options=list(MAPA_INDICADORES.keys()),
-            default=INDICADORES_DEFAULT,
-            key="indicadores_visibles_pronostico",
-        )
-
-    if not tiendas_visibles:
-        st.warning(
-            "⚠️ Selecciona al menos una tienda."
-        )
-
-    elif not indicadores_visibles:
-        st.warning(
-            "⚠️ Selecciona al menos un dato para mostrar."
-        )
-
     else:
 
-        tabla_general = construir_tabla_general(
-            df_filtrado,
-            tiendas_visibles,
-            indicadores_visibles,
-        )
+        controles1, controles2 = st.columns([1, 2])
 
-        st.dataframe(
-            tabla_general,
-            use_container_width=True,
-            hide_index=True,
-            height=450,
-        )
+        with controles1:
+            tienda_vista = st.selectbox(
+                "🏪 Tienda",
+                sorted(nombres_tiendas),
+                key="tienda_vista_pronostico",
+            )
+
+        with controles2:
+            indicadores_tienda = st.multiselect(
+                "👁️ Información visible",
+                options=list(MAPA_INDICADORES.keys()),
+                default=INDICADORES_DEFAULT,
+                key="indicadores_tienda_pronostico",
+            )
+
+        df_tienda_vista = df_filtrado[
+            df_filtrado["Tienda"] == tienda_vista
+        ].copy()
+
+        if not indicadores_tienda:
+            st.warning(
+                "⚠️ Selecciona al menos un dato para mostrar."
+            )
+        else:
+            tabla_tienda = construir_tabla_indicadores(
+                df_tienda_vista,
+                columna_fila="Producto",
+                indicadores=indicadores_tienda,
+                columnas_extra=["Código"],
+                orden_por="Producto",
+            )
+
+            st.dataframe(
+                tabla_tienda,
+                use_container_width=True,
+                hide_index=True,
+                height=420,
+            )
 
     with st.expander(
         "ℹ️ ¿Cómo leer esta tabla?"
     ):
         st.markdown(
             """
-            **Stock actual:** cantidad que existe actualmente en esa tienda.
+            **Stock actual:** cantidad que existe actualmente en esta tienda.
 
             **Duración estimada:** aproximadamente cuánto tiempo durará
             ese inventario al ritmo de venta pronosticado (equivalente
@@ -1874,8 +1750,116 @@ def modulo_pronosticos():
             alcanzar la cobertura objetivo.
 
             **Recomendación:** acción sugerida para ese producto en
-            esa tienda específica.
+            esta tienda.
             """
+        )
+
+    # ========================================================
+    # COMPARATIVA: UN PRODUCTO ENTRE TODAS LAS TIENDAS
+    # ========================================================
+
+    st.markdown("---")
+
+    st.markdown(
+        '<div class="section-title">🔍 ¿En qué tienda se mueve mejor un producto?</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "Elige un producto y compáralo entre todas tus tiendas: útil "
+        "para detectar, por ejemplo, que el mismo producto rota rápido "
+        "en una tienda y casi no se mueve en otra."
+    )
+
+    productos_disponibles = sorted(
+        df_filtrado["Producto"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    if not productos_disponibles:
+        st.info(
+            "No hay productos disponibles con los filtros actuales."
+        )
+    else:
+
+        controles3, controles4 = st.columns([1, 2])
+
+        with controles3:
+            producto_comparar = st.selectbox(
+                "📦 Producto",
+                productos_disponibles,
+                key="producto_comparar_pronostico",
+            )
+
+        with controles4:
+            indicadores_producto = st.multiselect(
+                "👁️ Información visible",
+                options=list(MAPA_INDICADORES.keys()),
+                default=INDICADORES_DEFAULT,
+                key="indicadores_producto_pronostico",
+            )
+
+        df_producto_comparar = df_filtrado[
+            df_filtrado["Producto"] == producto_comparar
+        ].copy()
+
+        df_valido = df_producto_comparar[
+            np.isfinite(df_producto_comparar["Cobertura días"])
+        ]
+
+        if df_valido.empty:
+            st.info(
+                "Este producto no tiene ventas recientes en ninguna "
+                "de las tiendas donde está registrado."
+            )
+        else:
+            fila_mejor = df_valido.sort_values(
+                "Cobertura días"
+            ).iloc[0]
+
+            st.success(
+                f"📈 En **{fila_mejor['Tienda']}** es donde este "
+                f"producto rota más rápido (dura aproximadamente "
+                f"{fila_mejor['Cobertura']} al ritmo de venta actual)."
+            )
+
+            if len(df_valido) > 1:
+                fila_peor = df_valido.sort_values(
+                    "Cobertura días",
+                    ascending=False
+                ).iloc[0]
+
+                if fila_peor["Tienda"] != fila_mejor["Tienda"]:
+                    st.caption(
+                        f"🐢 En **{fila_peor['Tienda']}** es donde "
+                        f"rota más lento (dura aproximadamente "
+                        f"{fila_peor['Cobertura']})."
+                    )
+
+        if not indicadores_producto:
+            st.warning(
+                "⚠️ Selecciona al menos un dato para mostrar."
+            )
+        else:
+            tabla_producto = construir_tabla_indicadores(
+                df_producto_comparar,
+                columna_fila="Tienda",
+                indicadores=indicadores_producto,
+                orden_por="Cobertura días",
+                ascendente=True,
+            )
+
+            st.dataframe(
+                tabla_producto,
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        st.caption(
+            "La tabla está ordenada de la tienda donde el producto "
+            "rota más rápido a la que rota más lento."
         )
 
     # ========================================================
@@ -2110,16 +2094,6 @@ def modulo_pronosticos():
                 use_container_width=True,
                 hide_index=True,
             )
-
-    # ========================================================
-    # DETALLE POR PRODUCTO
-    # ========================================================
-
-    st.markdown("---")
-
-    mostrar_detalle_producto(
-        df_filtrado
-    )
 
     # ========================================================
     # EXPLICACIÓN DEL MODELO
