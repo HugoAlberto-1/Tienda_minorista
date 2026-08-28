@@ -132,10 +132,10 @@ def configurar_estilo():
 # ============================================================
 def obtener_tiendas_activas():
     """
-    Obtiene todas las tiendas activas de la base de datos.
+    Obtiene todas las tiendas activas.
 
-    Esto permite que TODAS aparezcan como columnas aunque
-    alguna no tenga compras registradas para ciertos productos.
+    De esta forma todas las tiendas aparecerán en la tabla,
+    aunque alguna no tenga compra registrada de cierto producto.
     """
 
     conn = obtener_conexion()
@@ -143,9 +143,10 @@ def obtener_tiendas_activas():
     if not conn:
         return None
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = None
 
     try:
+        cursor = conn.cursor(dictionary=True)
 
         cursor.execute(
             """
@@ -163,36 +164,36 @@ def obtener_tiendas_activas():
         return tiendas
 
     except Exception as e:
-
         st.error(
-            f"❌ Error al obtener las tiendas: {e}"
+            f"❌ Error al obtener las tiendas activas: {e}"
         )
-
         return None
 
     finally:
+        if cursor:
+            cursor.close()
 
-        cursor.close()
-        conn.close()
+        if conn:
+            conn.close()
 
 
 # ============================================================
-# 🗄️ OBTENER DATOS DE COMPRAS
+# 🗄️ OBTENER PRECIOS UNITARIOS DE COMPRA
 # ============================================================
 def obtener_datos_comparativa():
     """
-    Obtiene el PRECIO UNITARIO DE COMPRA de los productos.
+    Obtiene exclusivamente el PRECIO UNITARIO DE COMPRA.
 
-    IMPORTANTE:
-    Se utiliza ProductoxCompra.Precio_Compra.
+    Se utiliza:
+        ProductoxCompra.Precio_Compra
 
     NO se utilizan:
-    - Precio_minorista
-    - Precio_mayorista1
-    - Precio_mayorista2
+        Precio_minorista
+        Precio_mayorista1
+        Precio_mayorista2
 
-    Por lo tanto, la tabla compara cuánto PAGÓ cada tienda
-    por cada producto.
+    Por tanto, esta información representa cuánto PAGÓ
+    cada tienda por cada producto.
     """
 
     conn = obtener_conexion()
@@ -200,9 +201,10 @@ def obtener_datos_comparativa():
     if not conn:
         return None
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = None
 
     try:
+        cursor = conn.cursor(dictionary=True)
 
         query = """
             SELECT
@@ -240,17 +242,17 @@ def obtener_datos_comparativa():
         return resultados
 
     except Exception as e:
-
         st.error(
-            f"❌ Error al obtener los datos de compras: {e}"
+            f"❌ Error al obtener los precios de compra: {e}"
         )
-
         return None
 
     finally:
+        if cursor:
+            cursor.close()
 
-        cursor.close()
-        conn.close()
+        if conn:
+            conn.close()
 
 
 # ============================================================
@@ -258,21 +260,19 @@ def obtener_datos_comparativa():
 # ============================================================
 def preparar_tabla_comparativa(datos, tiendas):
     """
-    Genera la tabla:
+    Construye una tabla del tipo:
 
-    Producto | Tienda 1 | Cerro de Dios | Abasto Campesina | ...
+    Código | Producto | Tienda 1 | Cerro de Dios |
+    Abasto Campesina | Canasta Comunitaria
 
-    Cada celda muestra:
-    PRECIO UNITARIO DE COMPRA MÁS RECIENTE.
-
-    Si una tienda nunca compró el producto:
-    se mantiene como NaN y luego se muestra como "—".
+    Cada celda contiene el precio unitario de la COMPRA
+    MÁS RECIENTE del producto en esa tienda.
     """
 
-    if not datos:
+    if datos is None or len(datos) == 0:
         return pd.DataFrame()
 
-    if not tiendas:
+    if tiendas is None or len(tiendas) == 0:
         return pd.DataFrame()
 
     df = pd.DataFrame(datos)
@@ -282,7 +282,35 @@ def preparar_tabla_comparativa(datos, tiendas):
 
 
     # ============================================================
-    # CONVERTIR PRECIO A NUMÉRICO
+    # VALIDAR COLUMNAS NECESARIAS
+    # ============================================================
+
+    columnas_necesarias = [
+        "Codigo",
+        "Producto",
+        "Precio_Unitario_Compra",
+        "Id_Tienda",
+        "Tienda",
+        "Fecha",
+        "Id_Compra"
+    ]
+
+    faltantes = [
+        columna
+        for columna in columnas_necesarias
+        if columna not in df.columns
+    ]
+
+    if faltantes:
+        st.error(
+            "❌ Faltan columnas necesarias para generar "
+            f"la comparativa: {', '.join(faltantes)}"
+        )
+        return pd.DataFrame()
+
+
+    # ============================================================
+    # PRECIO UNITARIO DE COMPRA A NUMÉRICO
     # ============================================================
 
     df["Precio_Unitario_Compra"] = pd.to_numeric(
@@ -292,7 +320,7 @@ def preparar_tabla_comparativa(datos, tiendas):
 
 
     # ============================================================
-    # CONVERTIR FECHA
+    # FECHA
     # ============================================================
 
     df["Fecha"] = pd.to_datetime(
@@ -302,7 +330,17 @@ def preparar_tabla_comparativa(datos, tiendas):
 
 
     # ============================================================
-    # ORDENAR PARA QUE LA COMPRA MÁS RECIENTE QUEDE PRIMERO
+    # ID COMPRA
+    # ============================================================
+
+    df["Id_Compra"] = pd.to_numeric(
+        df["Id_Compra"],
+        errors="coerce"
+    )
+
+
+    # ============================================================
+    # ORDENAR PARA IDENTIFICAR LA COMPRA MÁS RECIENTE
     # ============================================================
 
     df = df.sort_values(
@@ -323,10 +361,18 @@ def preparar_tabla_comparativa(datos, tiendas):
 
     # ============================================================
     # TOMAR SOLO LA COMPRA MÁS RECIENTE
-    # DE CADA PRODUCTO EN CADA TIENDA
+    #
+    # Ejemplo:
+    #
+    # Tienda 1 compra arroz:
+    # Enero → $0.50
+    # Marzo → $0.47
+    # Junio → $0.42
+    #
+    # La tabla mostrará $0.42.
     # ============================================================
 
-    df_ultimos_precios = df.drop_duplicates(
+    df_ultimos = df.drop_duplicates(
         subset=[
             "Codigo",
             "Id_Tienda"
@@ -336,34 +382,50 @@ def preparar_tabla_comparativa(datos, tiendas):
 
 
     # ============================================================
-    # CREAR TABLA HORIZONTAL
+    # NOMBRES DE LAS TIENDAS ACTIVAS
     # ============================================================
 
-    tabla = df_ultimos_precios.pivot_table(
+    nombres_tiendas = []
+
+    for tienda in tiendas:
+
+        nombre = tienda.get("nombre")
+
+        if nombre and nombre not in nombres_tiendas:
+            nombres_tiendas.append(nombre)
+
+
+    if not nombres_tiendas:
+        return pd.DataFrame()
+
+
+    # ============================================================
+    # CREAR TABLA PIVOT
+    # ============================================================
+
+    tabla = df_ultimos.pivot_table(
         index=[
             "Codigo",
             "Producto"
         ],
         columns="Tienda",
         values="Precio_Unitario_Compra",
-        aggfunc="first"
+        aggfunc="first",
+        dropna=False
     )
 
 
     # ============================================================
-    # OBTENER NOMBRES DE TODAS LAS TIENDAS ACTIVAS
-    # ============================================================
-
-    nombres_tiendas = [
-        tienda["nombre"]
-        for tienda in tiendas
-    ]
-
-
-    # ============================================================
-    # OBLIGAR A QUE TODAS LAS TIENDAS APAREZCAN
+    # OBLIGAR A MOSTRAR TODAS LAS TIENDAS ACTIVAS
     #
-    # Aunque no tengan compras registradas.
+    # Si están activas:
+    #
+    # Tienda 1
+    # Cerro de Dios
+    # Abasto Campesina
+    # Canasta Comunitaria
+    #
+    # las cuatro aparecerán aunque tengan celdas vacías.
     # ============================================================
 
     tabla = tabla.reindex(
@@ -371,19 +433,19 @@ def preparar_tabla_comparativa(datos, tiendas):
     )
 
 
-    # ============================================================
-    # QUITAR NOMBRE DEL EJE DE COLUMNAS
-    # ============================================================
-
     tabla.columns.name = None
 
 
     # ============================================================
-    # REGRESAR CÓDIGO Y PRODUCTO COMO COLUMNAS
+    # VOLVER ÍNDICES A COLUMNAS NORMALES
     # ============================================================
 
     tabla = tabla.reset_index()
 
+
+    # ============================================================
+    # RENOMBRAR CÓDIGO
+    # ============================================================
 
     tabla = tabla.rename(
         columns={
@@ -393,130 +455,194 @@ def preparar_tabla_comparativa(datos, tiendas):
 
 
     # ============================================================
-    # ORDENAR PRODUCTOS ALFABÉTICAMENTE
+    # ASEGURAR ORDEN DE COLUMNAS
     # ============================================================
 
-    tabla = tabla.sort_values(
-        by="Producto",
-        key=lambda x: x.astype(str).str.lower(),
-        ascending=True
-    )
+    columnas_finales = [
+        "Código",
+        "Producto"
+    ] + nombres_tiendas
+
+    columnas_existentes = [
+        columna
+        for columna in columnas_finales
+        if columna in tabla.columns
+    ]
+
+    tabla = tabla[columnas_existentes]
+
+
+    # ============================================================
+    # ELIMINAR FILAS QUE REALMENTE NO TENGAN NINGÚN PRECIO
+    # ============================================================
+
+    columnas_precios = [
+        columna
+        for columna in nombres_tiendas
+        if columna in tabla.columns
+    ]
+
+    if columnas_precios:
+
+        tiene_algun_precio = tabla[
+            columnas_precios
+        ].notna().any(axis=1)
+
+        tabla = tabla[
+            tiene_algun_precio
+        ].copy()
+
+
+    # ============================================================
+    # ORDENAR POR NOMBRE DE PRODUCTO
+    # ============================================================
+
+    if "Producto" in tabla.columns:
+
+        tabla = tabla.sort_values(
+            by="Producto",
+            key=lambda x: x.astype(str).str.lower(),
+            ascending=True
+        )
 
 
     tabla = tabla.reset_index(
         drop=True
     )
 
-
     return tabla
 
 
 # ============================================================
-# 🟢 RESALTAR MENOR PRECIO UNITARIO DE COMPRA
+# 🟢 CREAR MATRIZ DE ESTILOS
 # ============================================================
-def resaltar_precio_menor(fila):
+def crear_estilos_precios(dataframe, columnas_tiendas):
     """
-    Encuentra el menor precio UNITARIO DE COMPRA de la fila.
+    Crea una matriz de estilos con exactamente el mismo
+    tamaño que el DataFrame.
 
-    NO analiza precio de venta.
+    Esto evita los KeyError que se estaban produciendo
+    anteriormente con Pandas Styler.
 
-    Las primeras columnas son:
-    0 = Código
-    1 = Producto
-
-    Desde la posición 2 están las tiendas.
+    Se resalta únicamente el menor PRECIO UNITARIO DE COMPRA
+    de cada producto.
     """
 
-    estilos = [
-        ""
-    ] * len(fila)
-
-
-    # ============================================================
-    # TOMAR SOLO PRECIOS DE LAS TIENDAS
-    # ============================================================
-
-    precios = pd.to_numeric(
-        fila.iloc[2:],
-        errors="coerce"
+    estilos = pd.DataFrame(
+        "",
+        index=dataframe.index,
+        columns=dataframe.columns
     )
 
 
-    # ============================================================
-    # IGNORAR TIENDAS SIN COMPRA REGISTRADA
-    # ============================================================
-
-    precios_validos = precios.dropna()
-
-
-    if precios_validos.empty:
+    if not columnas_tiendas:
         return estilos
 
 
     # ============================================================
-    # MENOR PRECIO DE COMPRA
+    # RECORRER PRODUCTO POR PRODUCTO
     # ============================================================
 
-    precio_minimo = precios_validos.min()
+    for indice in dataframe.index:
+
+        precios = {}
+
+        for columna in columnas_tiendas:
+
+            if columna not in dataframe.columns:
+                continue
+
+            valor = dataframe.at[
+                indice,
+                columna
+            ]
+
+            try:
+
+                if pd.notna(valor):
+
+                    precio = float(valor)
+
+                    precios[columna] = precio
+
+            except (ValueError, TypeError):
+
+                continue
 
 
-    # ============================================================
-    # RESALTAR EN VERDE
-    # ============================================================
+        # ========================================================
+        # SI EL PRODUCTO NO TIENE PRECIOS, NO HACER NADA
+        # ========================================================
 
-    for posicion, precio in enumerate(
-        precios,
-        start=2
-    ):
+        if not precios:
+            continue
 
-        if (
-            pd.notna(precio)
-            and precio == precio_minimo
-        ):
 
-            estilos[posicion] = (
-                "background-color: #d4edda;"
-                "color: #155724;"
-                "font-weight: bold;"
-                "border: 1px solid #28a745;"
-            )
+        # ========================================================
+        # ENCONTRAR MENOR PRECIO UNITARIO DE COMPRA
+        # ========================================================
+
+        precio_minimo = min(
+            precios.values()
+        )
+
+
+        # ========================================================
+        # RESALTAR LA O LAS TIENDAS CON MENOR COSTO
+        # ========================================================
+
+        for columna, precio in precios.items():
+
+            if precio == precio_minimo:
+
+                estilos.at[
+                    indice,
+                    columna
+                ] = (
+                    "background-color: #d4edda;"
+                    "color: #155724;"
+                    "font-weight: bold;"
+                    "border: 1px solid #28a745;"
+                )
 
 
     return estilos
 
 
 # ============================================================
-# 💰 FORMATO MONEDA
+# 💰 FORMATEAR PRECIO
 # ============================================================
 def formato_moneda(valor):
     """
-    Ejemplo:
+    Convierte:
 
-    0.40 -> $0.40
+    0.4 → $0.40
 
     Si no existe compra:
 
-    NaN -> —
+    NaN → —
     """
 
     if pd.isna(valor):
         return "—"
 
     try:
-
         return f"${float(valor):,.2f}"
 
     except (ValueError, TypeError):
-
-        return valor
+        return str(valor)
 
 
 # ============================================================
-# 📋 MOSTRAR TABLA
+# 📋 MOSTRAR TABLA COMPARATIVA
 # ============================================================
-def mostrar_tabla_comparativa(tabla):
+def mostrar_tabla_comparativa(tabla, nombres_tiendas):
+    """
+    Muestra la tabla comparativa y resalta
+    el menor precio unitario de compra.
+    """
 
-    if tabla.empty:
+    if tabla is None or tabla.empty:
 
         st.info(
             "ℹ️ No hay compras registradas para generar "
@@ -527,48 +653,92 @@ def mostrar_tabla_comparativa(tabla):
 
 
     # ============================================================
+    # COPIA SEGURA
+    # ============================================================
+
+    tabla_mostrar = tabla.copy()
+
+
+    # ============================================================
     # IDENTIFICAR COLUMNAS DE TIENDAS
+    #
+    # Solamente usamos tiendas que realmente estén
+    # presentes en la tabla.
     # ============================================================
 
     columnas_tiendas = [
-        columna
-        for columna in tabla.columns
-        if columna not in [
-            "Código",
-            "Producto"
-        ]
+        tienda
+        for tienda in nombres_tiendas
+        if tienda in tabla_mostrar.columns
     ]
 
 
     # ============================================================
-    # CREAR ESTILO
+    # CONVERTIR TODAS LAS COLUMNAS DE PRECIOS A NUMÉRICO
     # ============================================================
 
-    tabla_estilizada = tabla.style.apply(
-        resaltar_precio_menor,
-        axis=1
+    for columna in columnas_tiendas:
+
+        tabla_mostrar[columna] = pd.to_numeric(
+            tabla_mostrar[columna],
+            errors="coerce"
+        )
+
+
+    # ============================================================
+    # CREAR MATRIZ DE ESTILOS
+    # ============================================================
+
+    matriz_estilos = crear_estilos_precios(
+        tabla_mostrar,
+        columnas_tiendas
     )
 
 
     # ============================================================
-    # FORMATO DE MONEDA
+    # CREAR STYLER
     # ============================================================
 
-    tabla_estilizada = tabla_estilizada.format(
-        {
-            columna: formato_moneda
-            for columna in columnas_tiendas
-        },
-        na_rep="—"
+    tabla_estilizada = tabla_mostrar.style
+
+
+    # ============================================================
+    # APLICAR LOS ESTILOS
+    #
+    # axis=None permite aplicar una matriz completa de estilos
+    # con las mismas filas y columnas del DataFrame.
+    # ============================================================
+
+    tabla_estilizada = tabla_estilizada.apply(
+        lambda _: matriz_estilos,
+        axis=None
     )
 
 
     # ============================================================
-    # ALINEAR PRECIOS
+    # FORMATO DE PRECIOS
+    # ============================================================
+
+    formatos = {}
+
+    for columna in columnas_tiendas:
+
+        formatos[columna] = formato_moneda
+
+
+    if formatos:
+
+        tabla_estilizada = tabla_estilizada.format(
+            formatos,
+            na_rep="—"
+        )
+
+
+    # ============================================================
+    # ALINEACIÓN GENERAL
     # ============================================================
 
     tabla_estilizada = tabla_estilizada.set_properties(
-        subset=columnas_tiendas,
         **{
             "text-align": "center"
         }
@@ -576,22 +746,30 @@ def mostrar_tabla_comparativa(tabla):
 
 
     # ============================================================
-    # ALINEAR PRODUCTO Y CÓDIGO
+    # CÓDIGO Y PRODUCTO A LA IZQUIERDA
     # ============================================================
 
-    tabla_estilizada = tabla_estilizada.set_properties(
-        subset=[
-            "Código",
-            "Producto"
-        ],
-        **{
-            "text-align": "left"
-        }
-    )
+    columnas_texto = []
+
+    if "Código" in tabla_mostrar.columns:
+        columnas_texto.append("Código")
+
+    if "Producto" in tabla_mostrar.columns:
+        columnas_texto.append("Producto")
+
+
+    if columnas_texto:
+
+        tabla_estilizada = tabla_estilizada.set_properties(
+            subset=columnas_texto,
+            **{
+                "text-align": "left"
+            }
+        )
 
 
     # ============================================================
-    # MOSTRAR DATAFRAME
+    # MOSTRAR
     # ============================================================
 
     st.dataframe(
@@ -630,7 +808,7 @@ def modulo_comparativa_inv():
 
 
     # ============================================================
-    # 🔐 VALIDAR SESIÓN
+    # 🔐 VERIFICAR SESIÓN
     # ============================================================
 
     if not st.session_state.get(
@@ -638,7 +816,8 @@ def modulo_comparativa_inv():
     ):
 
         st.error(
-            "❌ No has iniciado sesión."
+            "❌ No has iniciado sesión. "
+            "Inicia sesión primero."
         )
 
         st.markdown("---")
@@ -649,7 +828,6 @@ def modulo_comparativa_inv():
         ):
 
             st.session_state["module"] = None
-
             st.rerun()
 
         return
@@ -681,7 +859,6 @@ def modulo_comparativa_inv():
         ):
 
             st.session_state["module"] = None
-
             st.rerun()
 
         return
@@ -697,9 +874,9 @@ def modulo_comparativa_inv():
         'Para cada producto se muestra el '
         '<strong>precio unitario al que cada tienda compró el producto</strong> '
         'en su compra más reciente.<br><br>'
-        'No se utilizan precios de venta minorista ni mayorista. '
-        'La comparación se realiza únicamente con el '
-        '<strong>precio unitario de compra</strong>.'
+        'La comparación utiliza únicamente el '
+        '<strong>precio unitario de compra</strong>. '
+        'No se utilizan precios de venta minorista ni mayorista.'
         '</div>',
         unsafe_allow_html=True
     )
@@ -719,7 +896,7 @@ def modulo_comparativa_inv():
 
     st.markdown(
         '<div class="section-description">'
-        'Las filas representan productos y cada columna representa una tienda activa del sistema.'
+        'Cada fila representa un producto y cada columna representa una tienda activa del sistema.'
         '</div>',
         unsafe_allow_html=True
     )
@@ -732,19 +909,20 @@ def modulo_comparativa_inv():
     st.markdown(
         '<div class="legend-box">'
         '<span class="legend-color"></span>'
-        '<strong>Menor costo de compra:</strong> '
-        'la celda verde indica la tienda que registró el menor precio unitario de compra para ese producto.'
+        '<strong>Menor costo unitario de compra:</strong> '
+        'la celda verde identifica la tienda que registró '
+        'el menor precio unitario de compra para ese producto.'
         '</div>',
         unsafe_allow_html=True
     )
 
 
     # ============================================================
-    # ⏳ CARGAR TIENDAS
+    # ⏳ CARGAR INFORMACIÓN
     # ============================================================
 
     with st.spinner(
-        "Cargando tiendas y precios de compra..."
+        "Cargando tiendas y precios unitarios de compra..."
     ):
 
         tiendas = obtener_tiendas_activas()
@@ -753,18 +931,19 @@ def modulo_comparativa_inv():
 
 
     # ============================================================
-    # ERROR DE TIENDAS
+    # ERROR AL OBTENER TIENDAS
     # ============================================================
 
     if tiendas is None:
 
         st.error(
-            "❌ No fue posible obtener las tiendas."
+            "❌ No fue posible obtener la información "
+            "de las tiendas."
         )
 
 
     # ============================================================
-    # NO EXISTEN TIENDAS ACTIVAS
+    # SIN TIENDAS
     # ============================================================
 
     elif len(tiendas) == 0:
@@ -781,125 +960,138 @@ def modulo_comparativa_inv():
     elif datos is None:
 
         st.error(
-            "❌ No fue posible cargar los precios de compra."
+            "❌ No fue posible obtener los precios "
+            "unitarios de compra."
         )
 
 
     # ============================================================
-    # NO EXISTEN COMPRAS
-    # ============================================================
-
-    elif len(datos) == 0:
-
-        st.info(
-            "ℹ️ Las tiendas existen, pero todavía no hay "
-            "compras registradas para realizar la comparativa."
-        )
-
-
-    # ============================================================
-    # GENERAR TABLA
+    # NOMBRES DE LAS TIENDAS
     # ============================================================
 
     else:
 
-        tabla_comparativa = preparar_tabla_comparativa(
-            datos,
-            tiendas
-        )
+        nombres_tiendas = []
+
+        for tienda in tiendas:
+
+            nombre = tienda.get("nombre")
+
+            if nombre and nombre not in nombres_tiendas:
+                nombres_tiendas.append(nombre)
 
 
-        if tabla_comparativa.empty:
+        # ========================================================
+        # MOSTRAR LAS TIENDAS DETECTADAS
+        # ========================================================
+
+        if nombres_tiendas:
+
+            st.caption(
+                "🏪 Tiendas incluidas: "
+                + " • ".join(nombres_tiendas)
+            )
+
+
+        # ========================================================
+        # NO HAY COMPRAS
+        # ========================================================
+
+        if len(datos) == 0:
 
             st.info(
-                "ℹ️ No existen datos suficientes para "
-                "generar la comparativa."
+                "ℹ️ Las tiendas están registradas, pero todavía "
+                "no existen compras para generar la comparativa."
             )
+
+
+        # ========================================================
+        # GENERAR TABLA
+        # ========================================================
 
         else:
 
-            # ====================================================
-            # INFORMACIÓN GENERAL
-            # ====================================================
-
-            total_productos = len(
-                tabla_comparativa
-            )
-
-            total_tiendas = len(
+            tabla_comparativa = preparar_tabla_comparativa(
+                datos,
                 tiendas
             )
 
 
-            col1, col2 = st.columns(2)
+            if tabla_comparativa.empty:
 
-
-            with col1:
-
-                st.metric(
-                    label="📦 Productos comparados",
-                    value=total_productos
+                st.info(
+                    "ℹ️ No existen datos suficientes para "
+                    "generar la comparativa."
                 )
 
+            else:
 
-            with col2:
+                # ================================================
+                # MÉTRICAS
+                # ================================================
 
-                st.metric(
-                    label="🏪 Tiendas activas",
-                    value=total_tiendas
+                total_productos = len(
+                    tabla_comparativa
                 )
 
-
-            # ====================================================
-            # MOSTRAR NOMBRES DE TIENDAS
-            # ====================================================
-
-            nombres_tiendas = [
-                tienda["nombre"]
-                for tienda in tiendas
-            ]
-
-
-            st.caption(
-                "Tiendas incluidas: "
-                + " • ".join(
+                total_tiendas = len(
                     nombres_tiendas
                 )
-            )
 
 
-            st.markdown("---")
+                col1, col2 = st.columns(2)
 
 
-            # ====================================================
-            # MOSTRAR TABLA
-            # ====================================================
+                with col1:
 
-            mostrar_tabla_comparativa(
-                tabla_comparativa
-            )
+                    st.metric(
+                        label="📦 Productos comparados",
+                        value=total_productos
+                    )
 
 
-            # ====================================================
-            # ACLARACIONES
-            # ====================================================
+                with col2:
 
-            st.caption(
-                "🟢 Verde = menor precio unitario de compra "
-                "registrado para ese producto."
-            )
+                    st.metric(
+                        label="🏪 Tiendas activas",
+                        value=total_tiendas
+                    )
 
-            st.caption(
-                "— = esa tienda no tiene una compra registrada "
-                "para ese producto."
-            )
+
+                st.markdown("---")
+
+
+                # ================================================
+                # TABLA
+                # ================================================
+
+                mostrar_tabla_comparativa(
+                    tabla_comparativa,
+                    nombres_tiendas
+                )
+
+
+                # ================================================
+                # ACLARACIONES
+                # ================================================
+
+                st.caption(
+                    "🟢 Verde = menor precio UNITARIO DE COMPRA "
+                    "registrado para ese producto."
+                )
+
+                st.caption(
+                    "— = esa tienda no tiene una compra "
+                    "registrada para ese producto."
+                )
 
 
     # ============================================================
-    # 🔙 VOLVER AL MENÚ
+    # 🔙 VOLVER
     # ============================================================
 
     st.markdown("---")
+
 
     col1, col2, col3 = st.columns(
         [1, 2, 1]
