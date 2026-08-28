@@ -19,6 +19,7 @@ from modulos.gestion_admin import modulo_gestion_admin
 from modulos.productos_mas_menos_vendidos import modulo_productos_mas_menos_vendidos
 from modulos.reporte_compras import modulo_reporte_compras
 from modulos.comparativa_inv import modulo_comparativa_inv
+from modulos.pronosticos import modulo_pronosticos
 
 
 # ============================================================
@@ -316,8 +317,8 @@ def menu_principal():
                 # Inventario + Comparativa
                 # ====================================================
 
-                col1, col2 = st.columns(
-                    2,
+                col1, col2, col_pron = st.columns(
+                    3,
                     gap="large"
                 )
 
@@ -366,6 +367,28 @@ def menu_principal():
                         st.rerun()
 
 
+                # ----------------------------------------------------
+                # PRONÓSTICOS Y PUNTO DE REORDEN
+                # ----------------------------------------------------
+
+                with col_pron:
+
+                    mostrar_macro_tarjeta(
+                        "📈",
+                        "Pronósticos y Reorden",
+                        "Rotación, cobertura, alertas y compras sugeridas"
+                    )
+
+                    if st.button(
+                        "📦 Ver pronósticos",
+                        key="btn_pronosticos_admin",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Pronosticos"
+                        st.rerun()
+
+
                 # Separación entre filas
                 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -375,8 +398,8 @@ def menu_principal():
                 # Administración + Reportes
                 # ====================================================
 
-                col3, col4 = st.columns(
-                    2,
+                col3, col4, col5 = st.columns(
+                    3,
                     gap="large"
                 )
 
@@ -624,6 +647,28 @@ def menu_principal():
                     ):
 
                         st.session_state["macro_modulo"] = "reportes"
+                        st.rerun()
+
+
+                # ----------------------------------------------------
+                # PRONÓSTICOS Y PUNTO DE REORDEN
+                # ----------------------------------------------------
+
+                with col5:
+
+                    mostrar_macro_tarjeta(
+                        "📈",
+                        "Pronósticos y Reorden",
+                        "Rotación, cobertura, alertas y compras sugeridas"
+                    )
+
+                    if st.button(
+                        "📦 Ver pronósticos",
+                        key="btn_pronosticos_vendedor",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Pronosticos"
                         st.rerun()
 
 
@@ -955,7 +1000,8 @@ def cargar_modulo():
         "Reportes_Ventas",
         "productomasvendido",
         "GestionAdmin",
-        "Reportes_Compras"
+        "Reportes_Compras",
+        "Pronosticos"
     ]
 
 
@@ -1058,6 +1104,11 @@ def cargar_modulo():
     elif modulo_solicitado == "Reportes_Compras":
 
         modulo_reporte_compras()
+
+
+    elif modulo_solicitado == "Pronosticos":
+
+        modulo_pronosticos()
 
 
     else:
