@@ -1389,57 +1389,57 @@ def modulo_pronosticos():
     # Parámetros
     # --------------------------------------------------------
 
-    with st.expander(
-        "⚙️ Configuración del pronóstico y reorden",
-        expanded=False
-    ):
+    st.markdown(
+        '<div class="section-title">⚙️ Configuración del pronóstico y reorden</div>',
+        unsafe_allow_html=True
+    )
 
-        st.caption(
-            "Estos parámetros permiten adaptar la recomendación "
-            "de compra a la forma real en que trabajas."
+    st.caption(
+        "Estos parámetros permiten adaptar la recomendación "
+        "de compra a la forma real en que trabajas."
+    )
+
+    p1, p2 = st.columns(2)
+
+    with p1:
+        dias_historial = st.selectbox(
+            "Historial de ventas",
+            [30, 60, 90, 180, 365],
+            index=2,
+            format_func=lambda x: f"{x} días",
+            help=(
+                "Período utilizado para analizar "
+                "la demanda reciente."
+            ),
         )
 
-        p1, p2 = st.columns(2)
-
-        with p1:
-            dias_historial = st.selectbox(
-                "Historial de ventas",
-                [30, 60, 90, 180, 365],
-                index=2,
-                format_func=lambda x: f"{x} días",
-                help=(
-                    "Período utilizado para analizar "
-                    "la demanda reciente."
-                ),
-            )
-
-        with p2:
-            cobertura_objetivo = st.number_input(
-                "Cobertura objetivo",
-                min_value=7,
-                max_value=180,
-                value=30,
-                step=1,
-                help=(
-                    "Cantidad de días que deseas cubrir "
-                    "con cada reposición."
-                ),
-            )
-
-        dias_limpieza = st.slider(
-            "Considerar producto para limpieza si lleva sin vender:",
-            min_value=30,
-            max_value=365,
-            value=90,
-            step=15,
-            format="%d días",
+    with p2:
+        cobertura_objetivo = st.number_input(
+            "Cobertura objetivo",
+            min_value=7,
+            max_value=180,
+            value=30,
+            step=1,
+            help=(
+                "Cantidad de días que deseas cubrir "
+                "con cada reposición."
+            ),
         )
 
-        st.caption(
-            f"ℹ️ El punto de reorden asume un tiempo de reposición fijo "
-            f"de {DIAS_REPOSICION} días y un stock de seguridad fijo de "
-            f"{DIAS_SEGURIDAD} días."
-        )
+    dias_limpieza = st.slider(
+        "Considerar producto para limpieza si lleva sin vender:",
+        min_value=30,
+        max_value=365,
+        value=90,
+        step=15,
+        format="%d días",
+    )
+
+    st.caption(
+        f"ℹ️ El punto de reorden asume un tiempo de reposición fijo "
+        f"de {DIAS_REPOSICION} días y un stock de seguridad fijo de "
+        f"{DIAS_SEGURIDAD} días."
+    )
 
     fecha_fin = datetime.now().date()
 
@@ -1548,59 +1548,24 @@ def modulo_pronosticos():
         unsafe_allow_html=True
     )
 
-    f1, f2 = st.columns([2, 1])
-
-    with f1:
-        buscador = st.text_input(
-            "🔎 Buscar producto",
-            placeholder=(
-                "Escribe nombre o código de barras..."
-            ),
-            key="buscar_producto_pronostico",
+    categoria_lista = (
+        ["Todas"] +
+        sorted(
+            df["Categoría"]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
         )
+    )
 
-    with f2:
-        categoria_lista = (
-            ["Todas"] +
-            sorted(
-                df["Categoría"]
-                .dropna()
-                .astype(str)
-                .unique()
-                .tolist()
-            )
-        )
-
-        categoria = st.selectbox(
-            "📁 Categoría",
-            categoria_lista,
-            key="categoria_pronostico",
-        )
+    categoria = st.selectbox(
+        "📁 Categoría",
+        categoria_lista,
+        key="categoria_pronostico",
+    )
 
     df_filtrado = df.copy()
-
-    if buscador:
-        texto = buscador.strip().lower()
-
-        df_filtrado = df_filtrado[
-            df_filtrado["Producto"]
-            .astype(str)
-            .str.lower()
-            .str.contains(
-                texto,
-                na=False,
-                regex=False
-            )
-            |
-            df_filtrado["Código"]
-            .astype(str)
-            .str.lower()
-            .str.contains(
-                texto,
-                na=False,
-                regex=False
-            )
-        ]
 
     if categoria != "Todas":
         df_filtrado = df_filtrado[
