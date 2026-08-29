@@ -145,11 +145,24 @@ def configurar_estilo():
             border-radius: 8px;
         }}
 
-        .stSelectbox > div > div > div {{
+        .stSelectbox div[data-baseweb="select"] *,
+        .stMultiSelect div[data-baseweb="select"] * {{
             color: white !important;
         }}
 
-        .stSelectbox svg {{
+        .stSelectbox input,
+        .stMultiSelect input {{
+            color: white !important;
+        }}
+
+        .stSelectbox input::placeholder,
+        .stMultiSelect input::placeholder {{
+            color: #dbe7f5 !important;
+            opacity: 1 !important;
+        }}
+
+        .stSelectbox svg,
+        .stMultiSelect svg {{
             fill: white !important;
         }}
 
@@ -1081,7 +1094,6 @@ def construir_analisis(
 # ============================================================
 
 # Etiquetas amigables -> columna real del análisis.
-# El orden de este diccionario define el orden en el multiselect.
 MAPA_INDICADORES = {
     "Stock actual": "Stock",
     "Duración estimada": "Cobertura",
@@ -1102,6 +1114,7 @@ INDICADORES_CANTIDAD = [
     "Cuánto comprar",
 ]
 
+# Set fijo de indicadores que se muestran en las tablas principales.
 INDICADORES_DEFAULT = [
     "Stock actual",
     "Duración estimada",
@@ -1178,6 +1191,28 @@ def construir_tabla_indicadores(
             resultado[indicador] = df_subset[columna_origen]
 
     return resultado
+
+
+def calcular_altura_tabla(
+    n_filas,
+    alto_fila=35,
+    alto_encabezado=38,
+    minimo=120,
+    maximo=480,
+):
+    """
+    Calcula una altura razonable para st.dataframe según la
+    cantidad de filas que va a mostrar, para no dejar espacio en
+    blanco cuando hay pocos productos ni cortar la tabla cuando
+    hay muchos (a partir de cierto punto se activa el scroll).
+    """
+
+    if n_filas <= 0:
+        return minimo
+
+    altura = alto_encabezado + (n_filas * alto_fila)
+
+    return int(min(maximo, max(minimo, altura)))
 
 
 # ============================================================
@@ -1686,46 +1721,30 @@ def modulo_pronosticos():
         )
     else:
 
-        controles1, controles2 = st.columns([1, 2])
-
-        with controles1:
-            tienda_vista = st.selectbox(
-                "🏪 Tienda",
-                sorted(nombres_tiendas),
-                key="tienda_vista_pronostico",
-            )
-
-        with controles2:
-            indicadores_tienda = st.multiselect(
-                "👁️ Información visible",
-                options=list(MAPA_INDICADORES.keys()),
-                default=INDICADORES_DEFAULT,
-                key="indicadores_tienda_pronostico",
-            )
+        tienda_vista = st.selectbox(
+            "🏪 Tienda",
+            sorted(nombres_tiendas),
+            key="tienda_vista_pronostico",
+        )
 
         df_tienda_vista = df_filtrado[
             df_filtrado["Tienda"] == tienda_vista
         ].copy()
 
-        if not indicadores_tienda:
-            st.warning(
-                "⚠️ Selecciona al menos un dato para mostrar."
-            )
-        else:
-            tabla_tienda = construir_tabla_indicadores(
-                df_tienda_vista,
-                columna_fila="Producto",
-                indicadores=indicadores_tienda,
-                columnas_extra=["Código"],
-                orden_por="Producto",
-            )
+        tabla_tienda = construir_tabla_indicadores(
+            df_tienda_vista,
+            columna_fila="Producto",
+            indicadores=INDICADORES_DEFAULT,
+            columnas_extra=["Código"],
+            orden_por="Producto",
+        )
 
-            st.dataframe(
-                tabla_tienda,
-                use_container_width=True,
-                hide_index=True,
-                height=420,
-            )
+        st.dataframe(
+            tabla_tienda,
+            use_container_width=True,
+            hide_index=True,
+            height=calcular_altura_tabla(len(tabla_tienda)),
+        )
 
     with st.expander(
         "ℹ️ ¿Cómo leer esta tabla?"
@@ -1755,13 +1774,13 @@ def modulo_pronosticos():
         )
 
     # ========================================================
-    # COMPARATIVA: UN PRODUCTO ENTRE TODAS LAS TIENDAS
+    # COMPARATIVO DE ROTACIÓN DE UN PRODUCTO ENTRE TIENDAS
     # ========================================================
 
     st.markdown("---")
 
     st.markdown(
-        '<div class="section-title">🔍 ¿En qué tienda se mueve mejor un producto?</div>',
+        '<div class="section-title">📊 Comparativo de rotación de un producto entre tiendas</div>',
         unsafe_allow_html=True
     )
 
@@ -1784,22 +1803,11 @@ def modulo_pronosticos():
         )
     else:
 
-        controles3, controles4 = st.columns([1, 2])
-
-        with controles3:
-            producto_comparar = st.selectbox(
-                "📦 Producto",
-                productos_disponibles,
-                key="producto_comparar_pronostico",
-            )
-
-        with controles4:
-            indicadores_producto = st.multiselect(
-                "👁️ Información visible",
-                options=list(MAPA_INDICADORES.keys()),
-                default=INDICADORES_DEFAULT,
-                key="indicadores_producto_pronostico",
-            )
+        producto_comparar = st.selectbox(
+            "📦 Producto",
+            productos_disponibles,
+            key="producto_comparar_pronostico",
+        )
 
         df_producto_comparar = df_filtrado[
             df_filtrado["Producto"] == producto_comparar
@@ -1838,24 +1846,20 @@ def modulo_pronosticos():
                         f"{fila_peor['Cobertura']})."
                     )
 
-        if not indicadores_producto:
-            st.warning(
-                "⚠️ Selecciona al menos un dato para mostrar."
-            )
-        else:
-            tabla_producto = construir_tabla_indicadores(
-                df_producto_comparar,
-                columna_fila="Tienda",
-                indicadores=indicadores_producto,
-                orden_por="Cobertura días",
-                ascendente=True,
-            )
+        tabla_producto = construir_tabla_indicadores(
+            df_producto_comparar,
+            columna_fila="Tienda",
+            indicadores=INDICADORES_DEFAULT,
+            orden_por="Cobertura días",
+            ascendente=True,
+        )
 
-            st.dataframe(
-                tabla_producto,
-                use_container_width=True,
-                hide_index=True,
-            )
+        st.dataframe(
+            tabla_producto,
+            use_container_width=True,
+            hide_index=True,
+            height=calcular_altura_tabla(len(tabla_producto)),
+        )
 
         st.caption(
             "La tabla está ordenada de la tienda donde el producto "
