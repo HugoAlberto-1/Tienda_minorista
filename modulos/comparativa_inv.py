@@ -736,14 +736,138 @@ def obtener_precio_verde_producto(codigo_producto, tiendas):
 
 
 # ============================================================
-# 🔄 REINICIAR CAMPOS DEL EVALUADOR
+# 💵 PARSEAR VALORES DE DINERO
 # ============================================================
-def reiniciar_campos_evaluador():
+def parsear_dinero(valor):
     """
-    Limpia los valores temporales del evaluador.
+    Convierte texto monetario a float aceptando formatos comunes:
+
+        0,00
+        0.00
+        23
+        23,50
+        23.50
+        1,100.00
+        1.100,00
+
+    No guarda el valor en BD. Solo lo interpreta temporalmente.
     """
-    st.session_state.pop("evaluador_precio_unitario", None)
-    st.session_state.pop("evaluador_costo_extra", None)
+    if valor is None:
+        return None
+
+    texto = str(valor).strip()
+
+    if texto == "":
+        return None
+
+    # Quitar símbolos y espacios que el usuario pueda escribir.
+    texto = (
+        texto.replace("$", "")
+        .replace(" ", "")
+        .replace("\u00a0", "")
+    )
+
+    # Solo permitir dígitos, punto, coma y signo negativo.
+    caracteres_validos = set("0123456789.,-")
+    if any(c not in caracteres_validos for c in texto):
+        return None
+
+    # No aceptamos negativos para precios/costos.
+    if texto.startswith("-"):
+        return None
+
+    # Si existen punto y coma, el último separador se interpreta
+    # como decimal y el otro como separador de miles.
+    if "." in texto and "," in texto:
+        ultimo_punto = texto.rfind(".")
+        ultima_coma = texto.rfind(",")
+
+        if ultimo_punto > ultima_coma:
+            # Ejemplo: 1,100.00
+            texto = texto.replace(",", "")
+        else:
+            # Ejemplo: 1.100,00
+            texto = texto.replace(".", "")
+            texto = texto.replace(",", ".")
+
+    elif "," in texto:
+        partes = texto.split(",")
+
+        if len(partes) > 2:
+            # Ejemplo: 1,100,000 -> separadores de miles
+            texto = "".join(partes)
+        elif len(partes) == 2:
+            izquierda, derecha = partes
+
+            # Si hay exactamente 3 dígitos después de la coma y
+            # la parte izquierda tiene contenido, lo tratamos como miles:
+            # 1,100 -> 1100
+            #
+            # En cualquier otro caso lo tratamos como decimal:
+            # 0,00 -> 0.00
+            # 23,5 -> 23.5
+            # 23,50 -> 23.50
+            if len(derecha) == 3 and izquierda not in ("", "0"):
+                texto = izquierda + derecha
+            else:
+                texto = izquierda + "." + derecha
+
+    elif "." in texto:
+        partes = texto.split(".")
+
+        if len(partes) > 2:
+            # Ejemplo: 1.100.000 -> separadores de miles
+            texto = "".join(partes)
+        elif len(partes) == 2:
+            izquierda, derecha = partes
+
+            # 1.100 se interpreta como 1100.
+            # 0.00 / 23.50 se interpretan como decimales.
+            if len(derecha) == 3 and izquierda not in ("", "0"):
+                texto = izquierda + derecha
+
+    try:
+        numero = float(texto)
+    except (TypeError, ValueError):
+        return None
+
+    if numero < 0:
+        return None
+
+    return numero
+
+
+# ============================================================
+# 💰 FORMATEAR VALOR PARA MOSTRAR
+# ============================================================
+def formatear_dinero_box(valor):
+    if valor is None:
+        return ""
+    return f"${valor:,.2f}"
+
+
+# ============================================================
+# 🔄 LIMPIAR ESTADO TEMPORAL DEL EVALUADOR
+# ============================================================
+def limpiar_estado_evaluador():
+    """
+    Elimina de session_state todos los valores temporales usados por
+    Precio unitario, Costo extra y Costo total.
+
+    Esto evita que un producto nuevo herede cualquier dato del anterior.
+    """
+    claves_a_borrar = [
+        clave
+        for clave in list(st.session_state.keys())
+        if (
+            clave.startswith("evaluador_precio_")
+            or clave.startswith("evaluador_extra_")
+            or clave.startswith("evaluador_total_")
+        )
+    ]
+
+    for clave in claves_a_borrar:
+        st.session_state.pop(clave, None)
 
 
 # ============================================================
@@ -761,7 +885,11 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
     Herramienta temporal para comparar un precio ofrecido por un nuevo
     proveedor contra el precio verde actual.
 
-    No guarda información ni modifica la base de datos.
+    IMPORTANTE:
+    - No ejecuta INSERT, UPDATE ni DELETE.
+    - No guarda precios, costos ni resultados en la base de datos.
+    - Los valores existen únicamente durante la interacción actual.
+    - Al cambiar de producto se eliminan los campos temporales anteriores.
     """
     if not tiendas or not catalogo_productos:
         return
@@ -793,15 +921,11 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
 
     opciones_codigos = list(etiquetas_productos.keys())
 
-    # Las 4 columnas existen para conservar el diseño,
-    # pero Costo extra y Costo total NO se dibujan hasta validar el precio.
-    col_producto, col_precio, col_extra, col_total = st.columns(
-        [1.55, 1, 1, 1]
-    )
+    # --------------------------------------------------------
+    # NOMBRE DEL PRODUCTO
+    # --------------------------------------------------------
+    col_producto, col_precio = st.columns([1.55, 1])
 
-    # --------------------------------------------------------
-    # PRODUCTO
-    # --------------------------------------------------------
     with col_producto:
         st.markdown(
             '<div class="evaluador-label">Nombre del producto</div>',
@@ -822,18 +946,24 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
 
     # --------------------------------------------------------
-    # REINICIO REAL AL CAMBIAR DE PRODUCTO
+    # DETECTAR CAMBIO DE PRODUCTO Y REINICIAR CAMPOS
     # --------------------------------------------------------
-    # Se compara el producto actual contra el último producto evaluado.
-    # Si cambió, se limpian Precio unitario y Costo extra ANTES de crear
-    # esos widgets, evitando que aparezca el valor del producto anterior.
     producto_anterior = st.session_state.get(
-        "evaluador_producto_anterior"
+        "_evaluador_producto_anterior"
     )
 
     if codigo_evaluar != producto_anterior:
-        reiniciar_campos_evaluador()
-        st.session_state["evaluador_producto_anterior"] = codigo_evaluar
+        limpiar_estado_evaluador()
+
+        # Incrementar versión obliga a Streamlit a crear campos totalmente
+        # nuevos, sin reutilizar el contenido de widgets anteriores.
+        st.session_state["_evaluador_version"] = (
+            st.session_state.get("_evaluador_version", 0) + 1
+        )
+
+        st.session_state["_evaluador_producto_anterior"] = codigo_evaluar
+
+    version = st.session_state.get("_evaluador_version", 0)
 
     precio_verde = None
     tienda_verde = None
@@ -853,19 +983,16 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
             unsafe_allow_html=True
         )
 
-        precio_unitario = st.number_input(
+        precio_texto = st.text_input(
             "Precio unitario nuevo",
-            min_value=0.0,
-            value=None,
-            step=0.01,
-            format="%.2f",
+            value="",
             placeholder="Digite el precio",
             disabled=(
                 codigo_evaluar is None
                 or precio_verde is None
             ),
             label_visibility="collapsed",
-            key="evaluador_precio_unitario"
+            key=f"evaluador_precio_{version}"
         )
 
         if precio_verde is not None:
@@ -873,75 +1000,10 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
                 f"Actual: ${precio_verde:,.2f}"
             )
 
-    # --------------------------------------------------------
-    # VALIDAR PRECIO UNITARIO
-    # --------------------------------------------------------
-    precio_unitario_valido = (
-        precio_verde is not None
-        and precio_unitario is not None
-        and precio_unitario > 0
-        and precio_unitario < precio_verde
-    )
+    precio_unitario = parsear_dinero(precio_texto)
 
     # --------------------------------------------------------
-    # COSTO EXTRA Y COSTO TOTAL
-    # --------------------------------------------------------
-    # IMPORTANTE:
-    # Estas dos cajas NO aparecen mientras el precio unitario:
-    # - esté vacío
-    # - sea igual al actual
-    # - sea mayor al actual
-    #
-    # Solo aparecen cuando el precio unitario nuevo ya fue validado
-    # como MENOR que el valor verde.
-    costo_extra = None
-    costo_total = None
-
-    if precio_unitario_valido:
-        with col_extra:
-            st.markdown(
-                '<div class="evaluador-label">Costo extra</div>',
-                unsafe_allow_html=True
-            )
-
-            costo_extra = st.number_input(
-                "Costo extra",
-                min_value=0.0,
-                value=None,
-                step=0.01,
-                format="%.2f",
-                placeholder="Digite el costo extra",
-                label_visibility="collapsed",
-                key="evaluador_costo_extra"
-            )
-
-        if costo_extra is not None:
-            costo_total = (
-                float(precio_unitario)
-                + float(costo_extra)
-            )
-
-        with col_total:
-            st.markdown(
-                '<div class="evaluador-label">Costo total</div>',
-                unsafe_allow_html=True
-            )
-
-            st.text_input(
-                "Costo total calculado",
-                value=(
-                    f"${costo_total:,.2f}"
-                    if costo_total is not None
-                    else ""
-                ),
-                placeholder="Se calcula al terminar",
-                disabled=True,
-                label_visibility="collapsed",
-                key=f"evaluador_total_visual_{codigo_evaluar}"
-            )
-
-    # --------------------------------------------------------
-    # MENSAJES DE DECISIÓN
+    # VALIDACIONES BÁSICAS DEL PRECIO
     # --------------------------------------------------------
     if codigo_evaluar is None:
         return
@@ -956,8 +1018,19 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # Mientras Precio unitario esté vacío, no mostramos mensajes.
-    if precio_unitario is None or precio_unitario <= 0:
+    # No hacer nada mientras el usuario no haya digitado un precio.
+    if precio_texto.strip() == "":
+        return
+
+    # Si escribió letras o un formato que no puede interpretarse.
+    if precio_unitario is None:
+        st.markdown(
+            '<div class="aviso-caro">'
+            '⚠️ <strong>Ingresa únicamente un valor de dinero válido.</strong> '
+            'Puedes usar formatos como 23.50, 23,50, 1,100.00 o 1.100,00.'
+            '</div>',
+            unsafe_allow_html=True
+        )
         return
 
     nombre_producto = etiquetas_productos.get(
@@ -965,7 +1038,9 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         str(codigo_evaluar)
     ).split("  |  Código:")[0]
 
-    # Si el precio nuevo es mayor, avisar y NO mostrar los otros campos.
+    # --------------------------------------------------------
+    # PRECIO MAYOR
+    # --------------------------------------------------------
     if precio_unitario > precio_verde:
         st.markdown(
             f'<div class="aviso-caro">'
@@ -979,7 +1054,9 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # Si es igual, tampoco se muestran Costo extra ni Costo total.
+    # --------------------------------------------------------
+    # PRECIO IGUAL
+    # --------------------------------------------------------
     if precio_unitario == precio_verde:
         st.markdown(
             f'<div class="aviso-neutral">'
@@ -990,13 +1067,71 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         )
         return
 
-    # Si el precio unitario es menor, NO se recomienda cambiar todavía.
-    # Primero esperamos a que el usuario termine de ingresar Costo extra
-    # y exista un Costo total.
-    if costo_total is None:
+    # --------------------------------------------------------
+    # PRECIO MENOR: AHORA SÍ MOSTRAR COSTO EXTRA Y COSTO TOTAL
+    # --------------------------------------------------------
+    col_extra, col_total = st.columns(2)
+
+    with col_extra:
+        st.markdown(
+            '<div class="evaluador-label">Costo extra</div>',
+            unsafe_allow_html=True
+        )
+
+        costo_extra_texto = st.text_input(
+            "Costo extra",
+            value="",
+            placeholder="Digite el costo extra",
+            label_visibility="collapsed",
+            key=f"evaluador_extra_{version}"
+        )
+
+    costo_extra = parsear_dinero(costo_extra_texto)
+
+    costo_total = None
+
+    # Solo calcular cuando el usuario realmente haya ingresado un valor.
+    # 0, 0.00 y 0,00 son valores válidos.
+    if costo_extra_texto.strip() != "" and costo_extra is not None:
+        costo_total = (
+            float(precio_unitario)
+            + float(costo_extra)
+        )
+
+    with col_total:
+        st.markdown(
+            '<div class="evaluador-label">Costo total</div>',
+            unsafe_allow_html=True
+        )
+
+        st.text_input(
+            "Costo total calculado",
+            value=formatear_dinero_box(costo_total),
+            placeholder="Se calcula automáticamente",
+            disabled=True,
+            label_visibility="collapsed",
+            key=f"evaluador_total_{version}"
+        )
+
+    # Si Costo extra está vacío, todavía NO mostramos decisión.
+    if costo_extra_texto.strip() == "":
         return
 
-    # Solo aquí, después de calcular el Costo total, se emite la decisión.
+    # Validación del formato de Costo extra.
+    if costo_extra is None:
+        st.markdown(
+            '<div class="aviso-caro">'
+            '⚠️ <strong>Ingresa un costo extra válido.</strong> '
+            'Puedes escribir 0, 0.00, 0,00, 25.50, 25,50, '
+            '1,100.00 o 1.100,00.'
+            '</div>',
+            unsafe_allow_html=True
+        )
+        return
+
+    # --------------------------------------------------------
+    # DECISIÓN FINAL: SOLO DESPUÉS DEL COSTO TOTAL
+    # --------------------------------------------------------
     if costo_total < precio_verde:
         ahorro = precio_verde - costo_total
 
