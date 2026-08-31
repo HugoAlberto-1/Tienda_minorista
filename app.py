@@ -575,14 +575,14 @@ def menu_principal():
                                 "Registra una nueva compra de productos"
                             )
         
-                            if st.button(
+                        if st.button(
                                 "Iniciar Compra",
                                 key="compra_btn",
                                 use_container_width=True
                             ):
         
-                                st.session_state["module"] = "Compras"
-                                st.rerun()
+                            st.session_state["module"] = "Compras"
+                            st.rerun()
 
         # ============================================================
         # 👩‍💼 MENÚ VENDEDOR
