@@ -424,6 +424,7 @@ def menu_principal():
 
                         st.session_state["module"] = "GestionAdmin"
                         st.rerun()
+                
                 with col4: 
                     mostrar_macro_tarjeta(
                         "💰",
@@ -437,7 +438,7 @@ def menu_principal():
                         use_container_width=True
                     ):
 
-                        st.session_state["module"] = "Transacciones"
+                        st.session_state["module"] = "transacciones"
                         st.rerun()
                 # ----------------------------------------------------
                 # REPORTES GLOBALES
