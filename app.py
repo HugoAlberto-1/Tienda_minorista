@@ -545,7 +545,7 @@ def menu_principal():
                         # VENTA
                         # ----------------------------------------------------
         
-                 with col1:
+                with col1:
         
                     mostrar_tarjeta(
                                 "🛒",
