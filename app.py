@@ -1126,6 +1126,14 @@ def cargar_modulo():
 
         modulo_pronosticos()
 
+    elif modulo_solicitado == "Compras":
+
+        modulo_compras()
+
+    elif modulo_solicitado == "Ventas":
+
+        modulo_ventas()
+
 
     else:
 
