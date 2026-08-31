@@ -427,18 +427,18 @@ def menu_principal():
                 
                 with col4: 
                     mostrar_macro_tarjeta(
-                        "💰",
-                        "Transacciones",
-                        "Comprar y vender productos"
+                        "💸",
+                        "Compra y vende productos",
+                        "Registra tus compras y ventas diarias"
                     )
 
                     if st.button(
-                        "Comprar y vender",
-                        key="btn_gestion_admin",
+                        "🛒 Comprar/Vender",
+                        key="btn_transacciones",
                         use_container_width=True
                     ):
 
-                        st.session_state["module"] = "transacciones"
+                        st.session_state["macro_modulo"] = "transacciones"
                         st.rerun()
                 # ----------------------------------------------------
                 # REPORTES GLOBALES
