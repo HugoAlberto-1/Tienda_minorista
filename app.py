@@ -567,22 +567,22 @@ def menu_principal():
                         # COMPRA
                         # ----------------------------------------------------
         
-                 with col2:
+                with col2:
         
-                      mostrar_tarjeta(
+                    mostrar_tarjeta(
                                 "📥",
                                 "Realizar Compra",
                                 "Registra una nueva compra de productos"
                             )
         
-                        if st.button(
+                    if st.button(
                                 "Iniciar Compra",
                                 key="compra_btn",
                                 use_container_width=True
                             ):
         
-                            st.session_state["module"] = "Compras"
-                            st.rerun()
+                        st.session_state["module"] = "Compras"
+                        st.rerun()
 
         # ============================================================
         # 👩‍💼 MENÚ VENDEDOR
