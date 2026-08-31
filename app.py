@@ -529,7 +529,7 @@ def menu_principal():
                         st.session_state["module"] = "productomasvendido"
                         st.rerun()
 
-         elif st.session_state["macro_modulo"] == "transacciones":
+             elif st.session_state["macro_modulo"] == "transacciones":
         
                         mostrar_titulo_seccion(
                             "💸 Haz una compra o una venta"
