@@ -430,7 +430,7 @@ def menu_principal():
                 # REPORTES GLOBALES
                 # ----------------------------------------------------
 
-                with col4:
+                with col5:
 
                     mostrar_macro_tarjeta(
                         "📊",
