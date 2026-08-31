@@ -553,13 +553,13 @@ def menu_principal():
                                 "Registra una nueva venta de productos"
                             )
         
-                            if st.button(
+                    if st.button(
                                 "Iniciar Venta",
                                 key="venta_btn",
                                 use_container_width=True
                             ):
         
-                                st.session_state["module"] = "Ventas"
+                       st.session_state["module"] = "Ventas"
                                 st.rerun()
         
         
