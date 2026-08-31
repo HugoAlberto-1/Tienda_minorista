@@ -559,8 +559,8 @@ def menu_principal():
                                 use_container_width=True
                             ):
         
-                       st.session_state["module"] = "Ventas"
-                                st.rerun()
+                        st.session_state["module"] = "Ventas"
+                        st.rerun()
         
         
                         # ----------------------------------------------------
