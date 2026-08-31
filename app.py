@@ -446,22 +446,7 @@ def menu_principal():
 
                         st.session_state["macro_modulo"] = "reportes"
                         st.rerun()
-                with col5:
-
-                    mostrar_macro_tarjeta(
-                        "📊",
-                        "Transacciones",
-                        "Compra y vende productos"
-                    )
-
-                    if st.button(
-                        "📈 Ver reportes",
-                        key="btn_reportes_admin",
-                        use_container_width=True
-                    ):
-
-                        st.session_state["macro_modulo"] = "transacciones"
-                        st.rerun()
+                
             
             # ========================================================
             # REPORTES ADMINISTRADOR
