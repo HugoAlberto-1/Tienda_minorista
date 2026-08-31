@@ -424,8 +424,21 @@ def menu_principal():
 
                         st.session_state["module"] = "GestionAdmin"
                         st.rerun()
+                with col4: 
+                    mostrar_macro_tarjeta(
+                        "💰",
+                        "Transacciones",
+                        "Comprar y vender productos"
+                    )
 
+                    if st.button(
+                        "Comprar y vender",
+                        key="btn_gestion_admin",
+                        use_container_width=True
+                    ):
 
+                        st.session_state["module"] = "Transacciones"
+                        st.rerun()
                 # ----------------------------------------------------
                 # REPORTES GLOBALES
                 # ----------------------------------------------------
