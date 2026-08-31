@@ -1018,7 +1018,9 @@ def cargar_modulo():
         "productomasvendido",
         "GestionAdmin",
         "Reportes_Compras",
-        "Pronosticos"
+        "Pronosticos",
+        "Compras",
+        "Ventas"
     ]
 
 
