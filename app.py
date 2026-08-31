@@ -447,23 +447,6 @@ def menu_principal():
                         st.session_state["macro_modulo"] = "reportes"
                         st.rerun()
 
-                with col5:
-
-                    mostrar_macro_tarjeta(
-                        "💸",
-                        "Compra y vende productos",
-                        "Registra tus compras y ventas diarias"
-                    )
-
-                    if st.button(
-                        "🛒 Comprar/Vender",
-                        key="btn_transacciones",
-                        use_container_width=True
-                    ):
-
-                        st.session_state["macro_modulo"] = "transacciones"
-                        st.rerun()
-
             
             # ========================================================
             # REPORTES ADMINISTRADOR
@@ -546,6 +529,60 @@ def menu_principal():
                         st.session_state["module"] = "productomasvendido"
                         st.rerun()
 
+         elif st.session_state["macro_modulo"] == "transacciones":
+        
+                        mostrar_titulo_seccion(
+                            "💸 Haz una compra o una venta"
+                        )
+        
+                        col1, col2 = st.columns(
+                            2,
+                            gap="large"
+                        )
+        
+        
+                        # ----------------------------------------------------
+                        # VENTA
+                        # ----------------------------------------------------
+        
+                        with col1:
+        
+                            mostrar_tarjeta(
+                                "🛒",
+                                "Realizar Venta",
+                                "Registra una nueva venta de productos"
+                            )
+        
+                            if st.button(
+                                "Iniciar Venta",
+                                key="venta_btn",
+                                use_container_width=True
+                            ):
+        
+                                st.session_state["module"] = "Ventas"
+                                st.rerun()
+        
+        
+                        # ----------------------------------------------------
+                        # COMPRA
+                        # ----------------------------------------------------
+        
+                        with col2:
+        
+                            mostrar_tarjeta(
+                                "📥",
+                                "Realizar Compra",
+                                "Registra una nueva compra de productos"
+                            )
+        
+                            if st.button(
+                                "Iniciar Compra",
+                                key="compra_btn",
+                                use_container_width=True
+                            ):
+        
+                                st.session_state["module"] = "Compras"
+                                st.rerun()
 
         # ============================================================
         # 👩‍💼 MENÚ VENDEDOR
