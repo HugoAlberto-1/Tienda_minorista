@@ -529,9 +529,9 @@ def menu_principal():
                         st.session_state["module"] = "productomasvendido"
                         st.rerun()
 
-             elif st.session_state["macro_modulo"] == "transacciones":
+            elif st.session_state["macro_modulo"] == "transacciones":
         
-                        mostrar_titulo_seccion(
+                mostrar_titulo_seccion(
                             "💸 Haz una compra o una venta"
                         )
         
@@ -545,9 +545,9 @@ def menu_principal():
                         # VENTA
                         # ----------------------------------------------------
         
-                        with col1:
+                 with col1:
         
-                            mostrar_tarjeta(
+                    mostrar_tarjeta(
                                 "🛒",
                                 "Realizar Venta",
                                 "Registra una nueva venta de productos"
@@ -567,9 +567,9 @@ def menu_principal():
                         # COMPRA
                         # ----------------------------------------------------
         
-                        with col2:
+                 with col2:
         
-                            mostrar_tarjeta(
+                      mostrar_tarjeta(
                                 "📥",
                                 "Realizar Compra",
                                 "Registra una nueva compra de productos"
