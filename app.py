@@ -543,17 +543,20 @@ def menu_principal():
                         st.session_state["module"] = "productomasvendido"
                         st.rerun()
 
-        elif st.session_state["macro_modulo"] == "transacciones":
+                    # ========================================================
+            # TRANSACCIONES CENTRO DE DISTRIBUCIÓN
+            # ========================================================
+
+            elif st.session_state["macro_modulo"] == "transacciones":
 
                 mostrar_titulo_seccion(
-                    "💸 Haz una compra o una venta"
+                    "💸 Operaciones del Centro de Distribución"
                 )
 
-                col1, col2 = st.columns(
-                    2,
+                col1, col2, col3 = st.columns(
+                    3,
                     gap="large"
                 )
-
 
                 # ----------------------------------------------------
                 # VENTA
@@ -564,12 +567,12 @@ def menu_principal():
                     mostrar_tarjeta(
                         "🛒",
                         "Realizar Venta",
-                        "Registra una nueva venta de productos"
+                        "Registra una salida o venta de productos"
                     )
 
                     if st.button(
                         "Iniciar Venta",
-                        key="venta_btn",
+                        key="venta_btn_admin",
                         use_container_width=True
                     ):
 
@@ -586,16 +589,38 @@ def menu_principal():
                     mostrar_tarjeta(
                         "📥",
                         "Realizar Compra",
-                        "Registra una nueva compra de productos"
+                        "Registra una compra para el Centro de Distribución"
                     )
 
                     if st.button(
                         "Iniciar Compra",
-                        key="compra_btn",
+                        key="compra_btn_admin",
                         use_container_width=True
                     ):
 
                         st.session_state["module"] = "Compras"
+                        st.rerun()
+
+
+                # ----------------------------------------------------
+                # INVENTARIO
+                # ----------------------------------------------------
+
+                with col3:
+
+                    mostrar_tarjeta(
+                        "📦",
+                        "Consultar Inventario",
+                        "Consulta las existencias del Centro de Distribución"
+                    )
+
+                    if st.button(
+                        "Ver Inventario",
+                        key="inventario_btn_admin",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Inventario"
                         st.rerun()
 
             
