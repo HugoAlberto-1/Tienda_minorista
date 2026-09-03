@@ -270,6 +270,16 @@ def modulo_compras():
     )
     productos = cursor.fetchall()
 
+    # ============================================================
+    # PROVEEDORES GLOBALES
+    # Se muestran por nombre, pero se guarda su Id_proveedor.
+    # No se filtran por tienda ni por producto.
+    # ============================================================
+    cursor.execute(
+        "SELECT Id_proveedor, Nombre FROM Proveedor ORDER BY Nombre"
+    )
+    proveedores = cursor.fetchall()
+
     if not productos:
         st.warning("⚠️ No hay productos disponibles para esta tienda.")
         cursor.close()
@@ -310,6 +320,26 @@ def modulo_compras():
             st.markdown('<div style="background: #e8f0fe; padding: 12px; border-radius: 8px; border-left: 4px solid #1e3a5f; color: #1a1a1a;">🏪 Compra para esta tienda</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div style="background: #e8f0fe; padding: 12px; border-radius: 8px; border-left: 4px solid #1e3a5f; color: #1a1a1a;">🌎 Compra global para todas las tiendas</div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ============================================================
+    # PROVEEDOR DESIGNADO PARA TODA LA COMPRA
+    # ============================================================
+    if proveedores:
+        opciones_proveedor = [(None, "Seleccione un proveedor")] + list(proveedores)
+
+        proveedor_seleccionado = st.selectbox(
+            "🚚 Proveedor designado",
+            opciones_proveedor,
+            format_func=lambda proveedor: proveedor[1],
+            key="proveedor_designado"
+        )
+
+        id_proveedor = proveedor_seleccionado[0]
+    else:
+        st.warning("⚠️ No hay proveedores registrados en la base de datos.")
+        id_proveedor = None
 
     st.markdown("---")
 
@@ -530,6 +560,8 @@ def modulo_compras():
         if st.button("✅ Registrar compra", use_container_width=True, type="primary"):
             if not st.session_state["productos_seleccionados"]:
                 st.error("❌ No hay productos agregados.")
+            elif id_proveedor is None:
+                st.error("❌ Debes seleccionar el proveedor designado antes de registrar la compra.")
             else:
                 try:
                     nuevo_id = obtener_proximo_id_compra(cursor)
@@ -538,8 +570,12 @@ def modulo_compras():
                     id_empleado = st.session_state["id_empleado"]
 
                     cursor.execute(
-                        "INSERT INTO Compra (Id_compra, Fecha, Id_empleado, id_tienda, Tipo_Compra) VALUES (%s, %s, %s, %s, %s)",
-                        (nuevo_id, fecha, id_empleado, id_tienda, tipo_compra),
+                        """
+                        INSERT INTO Compra
+                        (Id_compra, Fecha, Id_empleado, id_tienda, id_proveedor, Tipo_Compra)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (nuevo_id, fecha, id_empleado, id_tienda, id_proveedor, tipo_compra),
                     )
 
                     for prod in st.session_state["productos_seleccionados"]:
@@ -569,6 +605,7 @@ def modulo_compras():
                     st.success(f"📦 Compra registrada exitosamente con ID {nuevo_id} (Tipo: {tipo_compra}).")
                     st.session_state["productos_seleccionados"] = []
                     st.session_state["_reset_form_next_run"] = True
+                    st.session_state.pop("proveedor_designado", None)
                     st.rerun()
 
                 except Exception as e:
@@ -582,6 +619,7 @@ def modulo_compras():
             st.session_state["module"] = None
             st.session_state["productos_seleccionados"] = []
             st.session_state["_reset_form_next_run"] = True
+            st.session_state.pop("proveedor_designado", None)
             st.rerun()
 
     cursor.close()
