@@ -1039,6 +1039,393 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
 
 
 # ============================================================
+# 🚚 UTILIDADES PARA LA TABLA DE PROVEEDORES ACTUALES
+# ============================================================
+def _obtener_columnas_tabla(cursor, nombre_tabla):
+    """Devuelve un diccionario {nombre_en_minusculas: nombre_real}."""
+    cursor.execute(f"SHOW COLUMNS FROM `{nombre_tabla}`")
+    columnas = cursor.fetchall()
+
+    resultado = {}
+    for columna in columnas:
+        nombre = columna.get("Field")
+        if nombre:
+            resultado[str(nombre).lower()] = str(nombre)
+
+    return resultado
+
+
+def _buscar_columna(columnas, candidatos):
+    """Busca una columna ignorando mayúsculas/minúsculas."""
+    for candidato in candidatos:
+        real = columnas.get(str(candidato).lower())
+        if real:
+            return real
+    return None
+
+
+def obtener_tiendas_destino(tiendas):
+    """
+    Devuelve las tiendas que serán consideradas como tiendas abastecidas.
+
+    Por defecto excluye el Centro de Distribución porque funciona como punto
+    intermediario y no como una de las tiendas finales. Si no se encuentra
+    ningún Centro de Distribución, usa todas las tiendas activas.
+    """
+    if not tiendas:
+        return []
+
+    tiendas_destino = []
+
+    for tienda in tiendas:
+        nombre = str(tienda.get("nombre", "")).strip()
+        nombre_normalizado = nombre.lower()
+
+        if "centro de distrib" not in nombre_normalizado:
+            tiendas_destino.append(tienda)
+
+    return tiendas_destino if tiendas_destino else tiendas
+
+
+# ============================================================
+# 🗄️ OBTENER PROVEEDOR DE LA ÚLTIMA COMPRA POR TIENDA
+# ============================================================
+def obtener_datos_proveedores_actuales(codigo_filtro=None):
+    """
+    Obtiene el proveedor de cada compra usando directamente:
+        Compra.Id_proveedor -> Proveedor.Id_proveedor
+
+    El precio sigue viniendo de ProductoxCompra.Precio_Compra.
+    Después, preparar_tabla_proveedores_actuales() toma la última compra
+    de cada producto en cada tienda y conserva SOLO al proveedor del
+    menor precio actual.
+    """
+    conn = obtener_conexion()
+    if not conn:
+        return None
+
+    cursor = None
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+            SELECT
+                pc.cod_barra AS Codigo,
+                p.Nombre AS Producto,
+                pc.Precio_Compra AS Precio_Unitario_Compra,
+                pc.id_tienda AS Id_Tienda,
+                t.nombre AS Tienda,
+                c.Fecha AS Fecha,
+                c.Id_compra AS Id_Compra,
+                c.Id_proveedor AS Id_Proveedor,
+                pr.Nombre AS Proveedor
+            FROM ProductoxCompra pc
+            JOIN Compra c
+                ON pc.Id_compra = c.Id_compra
+            JOIN Producto p
+                ON pc.cod_barra = p.Cod_barra
+                AND pc.id_tienda = p.id_tienda
+            JOIN tienda t
+                ON pc.id_tienda = t.id_tienda
+            JOIN Proveedor pr
+                ON c.Id_proveedor = pr.Id_proveedor
+            WHERE t.activo = 1
+        """
+
+        params = []
+
+        if codigo_filtro is not None and str(codigo_filtro).strip() != "":
+            query += " AND CAST(pc.cod_barra AS CHAR) = %s"
+            params.append(str(codigo_filtro).strip())
+
+        query += " ORDER BY c.Fecha DESC, c.Id_compra DESC"
+
+        cursor.execute(query, tuple(params))
+        return cursor.fetchall()
+
+    except Exception as e:
+        st.error(f"❌ Error al obtener los proveedores actuales: {e}")
+        return None
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+# ============================================================
+# 📦 PREPARAR TABLA AGRUPADA DE PROVEEDORES
+# ============================================================
+def preparar_tabla_proveedores_actuales(datos, tiendas):
+    """
+    Genera una fila únicamente para el/los proveedor(es) asociados al
+    MENOR PRECIO ACTUAL de cada producto.
+
+    La regla es la misma de la tabla comparativa original:
+    1) Última compra por producto + tienda.
+    2) Comparar esos últimos precios.
+    3) Identificar el precio mínimo.
+    4) Conservar SOLO las compras cuyo precio coincide con ese mínimo.
+    5) Agrupar en una sola fila las tiendas atendidas por el mismo proveedor.
+
+    Un proveedor con precio mayor NO aparece.
+    """
+    if not datos or not tiendas:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(datos)
+
+    if df.empty:
+        return pd.DataFrame()
+
+    columnas_necesarias = [
+        "Codigo",
+        "Producto",
+        "Precio_Unitario_Compra",
+        "Id_Tienda",
+        "Tienda",
+        "Fecha",
+        "Id_Compra",
+        "Id_Proveedor",
+        "Proveedor"
+    ]
+
+    faltantes = [c for c in columnas_necesarias if c not in df.columns]
+
+    if faltantes:
+        st.error(
+            "❌ Faltan columnas para construir la tabla de proveedores: "
+            + ", ".join(faltantes)
+        )
+        return pd.DataFrame()
+
+    ids_tiendas_activas = {
+        tienda.get("id_tienda")
+        for tienda in tiendas
+        if tienda.get("id_tienda") is not None
+    }
+
+    if ids_tiendas_activas:
+        df = df[df["Id_Tienda"].isin(ids_tiendas_activas)].copy()
+
+    if df.empty:
+        return pd.DataFrame()
+
+    df["Codigo"] = df["Codigo"].astype(str).str.strip()
+    df["Producto"] = df["Producto"].fillna("").astype(str).str.strip()
+    df["Proveedor"] = df["Proveedor"].fillna("Sin proveedor").astype(str).str.strip()
+
+    df["Precio_Unitario_Compra"] = pd.to_numeric(
+        df["Precio_Unitario_Compra"],
+        errors="coerce"
+    )
+
+    df["Fecha"] = pd.to_datetime(
+        df["Fecha"],
+        errors="coerce"
+    )
+
+    df["Id_Compra"] = pd.to_numeric(
+        df["Id_Compra"],
+        errors="coerce"
+    )
+
+    # Misma regla exacta de la tabla superior: última compra por tienda.
+    df = df.sort_values(
+        by=["Codigo", "Id_Tienda", "Fecha", "Id_Compra"],
+        ascending=[True, True, False, False]
+    )
+
+    df_ultimos = df.drop_duplicates(
+        subset=["Codigo", "Id_Tienda"],
+        keep="first"
+    ).copy()
+
+    if df_ultimos.empty:
+        return pd.DataFrame()
+
+    # Precio verde / mínimo de cada producto.
+    precio_minimo_por_producto = (
+        df_ultimos.groupby("Codigo")["Precio_Unitario_Compra"].min()
+    )
+
+    df_ultimos["Precio_menor_actual"] = df_ultimos["Codigo"].map(
+        precio_minimo_por_producto
+    )
+
+    # SOLO proveedores que están exactamente en el precio mínimo.
+    tolerancia = 0.000001
+    df_ganadores = df_ultimos[
+        df_ultimos["Precio_Unitario_Compra"].notna()
+        & df_ultimos["Precio_menor_actual"].notna()
+        & (
+            (
+                df_ultimos["Precio_Unitario_Compra"]
+                - df_ultimos["Precio_menor_actual"]
+            ).abs() < tolerancia
+        )
+    ].copy()
+
+    if df_ganadores.empty:
+        return pd.DataFrame()
+
+    nombre_representativo = (
+        df_ganadores.groupby("Codigo")["Producto"]
+        .agg(
+            lambda serie: (
+                serie[serie != ""].value_counts().idxmax()
+                if not serie[serie != ""].empty
+                else ""
+            )
+        )
+    )
+
+    df_ganadores["Producto"] = df_ganadores["Codigo"].map(
+        nombre_representativo
+    )
+
+    orden_tiendas = {
+        tienda.get("nombre"): indice
+        for indice, tienda in enumerate(tiendas)
+        if tienda.get("nombre")
+    }
+
+    cantidad_columnas_tienda = max(1, len(tiendas))
+    filas = []
+
+    grupos = df_ganadores.groupby(
+        ["Codigo", "Producto", "Id_Proveedor", "Proveedor"],
+        dropna=False,
+        sort=False
+    )
+
+    for (codigo, producto, id_proveedor, proveedor), grupo in grupos:
+        tiendas_proveedor = list(
+            dict.fromkeys(
+                grupo["Tienda"]
+                .dropna()
+                .astype(str)
+                .str.strip()
+                .tolist()
+            )
+        )
+
+        tiendas_proveedor = sorted(
+            tiendas_proveedor,
+            key=lambda nombre: orden_tiendas.get(nombre, 999)
+        )
+
+        precios = grupo["Precio_Unitario_Compra"].dropna()
+        precio_ganador = float(precios.iloc[0]) if not precios.empty else None
+
+        fila = {
+            "Código": codigo,
+            "Producto": producto,
+            "Proveedor": proveedor if proveedor else "Sin proveedor",
+            "🟢 Precio menor": precio_ganador
+        }
+
+        for i in range(cantidad_columnas_tienda):
+            columna = f"Tienda que abastece {i + 1}"
+
+            if i < len(tiendas_proveedor):
+                fila[columna] = tiendas_proveedor[i]
+            else:
+                fila[columna] = "No abastece"
+
+        filas.append(fila)
+
+    tabla = pd.DataFrame(filas)
+
+    if tabla.empty:
+        return tabla
+
+    tabla = tabla.sort_values(
+        by=["Producto", "Proveedor"],
+        key=lambda x: x.astype(str).str.lower(),
+        ascending=True
+    )
+
+    return tabla.reset_index(drop=True)
+
+
+# ============================================================
+# 🚚 MOSTRAR TABLA DE PROVEEDORES
+# ============================================================
+def mostrar_tabla_proveedores(tabla):
+    if tabla is None or tabla.empty:
+        st.info(
+            "ℹ️ No hay compras registradas que permitan identificar "
+            "proveedores actuales."
+        )
+        return
+
+    tabla_mostrar = tabla.copy()
+
+    columna_precio = "🟢 Precio menor"
+
+    if columna_precio in tabla_mostrar.columns:
+        tabla_mostrar[columna_precio] = pd.to_numeric(
+            tabla_mostrar[columna_precio],
+            errors="coerce"
+        )
+
+    def resaltar_precio_verde(dataframe):
+        estilos = pd.DataFrame(
+            "",
+            index=dataframe.index,
+            columns=dataframe.columns
+        )
+
+        if columna_precio in dataframe.columns:
+            estilos[columna_precio] = (
+                "background-color: #d4edda;"
+                "color: #155724;"
+                "font-weight: bold;"
+                "border: 1px solid #28a745;"
+                "text-align: center;"
+            )
+
+        return estilos
+
+    tabla_estilizada = tabla_mostrar.style.apply(
+        resaltar_precio_verde,
+        axis=None
+    )
+
+    if columna_precio in tabla_mostrar.columns:
+        tabla_estilizada = tabla_estilizada.format(
+            {columna_precio: formato_moneda},
+            na_rep="—"
+        )
+
+    tabla_estilizada = tabla_estilizada.set_properties(
+        **{"text-align": "center"}
+    )
+
+    columnas_izquierda = [
+        c for c in ["Código", "Producto", "Proveedor"]
+        if c in tabla_mostrar.columns
+    ]
+
+    if columnas_izquierda:
+        tabla_estilizada = tabla_estilizada.set_properties(
+            subset=columnas_izquierda,
+            **{"text-align": "left"}
+        )
+
+    st.dataframe(
+        tabla_estilizada,
+        use_container_width=True,
+        hide_index=True
+    )
+
+
+
+
+# ============================================================
 # ⭐ MÓDULO PRINCIPAL
 # ============================================================
 def modulo_comparativa_precios():
@@ -1051,7 +1438,7 @@ def modulo_comparativa_precios():
 
     st.markdown(
         '<div class="comparativa-subtitle">'
-        'Comparación del precio unitario de compra de productos entre las diferentes tiendas'
+        'Comparación de costos, proveedores actuales y evaluación de nuevos proveedores'
         '</div>',
         unsafe_allow_html=True
     )
@@ -1100,45 +1487,7 @@ def modulo_comparativa_precios():
         return
 
     # --------------------------------------------------------
-    # ℹ️ INFORMACIÓN
-    # --------------------------------------------------------
-    st.markdown(
-        '<div class="info-box">'
-        '📌 <strong>¿Qué muestra esta tabla?</strong><br><br>'
-        'Para cada producto se muestra el <strong>precio unitario de la última compra '
-        'registrada de ese producto en cada tienda</strong>.<br><br>'
-        'La comparación utiliza únicamente el <strong>precio unitario de compra</strong>. '
-        'No se utilizan precios de venta minorista ni mayorista.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<div class="section-title">'
-        '📊 Comparativa de precios de compra por tienda'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<div class="section-description">'
-        'Cada fila representa un producto y cada columna representa una tienda activa del sistema.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<div class="legend-box">'
-        '<span class="legend-color"></span>'
-        '<strong>Menor costo unitario de compra:</strong> '
-        'primero se toma la última compra registrada del producto en cada tienda '
-        'y luego se comparan esos precios. La celda verde identifica el menor.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    # --------------------------------------------------------
-    # 🏪 CARGAR TIENDAS Y CATÁLOGO DEL BUSCADOR
+    # 🏪 CARGAR TIENDAS Y CATÁLOGO
     # --------------------------------------------------------
     with st.spinner(
         "Cargando tiendas y productos..."
@@ -1146,122 +1495,132 @@ def modulo_comparativa_precios():
         tiendas = obtener_tiendas_activas()
         catalogo_productos = obtener_catalogo_productos()
 
-    # --------------------------------------------------------
-    # 🔎 BUSCADOR CON AUTOCOMPLETADO
-    # --------------------------------------------------------
-    codigo_seleccionado = None
+    if tiendas is None:
+        st.error(
+            "❌ No fue posible obtener la información de las tiendas."
+        )
+        return
+
+    if len(tiendas) == 0:
+        st.warning(
+            "⚠️ No existen tiendas activas en el sistema."
+        )
+        return
 
     if catalogo_productos is None:
         st.error(
             "❌ No fue posible cargar el catálogo de productos."
         )
+        return
 
-    elif len(catalogo_productos) == 0:
-        st.warning(
-            "⚠️ No existen productos registrados en tiendas activas."
+    nombres_tiendas = []
+
+    for tienda in tiendas:
+        nombre = tienda.get("nombre")
+
+        if nombre and nombre not in nombres_tiendas:
+            nombres_tiendas.append(nombre)
+
+    # --------------------------------------------------------
+    # 🗂️ PESTAÑAS
+    # --------------------------------------------------------
+    tab_comparativa, tab_proveedores, tab_evaluador = st.tabs(
+        [
+            "📊 Comparativa de precios",
+            "🚚 Proveedores del menor precio",
+            "🧮 Evaluar nuevo proveedor"
+        ]
+    )
+
+    # ========================================================
+    # 📊 TAB 1: COMPARATIVA
+    # ========================================================
+    with tab_comparativa:
+        st.markdown(
+            '<div class="section-title">'
+            '📊 Comparativa de precios de compra por tienda'
+            '</div>',
+            unsafe_allow_html=True
         )
 
-    else:
-        # Diccionario:
-        # código -> "Nombre | Código"
-        #
-        # El buscador interno de st.selectbox permite escribir texto.
-        # Como la etiqueta contiene NOMBRE y CÓDIGO, acepta ambos.
-        etiquetas_productos = {}
-
-        for producto in catalogo_productos:
-            codigo = str(
-                producto.get("Codigo", "")
-            ).strip()
-
-            nombre = str(
-                producto.get("Producto", "")
-            ).strip()
-
-            if codigo and nombre:
-                etiquetas_productos[codigo] = (
-                    f"{nombre}  |  Código: {codigo}"
-                )
-
-        opciones_codigos = list(
-            etiquetas_productos.keys()
+        st.markdown(
+            '<div class="section-description">'
+            'Se utiliza la última compra registrada de cada producto en cada tienda activa.'
+            '</div>',
+            unsafe_allow_html=True
         )
 
-        codigo_seleccionado = st.selectbox(
-            "🔎 Buscar por nombre o código de barras:",
-            options=opciones_codigos,
-            index=None,
-            placeholder="Escribe parte del nombre o del código...",
-            format_func=lambda codigo: etiquetas_productos.get(
-                codigo,
-                str(codigo)
-            ),
-            help=(
-                "Puedes escribir, por ejemplo: Sal, salutaris, SALUTARIS "
-                "o parte del código de barras. "
-                "El desplegable irá filtrando las coincidencias."
-            ),
-            key="comparativa_buscador_producto"
+        st.markdown(
+            '<div class="legend-box">'
+            '<span class="legend-color"></span>'
+            '<strong>Menor costo unitario de compra:</strong> '
+            'la celda verde identifica el menor precio entre las últimas compras.'
+            '</div>',
+            unsafe_allow_html=True
         )
 
-        if codigo_seleccionado is not None:
-            etiqueta = etiquetas_productos.get(
-                codigo_seleccionado,
-                str(codigo_seleccionado)
+        codigo_seleccionado = None
+
+        if len(catalogo_productos) == 0:
+            st.warning(
+                "⚠️ No existen productos registrados en tiendas activas."
             )
 
-            st.caption(
-                f"🔎 Producto seleccionado: {etiqueta}"
+        else:
+            etiquetas_productos = {}
+
+            for producto in catalogo_productos:
+                codigo = str(
+                    producto.get("Codigo", "")
+                ).strip()
+
+                nombre = str(
+                    producto.get("Producto", "")
+                ).strip()
+
+                if codigo and nombre:
+                    etiquetas_productos[codigo] = (
+                        f"{nombre}  |  Código: {codigo}"
+                    )
+
+            opciones_codigos = list(
+                etiquetas_productos.keys()
             )
 
-    # --------------------------------------------------------
-    # 🗄️ CARGAR PRECIOS
-    # --------------------------------------------------------
-    with st.spinner(
-        "Cargando precios unitarios de compra..."
-    ):
-        datos = obtener_datos_comparativa(
-            codigo_filtro=codigo_seleccionado
-        )
+            codigo_seleccionado = st.selectbox(
+                "🔎 Buscar por nombre, código de barras o escáner:",
+                options=opciones_codigos,
+                index=None,
+                placeholder="Escribe parte del nombre o escanea el código...",
+                format_func=lambda codigo: etiquetas_productos.get(
+                    codigo,
+                    str(codigo)
+                ),
+                help=(
+                    "Puedes escribir el nombre, parte del nombre, el código "
+                    "de barras o escanearlo."
+                ),
+                key="comparativa_buscador_producto"
+            )
 
-    # --------------------------------------------------------
-    # 📊 MOSTRAR RESULTADOS
-    # --------------------------------------------------------
-    if tiendas is None:
-        st.error(
-            "❌ No fue posible obtener la información de las tiendas."
-        )
+        with st.spinner(
+            "Cargando precios unitarios de compra..."
+        ):
+            datos = obtener_datos_comparativa(
+                codigo_filtro=codigo_seleccionado
+            )
 
-    elif len(tiendas) == 0:
-        st.warning(
-            "⚠️ No existen tiendas activas en el sistema."
-        )
+        if datos is None:
+            st.error(
+                "❌ No fue posible obtener los precios unitarios de compra."
+            )
 
-    elif datos is None:
-        st.error(
-            "❌ No fue posible obtener los precios unitarios de compra."
-        )
-
-    else:
-        nombres_tiendas = []
-
-        for tienda in tiendas:
-            nombre = tienda.get("nombre")
-
-            if nombre and nombre not in nombres_tiendas:
-                nombres_tiendas.append(nombre)
-
-        if len(datos) == 0:
-            if codigo_seleccionado is not None:
-                st.info(
-                    "ℹ️ El producto seleccionado no tiene compras registradas "
-                    "en las tiendas activas."
-                )
-            else:
-                st.info(
-                    "ℹ️ Las tiendas están registradas, pero todavía no "
-                    "existen compras para generar la comparativa."
-                )
+        elif len(datos) == 0:
+            st.info(
+                "ℹ️ No hay compras registradas para el producto seleccionado."
+                if codigo_seleccionado is not None
+                else "ℹ️ Todavía no existen compras para generar la comparativa."
+            )
 
         else:
             tabla_comparativa = preparar_tabla_comparativa(
@@ -1290,13 +1649,112 @@ def modulo_comparativa_precios():
                     "para ese producto."
                 )
 
-    # --------------------------------------------------------
-    # 🧮 EVALUADOR TEMPORAL DE NUEVO PROVEEDOR
-    # --------------------------------------------------------
-    mostrar_evaluador_nuevo_proveedor(
-        tiendas,
-        catalogo_productos
-    )
+    # ========================================================
+    # 🚚 TAB 2: PROVEEDORES POR PRODUCTO
+    # ========================================================
+    with tab_proveedores:
+        st.markdown(
+            '<div class="section-title">'
+            '🚚 Proveedores del menor precio'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            '<div class="section-description">'
+            'Muestra únicamente al proveedor asociado al menor precio actual. '
+            'Si el mismo proveedor tiene ese menor precio en varias tiendas, '
+            'las tiendas se agrupan en una sola fila.'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        codigo_proveedor = None
+
+        if len(catalogo_productos) > 0:
+            etiquetas_proveedores = {}
+
+            for producto in catalogo_productos:
+                codigo = str(
+                    producto.get("Codigo", "")
+                ).strip()
+
+                nombre = str(
+                    producto.get("Producto", "")
+                ).strip()
+
+                if codigo and nombre:
+                    etiquetas_proveedores[codigo] = (
+                        f"{nombre}  |  Código: {codigo}"
+                    )
+
+            opciones_proveedores = list(
+                etiquetas_proveedores.keys()
+            )
+
+            codigo_proveedor = st.selectbox(
+                "🔎 Buscar producto:",
+                options=opciones_proveedores,
+                index=None,
+                placeholder="Escribe nombre, código o escanea el producto...",
+                format_func=lambda codigo: etiquetas_proveedores.get(
+                    codigo,
+                    str(codigo)
+                ),
+                help=(
+                    "El filtro acepta nombre del producto y código de barras. "
+                    "También puedes utilizar un lector de código de barras."
+                ),
+                key="proveedores_buscador_producto"
+            )
+
+        with st.spinner(
+            "Cargando proveedores actuales..."
+        ):
+            datos_proveedores = obtener_datos_proveedores_actuales(
+                codigo_filtro=codigo_proveedor
+            )
+
+        if datos_proveedores is None:
+            pass
+
+        elif len(datos_proveedores) == 0:
+            st.info(
+                "ℹ️ No hay compras registradas que permitan mostrar proveedores "
+                "para el producto seleccionado."
+                if codigo_proveedor is not None
+                else
+                "ℹ️ Todavía no hay compras registradas para mostrar proveedores."
+            )
+
+        else:
+            tabla_proveedores = preparar_tabla_proveedores_actuales(
+                datos_proveedores,
+                tiendas
+            )
+
+            mostrar_tabla_proveedores(
+                tabla_proveedores
+            )
+
+            st.caption(
+                "🟢 Precio menor actual = mismo precio verde mostrado en "
+                "la comparativa para ese producto."
+            )
+
+            st.caption(
+                "“No abastece” = ese proveedor no tiene asignada otra tienda "
+                "en las últimas compras registradas del producto."
+            )
+
+    # ========================================================
+    # 🧮 TAB 3: EVALUADOR DE NUEVO PROVEEDOR
+    # ========================================================
+    with tab_evaluador:
+        mostrar_evaluador_nuevo_proveedor(
+            tiendas,
+            catalogo_productos
+        )
 
     # --------------------------------------------------------
     # 🔙 VOLVER
@@ -1315,3 +1773,4 @@ def modulo_comparativa_precios():
             st.session_state["module"] = None
             st.session_state["macro_modulo"] = None
             st.rerun()
+
