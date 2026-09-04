@@ -324,7 +324,7 @@ def modulo_compras():
     st.markdown("---")
 
     # ============================================================
-    # PROVEEDOR DESIGNADO PARA TODA LA COMPRA
+    # PROVEEDOR DESIGNADO
     # ============================================================
     if proveedores:
         opciones_proveedor = [(None, "Seleccione un proveedor")] + list(proveedores)
@@ -561,7 +561,7 @@ def modulo_compras():
             if not st.session_state["productos_seleccionados"]:
                 st.error("❌ No hay productos agregados.")
             elif id_proveedor is None:
-                st.error("❌ Debes seleccionar el proveedor designado antes de registrar la compra.")
+                st.error("❌ Debes seleccionar un proveedor antes de registrar la compra.")
             else:
                 try:
                     nuevo_id = obtener_proximo_id_compra(cursor)
