@@ -695,7 +695,7 @@ def menu_principal():
                 # ====================================================
 
                 col3, col4, col5 = st.columns(
-                    2,
+                    3,
                     gap="large"
                 )
 
