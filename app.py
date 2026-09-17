@@ -694,8 +694,8 @@ def menu_principal():
                 # SEGUNDA FILA
                 # ====================================================
 
-                col3, col4, col5 = st.columns(
-                    3,
+                col3, col4 = st.columns(
+                    2,
                     gap="large"
                 )
 
@@ -748,22 +748,7 @@ def menu_principal():
                 # PRONÓSTICOS Y PUNTO DE REORDEN
                 # ----------------------------------------------------
 
-                with col5:
-
-                    mostrar_macro_tarjeta(
-                        "📈",
-                        "Pronósticos y Reorden",
-                        "Rotación, cobertura, alertas y compras sugeridas"
-                    )
-
-                    if st.button(
-                        "📦 Ver pronósticos",
-                        key="btn_pronosticos_vendedor",
-                        use_container_width=True
-                    ):
-
-                        st.session_state["module"] = "Pronosticos"
-                        st.rerun()
+                
 
 
             # ========================================================
