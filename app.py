@@ -694,7 +694,7 @@ def menu_principal():
                 # SEGUNDA FILA
                 # ====================================================
 
-                col3, col4 = st.columns(
+                col3, col4, col5 = st.columns(
                     2,
                     gap="large"
                 )
