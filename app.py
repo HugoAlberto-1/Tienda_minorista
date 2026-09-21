@@ -852,7 +852,7 @@ def menu_principal():
                 # CATEGORÍAS
                 # ----------------------------------------------------
 
-                with col4:
+                with col5:
 
                     mostrar_tarjeta(
                         "📁",
