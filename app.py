@@ -12,6 +12,7 @@ from modulos.producto import modulo_producto
 from modulos.editar_producto import modulo_editar_producto
 from modulos.dashboard import dashboard
 from modulos.empleado import modulo_empleado
+from modulos.proveedor import modulo_proveedor
 from modulos.inventario import modulo_inventario
 from modulos.reporte_ventas import reporte_ventas
 from modulos.categoria import modulo_categoria
@@ -655,7 +656,7 @@ def menu_principal():
                     mostrar_macro_tarjeta(
                         "✏️",
                         "Ingresa nueva información",
-                        "Registra productos, empleados y categorías"
+                        "Registra productos, empleados, proveedores y categorías"
                     )
 
                     if st.button(
@@ -761,7 +762,7 @@ def menu_principal():
                     "✏️ Registra información"
                 )
 
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4, col5 = st.columns(5)
 
 
                 # ----------------------------------------------------
@@ -827,6 +828,23 @@ def menu_principal():
                     ):
 
                         st.session_state["module"] = "Empleado"
+                        st.rerun()
+                        
+                with col4:
+
+                    mostrar_tarjeta(
+                        "🚚",
+                        "Nuevo Proveedor",
+                        "Registra proveedores de la tienda"
+                    )
+
+                    if st.button(
+                        "Registrar",
+                        key="btn_proveedor",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["module"] = "Proveedor"
                         st.rerun()
 
 
@@ -1150,6 +1168,10 @@ def cargar_modulo():
     elif modulo_solicitado == "Empleado":
 
         modulo_empleado()
+
+    elif modulo_solicitado == "Proveedor":
+
+        modulo_proveedor()
 
 
     elif modulo_solicitado == "Inventario":
