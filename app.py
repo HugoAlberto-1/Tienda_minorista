@@ -12,7 +12,7 @@ from modulos.producto import modulo_producto
 from modulos.editar_producto import modulo_editar_producto
 from modulos.dashboard import dashboard
 from modulos.empleado import modulo_empleado
-from modulos.proveedor import modulo_proveedor
+from modulos.proveedor import modulo_Proveedor
 from modulos.inventario import modulo_inventario
 from modulos.reporte_ventas import reporte_ventas
 from modulos.categoria import modulo_categoria
