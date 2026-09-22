@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime
 from config.conexion import obtener_conexion
 
+
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo de compras - MODO CLARO"""
     COLOR_PRIMARY = "#1e3a5f"
@@ -92,7 +93,10 @@ def configurar_estilo():
         }}
         
         /* Labels en color oscuro */
-        .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
+        .stTextInput > label,
+        .stSelectbox > label,
+        .stNumberInput > label,
+        .stDateInput > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
@@ -205,11 +209,13 @@ CONVERSIONES_A_LIBRAS = {
     "quintal": 100,
 }
 
+
 # 📁 Categorías que se consideran "granos"
 CATEGORIAS_GRANOS = [
     "Granos y productos a granel",
     "Sopas, pastas y consomés"
 ]
+
 
 def obtener_unidades_por_categoria(categoria):
     """Devuelve las unidades disponibles según la categoría del producto"""
@@ -224,403 +230,1426 @@ def obtener_unidades_por_categoria(categoria):
 def obtener_id_producto(cursor, cod_barra, id_tienda):
     """Obtiene el id_producto a partir del código de barras"""
     cursor.execute(
-        "SELECT id_producto FROM Producto WHERE Cod_barra = %s AND id_tienda = %s",
+        """
+        SELECT id_producto
+        FROM Producto
+        WHERE Cod_barra = %s
+        AND id_tienda = %s
+        """,
         (cod_barra, id_tienda)
     )
+    
     resultado = cursor.fetchone()
+    
     return resultado[0] if resultado else None
 
 
 def obtener_proximo_id_compra(cursor):
     """Obtiene el próximo ID disponible para una compra (global)"""
-    cursor.execute("SELECT MAX(Id_compra) FROM Compra")
+    cursor.execute(
+        "SELECT MAX(Id_compra) FROM Compra"
+    )
+    
     ultimo_id = cursor.fetchone()[0]
+    
     return 1 if ultimo_id is None else int(ultimo_id) + 1
 
 
 def modulo_compras():
+
     configurar_estilo()
     
-    st.markdown('<div class="module-title">🧾 Registro de Compras</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="module-title">🧾 Registro de Compras</div>',
+        unsafe_allow_html=True
+    )
 
-    if not st.session_state.get("logueado") or "id_empleado" not in st.session_state or "id_tienda" not in st.session_state:
-        st.error("⚠️ Debes iniciar sesión para registrar compras.")
+
+    # ============================================================
+    # VALIDACIÓN DE SESIÓN
+    # ============================================================
+
+    if (
+        not st.session_state.get("logueado")
+        or "id_empleado" not in st.session_state
+        or "id_tienda" not in st.session_state
+    ):
+
+        st.error(
+            "⚠️ Debes iniciar sesión para registrar compras."
+        )
+
         st.markdown("---")
-        if st.button("⬅ Volver al menú principal"):
+
+        if st.button(
+            "⬅ Volver al menú principal"
+        ):
             st.session_state["module"] = None
             st.rerun()
+
         return
 
-    id_tienda = st.session_state["id_tienda"]
-    nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
-    nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
 
-    st.markdown(f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong> | 👤 Empleado: <strong>{nombre_empleado}</strong></div>', unsafe_allow_html=True)
+    # ============================================================
+    # DATOS DE SESIÓN
+    # ============================================================
+
+    id_tienda = st.session_state["id_tienda"]
+
+    nombre_tienda = st.session_state.get(
+        "nombre_tienda",
+        "Mi Tienda"
+    )
+
+    nombre_empleado = st.session_state.get(
+        "nombre_empleado",
+        "Usuario"
+    )
+
+
+    st.markdown(
+        f"""
+        <div class="info-box">
+            🏪 Tienda:
+            <strong>{nombre_tienda}</strong>
+            |
+            👤 Empleado:
+            <strong>{nombre_empleado}</strong>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    # ============================================================
+    # CONEXIÓN
+    # ============================================================
 
     conn = obtener_conexion()
+
     if not conn:
-        st.error("❌ No se pudo conectar a la base de datos.")
+
+        st.error(
+            "❌ No se pudo conectar a la base de datos."
+        )
+
         st.stop()
+
 
     cursor = conn.cursor()
 
+
+    # ============================================================
+    # PRODUCTOS DE LA TIENDA
+    # ============================================================
+
     cursor.execute(
-        "SELECT Cod_barra, Nombre, categoria FROM Producto WHERE id_tienda = %s",
+        """
+        SELECT
+            Cod_barra,
+            Nombre,
+            categoria
+        FROM Producto
+        WHERE id_tienda = %s
+        """,
         (id_tienda,)
     )
+
     productos = cursor.fetchall()
 
+
     # ============================================================
-    # PROVEEDORES GLOBALES
-    # Se muestran por nombre, pero se guarda su Id_proveedor.
-    # No se filtran por tienda ni por producto.
+    # PROVEEDORES DE LA TIENDA
     # ============================================================
+
     cursor.execute(
-        "SELECT Id_proveedor, Nombre FROM Proveedor ORDER BY Nombre"
+        """
+        SELECT
+            Id_proveedor,
+            Nombre
+        FROM Proveedor
+        WHERE id_tienda = %s
+        ORDER BY Nombre
+        """,
+        (id_tienda,)
     )
+
     proveedores = cursor.fetchall()
 
+
     if not productos:
-        st.warning("⚠️ No hay productos disponibles para esta tienda.")
+
+        st.warning(
+            "⚠️ No hay productos disponibles para esta tienda."
+        )
+
         cursor.close()
         conn.close()
+
         return
 
-    if "productos_seleccionados" not in st.session_state:
-        st.session_state["productos_seleccionados"] = []
-    if "editar_indice" not in st.session_state:
-        st.session_state["editar_indice"] = None
-    if "form_data" not in st.session_state:
-        st.session_state["form_data"] = {
-            "precio_compra": 0.01,
-            "cantidad": 1,
-            "unidad": "libras",
-            "fecha_vencimiento": None,
-        }
-    if "form_data_codigo_barras" not in st.session_state:
-        st.session_state["form_data_codigo_barras"] = ""
 
     # ============================================================
-    # TIPO DE COMPRA (Propia / Global)
+    # VARIABLES DE SESIÓN
     # ============================================================
-    st.markdown('<p style="color: #1a1a1a; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">📋 Tipo de Compra</p>', unsafe_allow_html=True)
-    
+
+    if "productos_seleccionados" not in st.session_state:
+
+        st.session_state[
+            "productos_seleccionados"
+        ] = []
+
+
+    if "editar_indice" not in st.session_state:
+
+        st.session_state[
+            "editar_indice"
+        ] = None
+
+
+    if "form_data" not in st.session_state:
+
+        st.session_state["form_data"] = {
+
+            "precio_compra": 0.01,
+
+            "cantidad": 1,
+
+            "unidad": "libras",
+
+            "fecha_vencimiento": None,
+        }
+
+
+    if (
+        "form_data_codigo_barras"
+        not in st.session_state
+    ):
+
+        st.session_state[
+            "form_data_codigo_barras"
+        ] = ""
+
+
+    # ============================================================
+    # TIPO DE COMPRA
+    # ============================================================
+
+    st.markdown(
+        """
+        <p style="
+            color: #1a1a1a;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        ">
+        📋 Tipo de Compra
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
     col_tipo1, col_tipo2 = st.columns(2)
+
+
     with col_tipo1:
-        st.markdown('<p style="color: #1a1a1a; font-weight: 400; margin-bottom: 5px;">Seleccione el tipo de compra:</p>', unsafe_allow_html=True)
+
+        st.markdown(
+            """
+            <p style="
+                color: #1a1a1a;
+                font-weight: 400;
+                margin-bottom: 5px;
+            ">
+            Seleccione el tipo de compra:
+            </p>
+            """,
+            unsafe_allow_html=True
+        )
+
+
         tipo_compra = st.radio(
             "",
-            ["Propia", "Global"],
+            [
+                "Propia",
+                "Global"
+            ],
             horizontal=True,
             key="tipo_compra",
             label_visibility="collapsed"
         )
+
+
     with col_tipo2:
+
         if tipo_compra == "Propia":
-            st.markdown('<div style="background: #e8f0fe; padding: 12px; border-radius: 8px; border-left: 4px solid #1e3a5f; color: #1a1a1a;">🏪 Compra para esta tienda</div>', unsafe_allow_html=True)
+
+            st.markdown(
+                """
+                <div style="
+                    background: #e8f0fe;
+                    padding: 12px;
+                    border-radius: 8px;
+                    border-left: 4px solid #1e3a5f;
+                    color: #1a1a1a;
+                ">
+                    🏪 Compra para esta tienda
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
         else:
-            st.markdown('<div style="background: #e8f0fe; padding: 12px; border-radius: 8px; border-left: 4px solid #1e3a5f; color: #1a1a1a;">🌎 Compra global para todas las tiendas</div>', unsafe_allow_html=True)
+
+            st.markdown(
+                """
+                <div style="
+                    background: #e8f0fe;
+                    padding: 12px;
+                    border-radius: 8px;
+                    border-left: 4px solid #1e3a5f;
+                    color: #1a1a1a;
+                ">
+                    🌎 Compra global para todas las tiendas
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
 
     st.markdown("---")
+
 
     # ============================================================
     # PROVEEDOR DESIGNADO
     # ============================================================
+
     if proveedores:
-        opciones_proveedor = [(None, "Seleccione un proveedor")] + list(proveedores)
+
+        opciones_proveedor = [
+            (
+                None,
+                "Seleccione un proveedor"
+            )
+        ] + list(proveedores)
+
 
         proveedor_seleccionado = st.selectbox(
+
             "🚚 Proveedor designado",
+
             opciones_proveedor,
+
             format_func=lambda proveedor: proveedor[1],
+
             key="proveedor_designado"
         )
 
+
         id_proveedor = proveedor_seleccionado[0]
+
+
     else:
-        st.warning("⚠️ No hay proveedores registrados en la base de datos.")
+
+        st.warning(
+            "⚠️ No hay proveedores registrados en la base de datos."
+        )
+
         id_proveedor = None
+
 
     st.markdown("---")
 
-    if st.session_state.get("_reset_form_next_run"):
-        st.session_state["_reset_form_next_run"] = False
+
+    # ============================================================
+    # REINICIO DEL FORMULARIO
+    # ============================================================
+
+    if st.session_state.get(
+        "_reset_form_next_run"
+    ):
+
+        st.session_state[
+            "_reset_form_next_run"
+        ] = False
+
+
         st.session_state["form_data"] = {
+
             "precio_compra": 0.01,
+
             "cantidad": 1,
+
             "unidad": "libras",
+
             "fecha_vencimiento": None,
         }
-        st.session_state["form_data_codigo_barras"] = ""
-        st.session_state.pop("form_data_fecha_vencimiento", None)
 
-    if st.session_state["editar_indice"] is not None and "edit_loaded" not in st.session_state:
-        prod_edit = st.session_state["productos_seleccionados"][st.session_state["editar_indice"]]
-        st.session_state["form_data_codigo_barras"] = prod_edit["cod_barra"]
+
+        st.session_state[
+            "form_data_codigo_barras"
+        ] = ""
+
+
+        st.session_state.pop(
+            "form_data_fecha_vencimiento",
+            None
+        )
+
+
+    # ============================================================
+    # CARGAR PRODUCTO PARA EDICIÓN
+    # ============================================================
+
+    if (
+        st.session_state["editar_indice"]
+        is not None
+        and "edit_loaded"
+        not in st.session_state
+    ):
+
+        prod_edit = (
+            st.session_state[
+                "productos_seleccionados"
+            ][
+                st.session_state[
+                    "editar_indice"
+                ]
+            ]
+        )
+
+
+        st.session_state[
+            "form_data_codigo_barras"
+        ] = prod_edit["cod_barra"]
+
+
         st.session_state["form_data"] = {
-            "precio_compra": float(prod_edit["precio_compra"]),
-            "cantidad": int(prod_edit["cantidad"]),
-            "unidad": prod_edit["unidad"],
-            "fecha_vencimiento": prod_edit.get("fecha_vencimiento"),
-        }
-        st.session_state["edit_loaded"] = True
 
-    codigo_barras_disabled = st.session_state["editar_indice"] is not None
+            "precio_compra":
+                float(
+                    prod_edit[
+                        "precio_compra"
+                    ]
+                ),
+
+            "cantidad":
+                int(
+                    prod_edit[
+                        "cantidad"
+                    ]
+                ),
+
+            "unidad":
+                prod_edit[
+                    "unidad"
+                ],
+
+            "fecha_vencimiento":
+                prod_edit.get(
+                    "fecha_vencimiento"
+                ),
+        }
+
+
+        st.session_state[
+            "edit_loaded"
+        ] = True
+
+
+    codigo_barras_disabled = (
+        st.session_state[
+            "editar_indice"
+        ]
+        is not None
+    )
+
+
+    # ============================================================
+    # BUSCAR PRODUCTO
+    # ============================================================
 
     codigo_buscado = st.text_input(
+
         "🔍 Código de barras del producto",
+
         key="form_data_codigo_barras",
+
         disabled=codigo_barras_disabled,
+
         placeholder="Ej: 123456789"
     )
 
+
     producto_encontrado = None
+
     categoria_producto = None
-    unidades_disponibles = ["unidad"]
+
+    unidades_disponibles = [
+        "unidad"
+    ]
+
     id_producto_actual = None
-    
-    if codigo_buscado and not codigo_barras_disabled:
+
+
+    if (
+        codigo_buscado
+        and not codigo_barras_disabled
+    ):
+
         producto_encontrado = next(
-            (p for p in productos if p[0] == codigo_buscado),
+
+            (
+                p
+                for p in productos
+                if p[0] == codigo_buscado
+            ),
+
             None,
         )
+
+
         if producto_encontrado:
-            codigo, nombre, categoria_producto = producto_encontrado
-            id_producto_actual = obtener_id_producto(cursor, codigo, id_tienda)
-            
-            st.markdown(f'<div class="info-box">✅ Producto encontrado: <strong>{nombre}</strong><br>📁 Categoría: <strong>{categoria_producto}</strong><br>🆔 ID Producto: <strong>{id_producto_actual}</strong></div>', unsafe_allow_html=True)
-            
-            unidades_disponibles = obtener_unidades_por_categoria(categoria_producto)
-            
-            if st.session_state["form_data"]["unidad"] not in unidades_disponibles:
-                st.session_state["form_data"]["unidad"] = unidades_disponibles[0]
-            
-            if categoria_producto != "Granos y productos a granel":
-                st.session_state["form_data"]["fecha_vencimiento"] = st.date_input(
+
+            codigo, nombre, categoria_producto = (
+                producto_encontrado
+            )
+
+
+            id_producto_actual = obtener_id_producto(
+                cursor,
+                codigo,
+                id_tienda
+            )
+
+
+            st.markdown(
+                f"""
+                <div class="info-box">
+                    ✅ Producto encontrado:
+                    <strong>{nombre}</strong>
+                    <br>
+                    📁 Categoría:
+                    <strong>{categoria_producto}</strong>
+                    <br>
+                    🆔 ID Producto:
+                    <strong>{id_producto_actual}</strong>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+            unidades_disponibles = (
+                obtener_unidades_por_categoria(
+                    categoria_producto
+                )
+            )
+
+
+            if (
+                st.session_state[
+                    "form_data"
+                ]["unidad"]
+                not in unidades_disponibles
+            ):
+
+                st.session_state[
+                    "form_data"
+                ]["unidad"] = (
+                    unidades_disponibles[0]
+                )
+
+
+            if (
+                categoria_producto
+                != "Granos y productos a granel"
+            ):
+
+                st.session_state[
+                    "form_data"
+                ][
+                    "fecha_vencimiento"
+                ] = st.date_input(
+
                     "📅 Fecha de vencimiento (opcional)",
-                    key="form_data_fecha_vencimiento",
+
+                    key=(
+                        "form_data_fecha_vencimiento"
+                    ),
+
                     value=None
                 )
+
+
         else:
-            st.error("⚠️ Producto no encontrado.")
+
+            st.error(
+                "⚠️ Producto no encontrado."
+            )
+
+
+    # ============================================================
+    # UNIDAD DE COMPRA
+    # ============================================================
 
     if producto_encontrado:
-        st.session_state["form_data"]["unidad"] = st.selectbox(
+
+        st.session_state[
+            "form_data"
+        ]["unidad"] = st.selectbox(
+
             "📏 Unidad de compra",
+
             unidades_disponibles,
-            index=unidades_disponibles.index(st.session_state["form_data"]["unidad"]) if st.session_state["form_data"]["unidad"] in unidades_disponibles else 0,
+
+            index=(
+                unidades_disponibles.index(
+                    st.session_state[
+                        "form_data"
+                    ]["unidad"]
+                )
+
+                if st.session_state[
+                    "form_data"
+                ]["unidad"]
+                in unidades_disponibles
+
+                else 0
+            ),
+
             key="unidad_select"
         )
+
+
     else:
+
         st.selectbox(
+
             "📏 Unidad de compra",
-            ["Seleccione un producto primero"],
+
+            [
+                "Seleccione un producto primero"
+            ],
+
             disabled=True,
         )
 
-    unidad = st.session_state["form_data"]["unidad"]
+
+    unidad = st.session_state[
+        "form_data"
+    ]["unidad"]
+
+
+    # ============================================================
+    # PRECIO DE COMPRA
+    # ============================================================
 
     precio_compra = st.number_input(
+
         "💰 Precio de compra unitario",
+
         min_value=0.01,
+
         step=0.01,
+
         key="form_data_precio_compra",
-        value=st.session_state["form_data"].get("precio_compra", 0.01),
-    )
-    st.session_state["form_data"]["precio_compra"] = precio_compra
 
-    st.session_state["form_data"]["cantidad"] = st.number_input(
+        value=st.session_state[
+            "form_data"
+        ].get(
+            "precio_compra",
+            0.01
+        ),
+    )
+
+
+    st.session_state[
+        "form_data"
+    ]["precio_compra"] = (
+        precio_compra
+    )
+
+
+    # ============================================================
+    # CANTIDAD
+    # ============================================================
+
+    st.session_state[
+        "form_data"
+    ]["cantidad"] = st.number_input(
+
         "📦 Cantidad comprada",
+
         min_value=1,
+
         max_value=10000,
+
         step=1,
-        value=st.session_state["form_data"]["cantidad"],
+
+        value=st.session_state[
+            "form_data"
+        ]["cantidad"],
     )
-    cantidad = st.session_state["form_data"]["cantidad"]
 
-    subtotal_actual = round(precio_compra * cantidad, 2)
-    st.markdown(f'<p style="color: #1a1a1a; font-weight: 600;">🧾 Subtotal del producto actual: ${subtotal_actual:.2f}</p>', unsafe_allow_html=True)
 
-    precio_minorista = round(precio_compra / 0.70, 2)
-    st.markdown(f'<p style="color: #1a1a1a;">💡 <strong>Precio de venta sugerido (Al Detalle):</strong> ${precio_minorista:.2f}</p>', unsafe_allow_html=True)
+    cantidad = st.session_state[
+        "form_data"
+    ]["cantidad"]
 
-    precio_sugerido2 = round(precio_compra / 0.75, 2)
-    st.markdown(f'<p style="color: #1a1a1a;">💡 <strong>Precio de venta sugerido (Mayorista #1):</strong> ${precio_sugerido2:.2f}</p>', unsafe_allow_html=True)
 
-    precio_sugerido = round(precio_compra / 0.80, 2)
-    st.markdown(f'<p style="color: #1a1a1a;">💡 <strong>Precio de venta sugerido (Mayorista #2):</strong> ${precio_sugerido:.2f}</p>', unsafe_allow_html=True)
+    # ============================================================
+    # SUBTOTAL
+    # ============================================================
+
+    subtotal_actual = round(
+        precio_compra
+        * cantidad,
+        2
+    )
+
+
+    st.markdown(
+        f"""
+        <p style="
+            color: #1a1a1a;
+            font-weight: 600;
+        ">
+        🧾 Subtotal del producto actual:
+        ${subtotal_actual:.2f}
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    # ============================================================
+    # PRECIOS SUGERIDOS
+    # ============================================================
+
+    precio_minorista = round(
+        precio_compra / 0.70,
+        2
+    )
+
+
+    st.markdown(
+        f"""
+        <p style="color: #1a1a1a;">
+        💡 <strong>
+        Precio de venta sugerido (Al Detalle):
+        </strong>
+        ${precio_minorista:.2f}
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    precio_sugerido2 = round(
+        precio_compra / 0.75,
+        2
+    )
+
+
+    st.markdown(
+        f"""
+        <p style="color: #1a1a1a;">
+        💡 <strong>
+        Precio de venta sugerido (Mayorista #1):
+        </strong>
+        ${precio_sugerido2:.2f}
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    precio_sugerido = round(
+        precio_compra / 0.80,
+        2
+    )
+
+
+    st.markdown(
+        f"""
+        <p style="color: #1a1a1a;">
+        💡 <strong>
+        Precio de venta sugerido (Mayorista #2):
+        </strong>
+        ${precio_sugerido:.2f}
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    # ============================================================
+    # PRECIOS DE VENTA
+    # ============================================================
 
     precio_venta = st.number_input(
+
         "💰 Precio de venta al detalle",
+
         min_value=0.01,
+
         value=precio_minorista,
+
         format="%.2f",
     )
+
+
     precio_venta2 = st.number_input(
+
         "💰 Precio de venta mayorista #1",
+
         min_value=0.01,
+
         value=precio_sugerido2,
+
         format="%.2f",
     )
+
+
     precio_venta3 = st.number_input(
+
         "💰 Precio de venta mayorista #2",
+
         min_value=0.01,
+
         value=precio_sugerido,
+
         format="%.2f",
     )
 
-    boton_texto = "💾 Actualizar producto" if st.session_state["editar_indice"] is not None else "💾 Agregar producto"
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
+
+    # ============================================================
+    # AGREGAR / ACTUALIZAR PRODUCTO
+    # ============================================================
+
+    boton_texto = (
+        "💾 Actualizar producto"
+        if st.session_state[
+            "editar_indice"
+        ] is not None
+        else
+        "💾 Agregar producto"
+    )
+
+
+    col1, col2, col3 = st.columns(
+        [1, 2, 1]
+    )
+
+
     with col2:
-        if st.button(boton_texto, use_container_width=True, type="primary"):
-            if producto_encontrado or codigo_barras_disabled:
-                if st.session_state["editar_indice"] is not None:
-                    prod_ref = st.session_state["productos_seleccionados"][st.session_state["editar_indice"]]
+
+        if st.button(
+            boton_texto,
+            use_container_width=True,
+            type="primary"
+        ):
+
+            if (
+                producto_encontrado
+                or codigo_barras_disabled
+            ):
+
+                if (
+                    st.session_state[
+                        "editar_indice"
+                    ]
+                    is not None
+                ):
+
+                    prod_ref = (
+                        st.session_state[
+                            "productos_seleccionados"
+                        ][
+                            st.session_state[
+                                "editar_indice"
+                            ]
+                        ]
+                    )
+
+
                     producto = {
-                        "cod_barra": codigo_buscado,
-                        "id_producto": prod_ref.get("id_producto"),
-                        "nombre": prod_ref["nombre"],
-                        "cantidad": cantidad,
-                        "precio_compra": precio_compra,
-                        "precio_venta2": precio_venta2,
-                        "precio_venta3": precio_venta3,
-                        "precio_venta": precio_venta,
-                        "unidad": unidad,
-                        "fecha_vencimiento": st.session_state["form_data"].get("fecha_vencimiento"),
+
+                        "cod_barra":
+                            codigo_buscado,
+
+                        "id_producto":
+                            prod_ref.get(
+                                "id_producto"
+                            ),
+
+                        "nombre":
+                            prod_ref[
+                                "nombre"
+                            ],
+
+                        "cantidad":
+                            cantidad,
+
+                        "precio_compra":
+                            precio_compra,
+
+                        "precio_venta2":
+                            precio_venta2,
+
+                        "precio_venta3":
+                            precio_venta3,
+
+                        "precio_venta":
+                            precio_venta,
+
+                        "unidad":
+                            unidad,
+
+                        "fecha_vencimiento":
+                            st.session_state[
+                                "form_data"
+                            ].get(
+                                "fecha_vencimiento"
+                            ),
                     }
-                    st.session_state["productos_seleccionados"][st.session_state["editar_indice"]] = producto
-                    st.success("✅ Producto actualizado correctamente.")
-                    st.session_state["editar_indice"] = None
-                    st.session_state.pop("edit_loaded", None)
+
+
+                    st.session_state[
+                        "productos_seleccionados"
+                    ][
+                        st.session_state[
+                            "editar_indice"
+                        ]
+                    ] = producto
+
+
+                    st.success(
+                        "✅ Producto actualizado correctamente."
+                    )
+
+
+                    st.session_state[
+                        "editar_indice"
+                    ] = None
+
+
+                    st.session_state.pop(
+                        "edit_loaded",
+                        None
+                    )
+
+
                 else:
+
                     producto = {
-                        "cod_barra": codigo_buscado,
-                        "id_producto": id_producto_actual,
-                        "nombre": producto_encontrado[1],
-                        "cantidad": cantidad,
-                        "precio_compra": precio_compra,
-                        "precio_venta2": precio_venta2,
-                        "precio_venta3": precio_venta3,
-                        "precio_venta": precio_venta,
-                        "unidad": unidad,
-                        "fecha_vencimiento": st.session_state["form_data"].get("fecha_vencimiento"),
+
+                        "cod_barra":
+                            codigo_buscado,
+
+                        "id_producto":
+                            id_producto_actual,
+
+                        "nombre":
+                            producto_encontrado[1],
+
+                        "cantidad":
+                            cantidad,
+
+                        "precio_compra":
+                            precio_compra,
+
+                        "precio_venta2":
+                            precio_venta2,
+
+                        "precio_venta3":
+                            precio_venta3,
+
+                        "precio_venta":
+                            precio_venta,
+
+                        "unidad":
+                            unidad,
+
+                        "fecha_vencimiento":
+                            st.session_state[
+                                "form_data"
+                            ].get(
+                                "fecha_vencimiento"
+                            ),
                     }
-                    st.session_state["productos_seleccionados"].append(producto)
-                    st.success("✅ Producto agregado a la compra.")
-                    st.session_state["_reset_form_next_run"] = True
+
+
+                    st.session_state[
+                        "productos_seleccionados"
+                    ].append(
+                        producto
+                    )
+
+
+                    st.success(
+                        "✅ Producto agregado a la compra."
+                    )
+
+
+                    st.session_state[
+                        "_reset_form_next_run"
+                    ] = True
+
+
                     st.rerun()
+
+
             else:
-                st.error("⚠️ Código de barras inválido.")
 
-    if st.session_state["productos_seleccionados"]:
-        st.markdown("---")
-        st.markdown('<div class="module-subtitle">📦 Productos en la compra actual</div>', unsafe_allow_html=True)
-        total_compra = 0.0
-        
-        for i, prod in enumerate(st.session_state["productos_seleccionados"]):
-            subtotal = round(prod["precio_compra"] * prod["cantidad"], 2)
-            total_compra += subtotal
-            
-            unidad_texto = prod["unidad"]
-            if prod["unidad"] == "libras":
-                unidad_texto = "lb"
-            elif prod["unidad"] == "quintal":
-                unidad_texto = "qq"
-            
-            st.markdown(f"""
-                <div class="product-card">
-                    <div class="product-name">📦 {prod['nombre']}</div>
-                    <div class="product-details"><strong>Cantidad:</strong> {prod['cantidad']} {unidad_texto}</div>
-                    <div class="product-details"><strong>Precio unitario:</strong> ${prod['precio_compra']:.2f}</div>
-                    <div class="product-details"><strong>Subtotal:</strong> ${subtotal:.2f}</div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button(f"✏️ Editar", key=f"editar_{i}", use_container_width=True):
-                    st.session_state["editar_indice"] = i
-                    st.rerun()
-            with col2:
-                if st.button(f"🗑️ Eliminar", key=f"eliminar_{i}", use_container_width=True):
-                    st.session_state["productos_seleccionados"].pop(i)
-                    st.success("🗑️ Producto eliminado.")
-                    st.rerun()
+                st.error(
+                    "⚠️ Código de barras inválido."
+                )
+
+
+    # ============================================================
+    # PRODUCTOS SELECCIONADOS
+    # ============================================================
+
+    if st.session_state[
+        "productos_seleccionados"
+    ]:
 
         st.markdown("---")
-        st.markdown(f"""
-            <div class="total-compra">
-                🧮 Total de la compra: ${total_compra:.2f}
+
+
+        st.markdown(
+            """
+            <div class="module-subtitle">
+            📦 Productos en la compra actual
             </div>
-        """, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True
+        )
 
-    col1, col2, col3 = st.columns([1, 2, 1])
+
+        total_compra = 0.0
+
+
+        for i, prod in enumerate(
+            st.session_state[
+                "productos_seleccionados"
+            ]
+        ):
+
+            subtotal = round(
+                prod[
+                    "precio_compra"
+                ]
+                * prod[
+                    "cantidad"
+                ],
+                2
+            )
+
+
+            total_compra += subtotal
+
+
+            unidad_texto = (
+                prod["unidad"]
+            )
+
+
+            if prod["unidad"] == "libras":
+
+                unidad_texto = "lb"
+
+
+            elif (
+                prod["unidad"]
+                == "quintal"
+            ):
+
+                unidad_texto = "qq"
+
+
+            st.markdown(
+                f"""
+                <div class="product-card">
+
+                    <div class="product-name">
+                        📦 {prod['nombre']}
+                    </div>
+
+                    <div class="product-details">
+                        <strong>Cantidad:</strong>
+                        {prod['cantidad']}
+                        {unidad_texto}
+                    </div>
+
+                    <div class="product-details">
+                        <strong>Precio unitario:</strong>
+                        ${prod['precio_compra']:.2f}
+                    </div>
+
+                    <div class="product-details">
+                        <strong>Subtotal:</strong>
+                        ${subtotal:.2f}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+            col1, col2 = st.columns(
+                [1, 1]
+            )
+
+
+            with col1:
+
+                if st.button(
+                    f"✏️ Editar",
+                    key=f"editar_{i}",
+                    use_container_width=True
+                ):
+
+                    st.session_state[
+                        "editar_indice"
+                    ] = i
+
+                    st.rerun()
+
+
+            with col2:
+
+                if st.button(
+                    f"🗑️ Eliminar",
+                    key=f"eliminar_{i}",
+                    use_container_width=True
+                ):
+
+                    st.session_state[
+                        "productos_seleccionados"
+                    ].pop(i)
+
+
+                    st.success(
+                        "🗑️ Producto eliminado."
+                    )
+
+
+                    st.rerun()
+
+
+        st.markdown("---")
+
+
+        st.markdown(
+            f"""
+            <div class="total-compra">
+                🧮 Total de la compra:
+                ${total_compra:.2f}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+    # ============================================================
+    # REGISTRAR COMPRA
+    # ============================================================
+
+    col1, col2, col3 = st.columns(
+        [1, 2, 1]
+    )
+
+
     with col2:
-        if st.button("✅ Registrar compra", use_container_width=True, type="primary"):
-            if not st.session_state["productos_seleccionados"]:
-                st.error("❌ No hay productos agregados.")
-            elif id_proveedor is None:
-                st.error("❌ Debes seleccionar un proveedor antes de registrar la compra.")
-            else:
-                try:
-                    nuevo_id = obtener_proximo_id_compra(cursor)
 
-                    fecha = datetime.now().strftime("%Y-%m-%d")
-                    id_empleado = st.session_state["id_empleado"]
+        if st.button(
+            "✅ Registrar compra",
+            use_container_width=True,
+            type="primary"
+        ):
+
+            if not st.session_state[
+                "productos_seleccionados"
+            ]:
+
+                st.error(
+                    "❌ No hay productos agregados."
+                )
+
+
+            elif id_proveedor is None:
+
+                st.error(
+                    "❌ Debes seleccionar un proveedor antes de registrar la compra."
+                )
+
+
+            else:
+
+                try:
+
+                    nuevo_id = obtener_proximo_id_compra(
+                        cursor
+                    )
+
+
+                    fecha = datetime.now().strftime(
+                        "%Y-%m-%d"
+                    )
+
+
+                    id_empleado = (
+                        st.session_state[
+                            "id_empleado"
+                        ]
+                    )
+
+
+                    # ====================================================
+                    # INSERTAR COMPRA
+                    # ====================================================
 
                     cursor.execute(
                         """
                         INSERT INTO Compra
-                        (Id_compra, Fecha, Id_empleado, id_tienda, id_proveedor, Tipo_Compra)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        (
+                            Id_compra,
+                            Fecha,
+                            Id_empleado,
+                            id_tienda,
+                            id_proveedor,
+                            Tipo_Compra
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            %s,
+                            %s,
+                            %s,
+                            %s
+                        )
                         """,
-                        (nuevo_id, fecha, id_empleado, id_tienda, id_proveedor, tipo_compra),
+                        (
+                            nuevo_id,
+                            fecha,
+                            id_empleado,
+                            id_tienda,
+                            id_proveedor,
+                            tipo_compra
+                        ),
                     )
 
-                    for prod in st.session_state["productos_seleccionados"]:
+
+                    # ====================================================
+                    # INSERTAR PRODUCTOS DE LA COMPRA
+                    # ====================================================
+
+                    for prod in st.session_state[
+                        "productos_seleccionados"
+                    ]:
+
+
+                        # ================================================
+                        # PRODUCTO X COMPRA
+                        # ================================================
+
                         cursor.execute(
                             """
                             INSERT INTO ProductoxCompra
-                            (Id_compra, cod_barra, id_producto, cantidad_comprada, precio_compra, unidad, fecha_vencimiento,
-                             Precio_minorista, Precio_mayorista1, Precio_mayorista2, id_tienda)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            (
+                                Id_compra,
+                                cod_barra,
+                                id_producto,
+                                cantidad_comprada,
+                                precio_compra,
+                                unidad,
+                                fecha_vencimiento,
+                                Precio_minorista,
+                                Precio_mayorista1,
+                                Precio_mayorista2,
+                                id_tienda
+                            )
+                            VALUES
+                            (
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s
+                            )
                             """,
                             (
                                 nuevo_id,
-                                prod["cod_barra"],
-                                prod["id_producto"],
-                                prod["cantidad"],
-                                prod["precio_compra"],
-                                prod["unidad"],
-                                prod.get("fecha_vencimiento"),
-                                prod["precio_venta"],
-                                prod["precio_venta2"],
-                                prod["precio_venta3"],
+                                prod[
+                                    "cod_barra"
+                                ],
+                                prod[
+                                    "id_producto"
+                                ],
+                                prod[
+                                    "cantidad"
+                                ],
+                                prod[
+                                    "precio_compra"
+                                ],
+                                prod[
+                                    "unidad"
+                                ],
+                                prod.get(
+                                    "fecha_vencimiento"
+                                ),
+                                prod[
+                                    "precio_venta"
+                                ],
+                                prod[
+                                    "precio_venta2"
+                                ],
+                                prod[
+                                    "precio_venta3"
+                                ],
                                 id_tienda,
                             ),
                         )
 
+
+                        # ================================================
+                        # PRODUCTO - PROVEEDOR
+                        # ================================================
+                        # Si la relación no existe, la crea.
+                        # Si ya existe, actualiza el precio de compra
+                        # y la vuelve a marcar como activa.
+                        # ================================================
+
+                        cursor.execute(
+                            """
+                            INSERT INTO ProductoProveedor
+                            (
+                                ID_Producto,
+                                ID_Proveedor,
+                                PrecioCompra,
+                                Activo
+                            )
+                            VALUES
+                            (
+                                %s,
+                                %s,
+                                %s,
+                                1
+                            )
+
+                            ON DUPLICATE KEY UPDATE
+                                PrecioCompra = VALUES(PrecioCompra),
+                                Activo = 1
+                            """,
+                            (
+                                prod[
+                                    "id_producto"
+                                ],
+                                id_proveedor,
+                                prod[
+                                    "precio_compra"
+                                ]
+                            )
+                        )
+
+
+                    # ====================================================
+                    # CONFIRMAR TRANSACCIÓN
+                    # ====================================================
+
                     conn.commit()
-                    st.success(f"📦 Compra registrada exitosamente con ID {nuevo_id} (Tipo: {tipo_compra}).")
-                    st.session_state["productos_seleccionados"] = []
-                    st.session_state["_reset_form_next_run"] = True
-                    st.session_state.pop("proveedor_designado", None)
+
+
+                    st.success(
+                        f"📦 Compra registrada exitosamente "
+                        f"con ID {nuevo_id} "
+                        f"(Tipo: {tipo_compra})."
+                    )
+
+
+                    st.session_state[
+                        "productos_seleccionados"
+                    ] = []
+
+
+                    st.session_state[
+                        "_reset_form_next_run"
+                    ] = True
+
+
+                    st.session_state.pop(
+                        "proveedor_designado",
+                        None
+                    )
+
+
                     st.rerun()
 
+
                 except Exception as e:
+
                     conn.rollback()
-                    st.error(f"⚠️ Error al guardar en la base de datos: {e}")
+
+
+                    st.error(
+                        f"⚠️ Error al guardar en la base de datos: {e}"
+                    )
+
+
+    # ============================================================
+    # VOLVER
+    # ============================================================
 
     st.divider()
-    col1, col2, col3 = st.columns([1, 2, 1])
+
+
+    col1, col2, col3 = st.columns(
+        [1, 2, 1]
+    )
+
+
     with col2:
-        if st.button("🔙 Volver al menú principal", use_container_width=True):
-            st.session_state["module"] = None
-            st.session_state["productos_seleccionados"] = []
-            st.session_state["_reset_form_next_run"] = True
-            st.session_state.pop("proveedor_designado", None)
+
+        if st.button(
+            "🔙 Volver al menú principal",
+            use_container_width=True
+        ):
+
+            st.session_state[
+                "module"
+            ] = None
+
+
+            st.session_state[
+                "productos_seleccionados"
+            ] = []
+
+
+            st.session_state[
+                "_reset_form_next_run"
+            ] = True
+
+
+            st.session_state.pop(
+                "proveedor_designado",
+                None
+            )
+
+
             st.rerun()
+
 
     cursor.close()
     conn.close()
