@@ -66,18 +66,30 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
         
-        .stSelectbox > div > div {{
-            background-color: {COLOR_BUTTON};
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
-        .stSelectbox > div > div > div {{
+                /* ============================================ */
+        /* SELECTBOX - FONDO AZUL Y TEXTO BLANCO */
+        /* ============================================ */
+
+        .stSelectbox [data-baseweb="select"] > div {{
+            background-color: {COLOR_BUTTON} !important;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
             color: white !important;
         }}
-        
-        .stSelectbox svg {{
+
+        .stSelectbox [data-baseweb="select"] div {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }}
+
+        .stSelectbox [data-baseweb="select"] span {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }}
+
+        .stSelectbox [data-baseweb="select"] svg {{
             fill: white !important;
+            color: white !important;
         }}
         
         /* Botón guardar */
