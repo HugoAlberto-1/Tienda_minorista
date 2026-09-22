@@ -399,8 +399,8 @@ def menu_principal():
                 # Administración + Reportes
                 # ====================================================
 
-                col3, col4, col5 = st.columns(
-                    3,
+                col3, col_registro_admin, col4, col5 = st.columns(
+                    4,
                     gap="large"
                 )
 
@@ -426,6 +426,29 @@ def menu_principal():
                         st.session_state["module"] = "GestionAdmin"
                         st.rerun()
                 
+
+
+                # ----------------------------------------------------
+                # REGISTRAR INFORMACIÓN
+                # ----------------------------------------------------
+
+                with col_registro_admin:
+
+                    mostrar_macro_tarjeta(
+                        "✏️",
+                        "Registra información",
+                        "Registra productos, proveedores y categorías"
+                    )
+
+                    if st.button(
+                        "📝 Ingresar información",
+                        key="btn_registro_admin",
+                        use_container_width=True
+                    ):
+
+                        st.session_state["macro_modulo"] = "registro_admin"
+                        st.rerun()
+
                 with col4: 
                     mostrar_macro_tarjeta(
                         "💸",
@@ -463,6 +486,79 @@ def menu_principal():
                         st.rerun()
                 
             
+            # ========================================================
+            # SUBMENÚ REGISTRO ADMINISTRADOR
+            # ========================================================
+
+            elif st.session_state["macro_modulo"] == "registro_admin":
+
+                mostrar_titulo_seccion(
+                    "✏️ Registra información"
+                )
+
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    mostrar_tarjeta(
+                        "📦",
+                        "Nuevo Producto",
+                        "Registra productos en el sistema"
+                    )
+
+                    if st.button(
+                        "Agregar",
+                        key="btn_producto_admin",
+                        use_container_width=True
+                    ):
+                        st.session_state["module"] = "Producto"
+                        st.rerun()
+
+                with col2:
+                    mostrar_tarjeta(
+                        "✏️",
+                        "Editar Producto",
+                        "Modifica información de productos"
+                    )
+
+                    if st.button(
+                        "Editar",
+                        key="btn_editar_admin",
+                        use_container_width=True
+                    ):
+                        st.session_state["module"] = "Editar"
+                        st.rerun()
+
+                with col3:
+                    mostrar_tarjeta(
+                        "🚚",
+                        "Nuevo Proveedor",
+                        "Registra proveedores de la tienda"
+                    )
+
+                    if st.button(
+                        "Registrar",
+                        key="btn_proveedor_admin",
+                        use_container_width=True
+                    ):
+                        st.session_state["module"] = "Proveedor"
+                        st.rerun()
+
+                with col4:
+                    mostrar_tarjeta(
+                        "📁",
+                        "Gestionar Categorías",
+                        "Administra categorías de productos"
+                    )
+
+                    if st.button(
+                        "Gestionar",
+                        key="btn_categoria_admin",
+                        use_container_width=True
+                    ):
+                        st.session_state["module"] = "Categoria"
+                        st.rerun()
+
+
             # ========================================================
             # REPORTES ADMINISTRADOR
             # ========================================================
@@ -1100,7 +1196,11 @@ def cargar_modulo():
         "Reportes_Compras",
         "Pronosticos",
         "Compras",
-        "Ventas"
+        "Ventas",
+        "Producto",
+        "Editar",
+        "Proveedor",
+        "Categoria"
     ]
 
 
