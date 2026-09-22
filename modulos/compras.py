@@ -5,6 +5,7 @@ from config.conexion import obtener_conexion
 
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo de compras - MODO CLARO"""
+
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_ACCENT = "#3a7ca5"
@@ -16,13 +17,13 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
-    
+
     st.markdown(f"""
         <style>
         .stApp {{
             background-color: {COLOR_BG};
         }}
-        
+
         .module-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -30,14 +31,14 @@ def configurar_estilo():
             font-weight: bold;
             margin-bottom: 20px;
         }}
-        
+
         .module-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 30px;
         }}
-        
+
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
@@ -46,7 +47,7 @@ def configurar_estilo():
             margin: 15px 0;
             color: {COLOR_TEXT_DARK} !important;
         }}
-        
+
         .product-card {{
             background: {COLOR_CARD};
             border-radius: 12px;
@@ -56,30 +57,30 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
             transition: all 0.3s ease;
         }}
-        
+
         .product-card:hover {{
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
             border-color: {COLOR_ACCENT};
         }}
-        
+
         .product-name {{
             font-size: 1.1em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             margin-bottom: 8px;
         }}
-        
+
         .product-details {{
             color: {COLOR_TEXT};
             font-size: 0.9em;
             margin: 5px 0;
         }}
-        
+
         .product-details strong {{
             color: {COLOR_PRIMARY};
         }}
-        
+
         .total-compra {{
             background: {COLOR_HOVER};
             color: {COLOR_PRIMARY};
@@ -91,7 +92,7 @@ def configurar_estilo():
             font-weight: bold;
             border: 1px solid {COLOR_BORDER};
         }}
-        
+
         /* Labels en color oscuro */
         .stTextInput > label,
         .stSelectbox > label,
@@ -100,24 +101,24 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
-        
-        /* FORZAR COLOR OSCURO EN RADIO BUTTONS (Propia / Global) */
+
+        /* FORZAR COLOR OSCURO EN RADIO BUTTONS */
         .stRadio div[role="radiogroup"] label {{
             color: {COLOR_TEXT_DARK} !important;
         }}
-        
+
         .stRadio div[role="radiogroup"] div {{
             color: {COLOR_TEXT_DARK} !important;
         }}
-        
+
         .stRadio div[role="radiogroup"] span {{
             color: {COLOR_TEXT_DARK} !important;
         }}
-        
+
         /* ============================================================
            TODOS LOS INPUTS EN AZUL
            ============================================================ */
-        
+
         .stTextInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -125,11 +126,11 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER} !important;
             padding: 10px 15px !important;
         }}
-        
+
         .stTextInput > div > div > input::placeholder {{
             color: rgba(255,255,255,0.7) !important;
         }}
-        
+
         .stNumberInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -137,16 +138,16 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER} !important;
             padding: 10px 15px !important;
         }}
-        
+
         .stNumberInput > div > div > input::placeholder {{
             color: rgba(255,255,255,0.7) !important;
         }}
-        
+
         .stNumberInput > div > div > button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
         }}
-        
+
         .stDateInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -154,30 +155,30 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER} !important;
             padding: 10px 15px !important;
         }}
-        
+
         .stSelectbox > div > div {{
             background-color: {COLOR_PRIMARY} !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
         }}
-        
+
         .stSelectbox > div > div > div {{
             color: white !important;
         }}
-        
+
         .stSelectbox svg {{
             fill: white !important;
         }}
-        
+
         .stSelectbox > div > div:disabled {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
         }}
-        
+
         .stSelectbox > div > div:disabled > div {{
             color: white !important;
         }}
-        
+
         .stButton > button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -186,19 +187,20 @@ def configurar_estilo():
             font-weight: 500 !important;
             transition: all 0.3s ease !important;
         }}
-        
+
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY} !important;
             transform: translateY(-1px) !important;
         }}
-        
+
         .stAlert {{
             border-radius: 8px;
         }}
-        
+
         hr {{
             border-color: {COLOR_BORDER};
         }}
+
         </style>
     """, unsafe_allow_html=True)
 
@@ -219,16 +221,20 @@ CATEGORIAS_GRANOS = [
 
 def obtener_unidades_por_categoria(categoria):
     """Devuelve las unidades disponibles según la categoría del producto"""
+
     if categoria in CATEGORIAS_GRANOS:
         return ["libras", "quintal", "arroba"]
+
     elif categoria == "Carnes y congelados":
         return ["libras", "unidad"]
+
     else:
         return ["unidad"]
 
 
 def obtener_id_producto(cursor, cod_barra, id_tienda):
     """Obtiene el id_producto a partir del código de barras"""
+
     cursor.execute(
         """
         SELECT id_producto
@@ -238,27 +244,28 @@ def obtener_id_producto(cursor, cod_barra, id_tienda):
         """,
         (cod_barra, id_tienda)
     )
-    
+
     resultado = cursor.fetchone()
-    
+
     return resultado[0] if resultado else None
 
 
 def obtener_proximo_id_compra(cursor):
     """Obtiene el próximo ID disponible para una compra (global)"""
+
     cursor.execute(
         "SELECT MAX(Id_compra) FROM Compra"
     )
-    
+
     ultimo_id = cursor.fetchone()[0]
-    
+
     return 1 if ultimo_id is None else int(ultimo_id) + 1
 
 
 def modulo_compras():
 
     configurar_estilo()
-    
+
     st.markdown(
         '<div class="module-title">🧾 Registro de Compras</div>',
         unsafe_allow_html=True
@@ -281,9 +288,8 @@ def modulo_compras():
 
         st.markdown("---")
 
-        if st.button(
-            "⬅ Volver al menú principal"
-        ):
+        if st.button("⬅ Volver al menú principal"):
+
             st.session_state["module"] = None
             st.rerun()
 
@@ -308,15 +314,10 @@ def modulo_compras():
 
 
     st.markdown(
-        f"""
-        <div class="info-box">
-            🏪 Tienda:
-            <strong>{nombre_tienda}</strong>
-            |
-            👤 Empleado:
-            <strong>{nombre_empleado}</strong>
-        </div>
-        """,
+        f'<div class="info-box">'
+        f'🏪 Tienda: <strong>{nombre_tienda}</strong> | '
+        f'👤 Empleado: <strong>{nombre_empleado}</strong>'
+        f'</div>',
         unsafe_allow_html=True
     )
 
@@ -410,21 +411,14 @@ def modulo_compras():
     if "form_data" not in st.session_state:
 
         st.session_state["form_data"] = {
-
             "precio_compra": 0.01,
-
             "cantidad": 1,
-
             "unidad": "libras",
-
             "fecha_vencimiento": None,
         }
 
 
-    if (
-        "form_data_codigo_barras"
-        not in st.session_state
-    ):
+    if "form_data_codigo_barras" not in st.session_state:
 
         st.session_state[
             "form_data_codigo_barras"
@@ -436,16 +430,10 @@ def modulo_compras():
     # ============================================================
 
     st.markdown(
-        """
-        <p style="
-            color: #1a1a1a;
-            font-size: 1.1em;
-            font-weight: 600;
-            margin-bottom: 5px;
-        ">
-        📋 Tipo de Compra
-        </p>
-        """,
+        '<p style="color: #1a1a1a; font-size: 1.1em; '
+        'font-weight: 600; margin-bottom: 5px;">'
+        '📋 Tipo de Compra'
+        '</p>',
         unsafe_allow_html=True
     )
 
@@ -456,25 +444,17 @@ def modulo_compras():
     with col_tipo1:
 
         st.markdown(
-            """
-            <p style="
-                color: #1a1a1a;
-                font-weight: 400;
-                margin-bottom: 5px;
-            ">
-            Seleccione el tipo de compra:
-            </p>
-            """,
+            '<p style="color: #1a1a1a; font-weight: 400; '
+            'margin-bottom: 5px;">'
+            'Seleccione el tipo de compra:'
+            '</p>',
             unsafe_allow_html=True
         )
 
 
         tipo_compra = st.radio(
             "",
-            [
-                "Propia",
-                "Global"
-            ],
+            ["Propia", "Global"],
             horizontal=True,
             key="tipo_compra",
             label_visibility="collapsed"
@@ -486,34 +466,26 @@ def modulo_compras():
         if tipo_compra == "Propia":
 
             st.markdown(
-                """
-                <div style="
-                    background: #e8f0fe;
-                    padding: 12px;
-                    border-radius: 8px;
-                    border-left: 4px solid #1e3a5f;
-                    color: #1a1a1a;
-                ">
-                    🏪 Compra para esta tienda
-                </div>
-                """,
+                '<div style="background: #e8f0fe; '
+                'padding: 12px; '
+                'border-radius: 8px; '
+                'border-left: 4px solid #1e3a5f; '
+                'color: #1a1a1a;">'
+                '🏪 Compra para esta tienda'
+                '</div>',
                 unsafe_allow_html=True
             )
 
         else:
 
             st.markdown(
-                """
-                <div style="
-                    background: #e8f0fe;
-                    padding: 12px;
-                    border-radius: 8px;
-                    border-left: 4px solid #1e3a5f;
-                    color: #1a1a1a;
-                ">
-                    🌎 Compra global para todas las tiendas
-                </div>
-                """,
+                '<div style="background: #e8f0fe; '
+                'padding: 12px; '
+                'border-radius: 8px; '
+                'border-left: 4px solid #1e3a5f; '
+                'color: #1a1a1a;">'
+                '🌎 Compra global para todas las tiendas'
+                '</div>',
                 unsafe_allow_html=True
             )
 
@@ -536,13 +508,9 @@ def modulo_compras():
 
 
         proveedor_seleccionado = st.selectbox(
-
             "🚚 Proveedor designado",
-
             opciones_proveedor,
-
             format_func=lambda proveedor: proveedor[1],
-
             key="proveedor_designado"
         )
 
@@ -553,7 +521,7 @@ def modulo_compras():
     else:
 
         st.warning(
-            "⚠️ No hay proveedores registrados en la base de datos."
+            "⚠️ No hay proveedores registrados para esta tienda."
         )
 
         id_proveedor = None
@@ -563,7 +531,7 @@ def modulo_compras():
 
 
     # ============================================================
-    # REINICIO DEL FORMULARIO
+    # REINICIAR FORMULARIO
     # ============================================================
 
     if st.session_state.get(
@@ -576,13 +544,9 @@ def modulo_compras():
 
 
         st.session_state["form_data"] = {
-
             "precio_compra": 0.01,
-
             "cantidad": 1,
-
             "unidad": "libras",
-
             "fecha_vencimiento": None,
         }
 
@@ -599,14 +563,12 @@ def modulo_compras():
 
 
     # ============================================================
-    # CARGAR PRODUCTO PARA EDICIÓN
+    # EDICIÓN DE PRODUCTO
     # ============================================================
 
     if (
-        st.session_state["editar_indice"]
-        is not None
-        and "edit_loaded"
-        not in st.session_state
+        st.session_state["editar_indice"] is not None
+        and "edit_loaded" not in st.session_state
     ):
 
         prod_edit = (
@@ -667,45 +629,31 @@ def modulo_compras():
 
 
     # ============================================================
-    # BUSCAR PRODUCTO
+    # CÓDIGO DE BARRAS
     # ============================================================
 
     codigo_buscado = st.text_input(
-
         "🔍 Código de barras del producto",
-
         key="form_data_codigo_barras",
-
         disabled=codigo_barras_disabled,
-
         placeholder="Ej: 123456789"
     )
 
 
     producto_encontrado = None
-
     categoria_producto = None
-
-    unidades_disponibles = [
-        "unidad"
-    ]
-
+    unidades_disponibles = ["unidad"]
     id_producto_actual = None
 
 
-    if (
-        codigo_buscado
-        and not codigo_barras_disabled
-    ):
+    if codigo_buscado and not codigo_barras_disabled:
 
         producto_encontrado = next(
-
             (
                 p
                 for p in productos
                 if p[0] == codigo_buscado
             ),
-
             None,
         )
 
@@ -724,19 +672,17 @@ def modulo_compras():
             )
 
 
+            html_producto_encontrado = (
+                '<div class="info-box">'
+                f'✅ Producto encontrado: <strong>{nombre}</strong><br>'
+                f'📁 Categoría: <strong>{categoria_producto}</strong><br>'
+                f'🆔 ID Producto: <strong>{id_producto_actual}</strong>'
+                '</div>'
+            )
+
+
             st.markdown(
-                f"""
-                <div class="info-box">
-                    ✅ Producto encontrado:
-                    <strong>{nombre}</strong>
-                    <br>
-                    📁 Categoría:
-                    <strong>{categoria_producto}</strong>
-                    <br>
-                    🆔 ID Producto:
-                    <strong>{id_producto_actual}</strong>
-                </div>
-                """,
+                html_producto_encontrado,
                 unsafe_allow_html=True
             )
 
@@ -772,13 +718,8 @@ def modulo_compras():
                 ][
                     "fecha_vencimiento"
                 ] = st.date_input(
-
                     "📅 Fecha de vencimiento (opcional)",
-
-                    key=(
-                        "form_data_fecha_vencimiento"
-                    ),
-
+                    key="form_data_fecha_vencimiento",
                     value=None
                 )
 
@@ -826,13 +767,10 @@ def modulo_compras():
     else:
 
         st.selectbox(
-
             "📏 Unidad de compra",
-
             [
                 "Seleccione un producto primero"
             ],
-
             disabled=True,
         )
 
@@ -847,15 +785,10 @@ def modulo_compras():
     # ============================================================
 
     precio_compra = st.number_input(
-
         "💰 Precio de compra unitario",
-
         min_value=0.01,
-
         step=0.01,
-
         key="form_data_precio_compra",
-
         value=st.session_state[
             "form_data"
         ].get(
@@ -867,9 +800,7 @@ def modulo_compras():
 
     st.session_state[
         "form_data"
-    ]["precio_compra"] = (
-        precio_compra
-    )
+    ]["precio_compra"] = precio_compra
 
 
     # ============================================================
@@ -879,15 +810,10 @@ def modulo_compras():
     st.session_state[
         "form_data"
     ]["cantidad"] = st.number_input(
-
         "📦 Cantidad comprada",
-
         min_value=1,
-
         max_value=10000,
-
         step=1,
-
         value=st.session_state[
             "form_data"
         ]["cantidad"],
@@ -904,22 +830,16 @@ def modulo_compras():
     # ============================================================
 
     subtotal_actual = round(
-        precio_compra
-        * cantidad,
+        precio_compra * cantidad,
         2
     )
 
 
     st.markdown(
-        f"""
-        <p style="
-            color: #1a1a1a;
-            font-weight: 600;
-        ">
-        🧾 Subtotal del producto actual:
-        ${subtotal_actual:.2f}
-        </p>
-        """,
+        f'<p style="color: #1a1a1a; font-weight: 600;">'
+        f'🧾 Subtotal del producto actual: '
+        f'${subtotal_actual:.2f}'
+        f'</p>',
         unsafe_allow_html=True
     )
 
@@ -935,14 +855,10 @@ def modulo_compras():
 
 
     st.markdown(
-        f"""
-        <p style="color: #1a1a1a;">
-        💡 <strong>
-        Precio de venta sugerido (Al Detalle):
-        </strong>
-        ${precio_minorista:.2f}
-        </p>
-        """,
+        f'<p style="color: #1a1a1a;">'
+        f'💡 <strong>Precio de venta sugerido (Al Detalle):</strong> '
+        f'${precio_minorista:.2f}'
+        f'</p>',
         unsafe_allow_html=True
     )
 
@@ -954,14 +870,10 @@ def modulo_compras():
 
 
     st.markdown(
-        f"""
-        <p style="color: #1a1a1a;">
-        💡 <strong>
-        Precio de venta sugerido (Mayorista #1):
-        </strong>
-        ${precio_sugerido2:.2f}
-        </p>
-        """,
+        f'<p style="color: #1a1a1a;">'
+        f'💡 <strong>Precio de venta sugerido (Mayorista #1):</strong> '
+        f'${precio_sugerido2:.2f}'
+        f'</p>',
         unsafe_allow_html=True
     )
 
@@ -973,14 +885,10 @@ def modulo_compras():
 
 
     st.markdown(
-        f"""
-        <p style="color: #1a1a1a;">
-        💡 <strong>
-        Precio de venta sugerido (Mayorista #2):
-        </strong>
-        ${precio_sugerido:.2f}
-        </p>
-        """,
+        f'<p style="color: #1a1a1a;">'
+        f'💡 <strong>Precio de venta sugerido (Mayorista #2):</strong> '
+        f'${precio_sugerido:.2f}'
+        f'</p>',
         unsafe_allow_html=True
     )
 
@@ -990,37 +898,25 @@ def modulo_compras():
     # ============================================================
 
     precio_venta = st.number_input(
-
         "💰 Precio de venta al detalle",
-
         min_value=0.01,
-
         value=precio_minorista,
-
         format="%.2f",
     )
 
 
     precio_venta2 = st.number_input(
-
         "💰 Precio de venta mayorista #1",
-
         min_value=0.01,
-
         value=precio_sugerido2,
-
         format="%.2f",
     )
 
 
     precio_venta3 = st.number_input(
-
         "💰 Precio de venta mayorista #2",
-
         min_value=0.01,
-
         value=precio_sugerido,
-
         format="%.2f",
     )
 
@@ -1056,6 +952,10 @@ def modulo_compras():
                 producto_encontrado
                 or codigo_barras_disabled
             ):
+
+                # ========================================================
+                # ACTUALIZAR PRODUCTO
+                # ========================================================
 
                 if (
                     st.session_state[
@@ -1142,6 +1042,10 @@ def modulo_compras():
                     )
 
 
+                # ========================================================
+                # AGREGAR PRODUCTO
+                # ========================================================
+
                 else:
 
                     producto = {
@@ -1210,7 +1114,7 @@ def modulo_compras():
 
 
     # ============================================================
-    # PRODUCTOS SELECCIONADOS
+    # PRODUCTOS EN LA COMPRA ACTUAL
     # ============================================================
 
     if st.session_state[
@@ -1221,11 +1125,9 @@ def modulo_compras():
 
 
         st.markdown(
-            """
-            <div class="module-subtitle">
-            📦 Productos en la compra actual
-            </div>
-            """,
+            '<div class="module-subtitle">'
+            '📦 Productos en la compra actual'
+            '</div>',
             unsafe_allow_html=True
         )
 
@@ -1263,43 +1165,45 @@ def modulo_compras():
                 unidad_texto = "lb"
 
 
-            elif (
-                prod["unidad"]
-                == "quintal"
-            ):
+            elif prod["unidad"] == "quintal":
 
                 unidad_texto = "qq"
 
 
+            # ========================================================
+            # TARJETA DEL PRODUCTO
+            # ========================================================
+
+            html_producto = (
+                '<div class="product-card">'
+                f'<div class="product-name">'
+                f'📦 {prod["nombre"]}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Cantidad:</strong> '
+                f'{prod["cantidad"]} {unidad_texto}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Precio unitario:</strong> '
+                f'${prod["precio_compra"]:.2f}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Subtotal:</strong> '
+                f'${subtotal:.2f}'
+                f'</div>'
+                '</div>'
+            )
+
+
             st.markdown(
-                f"""
-                <div class="product-card">
-
-                    <div class="product-name">
-                        📦 {prod['nombre']}
-                    </div>
-
-                    <div class="product-details">
-                        <strong>Cantidad:</strong>
-                        {prod['cantidad']}
-                        {unidad_texto}
-                    </div>
-
-                    <div class="product-details">
-                        <strong>Precio unitario:</strong>
-                        ${prod['precio_compra']:.2f}
-                    </div>
-
-                    <div class="product-details">
-                        <strong>Subtotal:</strong>
-                        ${subtotal:.2f}
-                    </div>
-
-                </div>
-                """,
+                html_producto,
                 unsafe_allow_html=True
             )
 
+
+            # ========================================================
+            # EDITAR / ELIMINAR
+            # ========================================================
 
             col1, col2 = st.columns(
                 [1, 1]
@@ -1309,7 +1213,7 @@ def modulo_compras():
             with col1:
 
                 if st.button(
-                    f"✏️ Editar",
+                    "✏️ Editar",
                     key=f"editar_{i}",
                     use_container_width=True
                 ):
@@ -1324,7 +1228,7 @@ def modulo_compras():
             with col2:
 
                 if st.button(
-                    f"🗑️ Eliminar",
+                    "🗑️ Eliminar",
                     key=f"eliminar_{i}",
                     use_container_width=True
                 ):
@@ -1342,16 +1246,23 @@ def modulo_compras():
                     st.rerun()
 
 
+        # ============================================================
+        # TOTAL DE LA COMPRA
+        # ============================================================
+
         st.markdown("---")
 
 
+        html_total = (
+            '<div class="total-compra">'
+            f'🧮 Total de la compra: '
+            f'${total_compra:.2f}'
+            '</div>'
+        )
+
+
         st.markdown(
-            f"""
-            <div class="total-compra">
-                🧮 Total de la compra:
-                ${total_compra:.2f}
-            </div>
-            """,
+            html_total,
             unsafe_allow_html=True
         )
 
@@ -1373,6 +1284,7 @@ def modulo_compras():
             type="primary"
         ):
 
+
             if not st.session_state[
                 "productos_seleccionados"
             ]:
@@ -1392,6 +1304,10 @@ def modulo_compras():
             else:
 
                 try:
+
+                    # ====================================================
+                    # NUEVO ID DE COMPRA
+                    # ====================================================
 
                     nuevo_id = obtener_proximo_id_compra(
                         cursor
@@ -1447,7 +1363,7 @@ def modulo_compras():
 
 
                     # ====================================================
-                    # INSERTAR PRODUCTOS DE LA COMPRA
+                    # REGISTRAR PRODUCTOS
                     # ====================================================
 
                     for prod in st.session_state[
@@ -1527,9 +1443,17 @@ def modulo_compras():
                         # ================================================
                         # PRODUCTO - PROVEEDOR
                         # ================================================
-                        # Si la relación no existe, la crea.
-                        # Si ya existe, actualiza el precio de compra
-                        # y la vuelve a marcar como activa.
+                        #
+                        # Si nunca se ha comprado este producto
+                        # a este proveedor:
+                        #
+                        # → crea la relación.
+                        #
+                        # Si ya existe:
+                        #
+                        # → actualiza PrecioCompra
+                        # → Activo = 1
+                        #
                         # ================================================
 
                         cursor.execute(
@@ -1566,7 +1490,7 @@ def modulo_compras():
 
 
                     # ====================================================
-                    # CONFIRMAR TRANSACCIÓN
+                    # CONFIRMAR TODO
                     # ====================================================
 
                     conn.commit()
@@ -1578,6 +1502,10 @@ def modulo_compras():
                         f"(Tipo: {tipo_compra})."
                     )
 
+
+                    # ====================================================
+                    # LIMPIAR COMPRA
+                    # ====================================================
 
                     st.session_state[
                         "productos_seleccionados"
@@ -1609,7 +1537,7 @@ def modulo_compras():
 
 
     # ============================================================
-    # VOLVER
+    # VOLVER AL MENÚ PRINCIPAL
     # ============================================================
 
     st.divider()
