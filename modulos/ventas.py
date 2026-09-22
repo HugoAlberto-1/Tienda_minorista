@@ -22,6 +22,7 @@ def configurar_estilo():
 
     st.markdown(f"""
         <style>
+
         .stApp {{
             background-color: {COLOR_BG};
         }}
@@ -104,6 +105,10 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
 
+        /* ============================================================
+           LABELS
+           ============================================================ */
+
         .stTextInput > label,
         .stSelectbox > label,
         .stNumberInput > label,
@@ -111,6 +116,10 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
+
+        /* ============================================================
+           TEXT INPUT
+           ============================================================ */
 
         .stTextInput > div > div > input {{
             border-radius: 8px;
@@ -124,6 +133,10 @@ def configurar_estilo():
             color: rgba(255,255,255,0.7) !important;
         }}
 
+        /* ============================================================
+           NUMBER INPUT
+           ============================================================ */
+
         .stNumberInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
@@ -132,9 +145,9 @@ def configurar_estilo():
             padding: 10px 15px;
         }}
 
-                /* ============================================ */
-        /* SELECTBOX - FONDO AZUL Y TEXTO BLANCO */
-        /* ============================================ */
+        /* ============================================================
+           SELECTBOX - FONDO AZUL Y TEXTO BLANCO
+           ============================================================ */
 
         div[data-baseweb="select"] > div {{
             background-color: {COLOR_BUTTON} !important;
@@ -152,6 +165,10 @@ def configurar_estilo():
             color: white !important;
         }}
 
+        /* ============================================================
+           DATE INPUT
+           ============================================================ */
+
         .stDateInput > div > div > input {{
             background-color: {COLOR_BUTTON};
             color: white !important;
@@ -164,6 +181,10 @@ def configurar_estilo():
             font-weight: 600 !important;
             font-size: 1.1em !important;
         }}
+
+        /* ============================================================
+           BOTONES
+           ============================================================ */
 
         .stButton > button {{
             background-color: {COLOR_PRIMARY} !important;
@@ -186,6 +207,10 @@ def configurar_estilo():
         hr {{
             border-color: {COLOR_BORDER};
         }}
+
+        /* ============================================================
+           MÉTRICAS
+           ============================================================ */
 
         [data-testid="stMetric"] {{
             background-color: {COLOR_HOVER};
@@ -210,6 +235,7 @@ def configurar_estilo():
         .stMarkdown p {{
             color: {COLOR_TEXT_DARK} !important;
         }}
+
         </style>
     """, unsafe_allow_html=True)
 
@@ -356,16 +382,7 @@ def modulo_ventas():
 
 
     # ============================================================
-    # REINICIAR FORMULARIO DE PRODUCTO
-    # ============================================================
-    #
-    # IMPORTANTE:
-    #
-    # Aquí NO eliminamos venta_fecha.
-    #
-    # De esta forma, cuando se agrega un producto y Streamlit
-    # hace rerun(), la fecha seleccionada permanece.
-    #
+    # REINICIAR FORMULARIO DEL PRODUCTO
     # ============================================================
 
     if st.session_state.get(
@@ -391,6 +408,11 @@ def modulo_ventas():
         )
 
         st.session_state.pop(
+            "_precio_venta_contexto",
+            None
+        )
+
+        st.session_state.pop(
             "venta_cantidad",
             None
         )
@@ -402,12 +424,7 @@ def modulo_ventas():
 
 
     # ============================================================
-    # REINICIAR FECHA DESPUÉS DE REGISTRAR UNA VENTA
-    # ============================================================
-    #
-    # Se hace antes de crear el date_input para evitar modificar
-    # una clave de widget después de haber sido instanciada.
-    #
+    # REINICIAR FECHA DESPUÉS DE REGISTRAR VENTA
     # ============================================================
 
     if st.session_state.get(
@@ -736,6 +753,10 @@ def modulo_ventas():
                         precio_por_libra_mayorista2 = 0
 
 
+                    # ====================================================
+                    # MOSTRAR PRECIOS CONFIGURADOS
+                    # ====================================================
+
                     st.markdown(
                         '<div class="module-subtitle">'
                         '💰 Precios configurados'
@@ -778,6 +799,10 @@ def modulo_ventas():
                     ]
 
 
+                    # ====================================================
+                    # TIPO DE CLIENTE
+                    # ====================================================
+
                     tipo_cliente = st.selectbox(
                         "🧾 Seleccione el tipo de cliente",
                         [
@@ -788,6 +813,10 @@ def modulo_ventas():
                         key="venta_tipo_cliente"
                     )
 
+
+                    # ====================================================
+                    # PRECIO BASE SEGÚN TIPO DE CLIENTE
+                    # ====================================================
 
                     if tipo_cliente == "Minorista":
 
@@ -819,14 +848,46 @@ def modulo_ventas():
 
                     else:
 
-                        st.markdown(
-                            f'<p class="price-text">'
-                            f'💰 Precio de venta por libra: '
-                            f'${precio_por_libra:.2f}'
-                            f'</p>',
-                            unsafe_allow_html=True
+                        # ====================================================
+                        # PRECIO DE VENTA EDITABLE
+                        # ====================================================
+
+                        contexto_precio = (
+                            cod_barra_real,
+                            tipo_cliente
                         )
 
+
+                        if (
+                            st.session_state.get(
+                                "_precio_venta_contexto"
+                            )
+                            != contexto_precio
+                        ):
+
+                            st.session_state[
+                                "venta_precio_venta"
+                            ] = float(
+                                precio_por_libra
+                            )
+
+                            st.session_state[
+                                "_precio_venta_contexto"
+                            ] = contexto_precio
+
+
+                        precio_venta_editable = st.number_input(
+                            "💰 Precio de venta por libra",
+                            min_value=0.01,
+                            step=0.01,
+                            format="%.2f",
+                            key="venta_precio_venta"
+                        )
+
+
+                        # ====================================================
+                        # UNIDAD DE VENTA
+                        # ====================================================
 
                         unidad_venta = st.selectbox(
                             "📏 Unidad de venta",
@@ -842,9 +903,9 @@ def modulo_ventas():
                         )
 
 
-                        # ================================================
+                        # ====================================================
                         # LIBRAS
-                        # ================================================
+                        # ====================================================
 
                         if unidad_venta == "libras":
 
@@ -866,12 +927,13 @@ def modulo_ventas():
                             )
 
                             cantidad_en_libras = cantidad
+
                             cantidad_original = cantidad
 
 
-                        # ================================================
+                        # ====================================================
                         # QUINTAL
-                        # ================================================
+                        # ====================================================
 
                         elif unidad_venta == "quintal":
 
@@ -905,9 +967,9 @@ def modulo_ventas():
                             )
 
 
-                        # ================================================
+                        # ====================================================
                         # ARROBA
-                        # ================================================
+                        # ====================================================
 
                         else:
 
@@ -941,8 +1003,12 @@ def modulo_ventas():
                             )
 
 
+                        # ====================================================
+                        # SUBTOTAL
+                        # ====================================================
+
                         subtotal = round(
-                            precio_por_libra
+                            precio_venta_editable
                             * cantidad_en_libras,
                             2
                         )
@@ -955,6 +1021,10 @@ def modulo_ventas():
                             unsafe_allow_html=True
                         )
 
+
+                        # ====================================================
+                        # VALIDAR STOCK
+                        # ====================================================
 
                         if (
                             cantidad_en_libras
@@ -998,7 +1068,7 @@ def modulo_ventas():
                                             nombre_producto,
 
                                         "precio_venta":
-                                            precio_por_libra,
+                                            precio_venta_editable,
 
                                         "cantidad":
                                             cantidad_original,
@@ -1043,6 +1113,10 @@ def modulo_ventas():
                 existencias = {}
 
 
+                # ====================================================
+                # SUMAR COMPRAS
+                # ====================================================
+
                 for unidad, cantidad in compras:
 
                     existencias[unidad] = (
@@ -1053,6 +1127,10 @@ def modulo_ventas():
                         + cantidad
                     )
 
+
+                # ====================================================
+                # RESTAR VENTAS
+                # ====================================================
 
                 for unidad, cantidad in ventas:
 
@@ -1119,6 +1197,10 @@ def modulo_ventas():
 
                 else:
 
+                    # ====================================================
+                    # PRECIOS CONFIGURADOS
+                    # ====================================================
+
                     cursor.execute(
                         """
                         SELECT
@@ -1169,6 +1251,10 @@ def modulo_ventas():
                         precio_mayorista2 = 0
 
 
+                    # ====================================================
+                    # MOSTRAR PRECIOS
+                    # ====================================================
+
                     if precio_minorista > 0:
 
                         st.markdown(
@@ -1208,6 +1294,10 @@ def modulo_ventas():
                             )
 
 
+                    # ====================================================
+                    # UNIDADES DISPONIBLES
+                    # ====================================================
+
                     if categoria in CATEGORIAS_CARNES:
 
                         unidades_con_stock = [
@@ -1232,6 +1322,10 @@ def modulo_ventas():
                         ]
 
 
+                    # ====================================================
+                    # TIPO DE CLIENTE
+                    # ====================================================
+
                     tipo_cliente = st.selectbox(
                         "🧾 Seleccione el tipo de cliente",
                         [
@@ -1242,6 +1336,10 @@ def modulo_ventas():
                         key="venta_tipo_cliente"
                     )
 
+
+                    # ====================================================
+                    # PRECIO BASE SEGÚN CLIENTE
+                    # ====================================================
 
                     if tipo_cliente == "Minorista":
 
@@ -1273,14 +1371,46 @@ def modulo_ventas():
 
                     else:
 
-                        st.markdown(
-                            f'<p class="price-text">'
-                            f'💰 Precio de venta: '
-                            f'${precio_base:.2f}'
-                            f'</p>',
-                            unsafe_allow_html=True
+                        # ====================================================
+                        # PRECIO DE VENTA EDITABLE
+                        # ====================================================
+
+                        contexto_precio = (
+                            cod_barra_real,
+                            tipo_cliente
                         )
 
+
+                        if (
+                            st.session_state.get(
+                                "_precio_venta_contexto"
+                            )
+                            != contexto_precio
+                        ):
+
+                            st.session_state[
+                                "venta_precio_venta"
+                            ] = float(
+                                precio_base
+                            )
+
+                            st.session_state[
+                                "_precio_venta_contexto"
+                            ] = contexto_precio
+
+
+                        precio_venta_editable = st.number_input(
+                            "💰 Precio de venta",
+                            min_value=0.01,
+                            step=0.01,
+                            format="%.2f",
+                            key="venta_precio_venta"
+                        )
+
+
+                        # ====================================================
+                        # UNIDAD
+                        # ====================================================
 
                         unidad_venta = st.selectbox(
                             "📏 Unidad de venta",
@@ -1288,6 +1418,10 @@ def modulo_ventas():
                             key="unidad_select"
                         )
 
+
+                        # ====================================================
+                        # STOCK
+                        # ====================================================
 
                         stock_disponible = (
                             existencias.get(
@@ -1303,6 +1437,10 @@ def modulo_ventas():
                             f"{unidad_venta}"
                         )
 
+
+                        # ====================================================
+                        # CANTIDAD
+                        # ====================================================
 
                         if unidad_venta == "unidad":
 
@@ -1332,6 +1470,10 @@ def modulo_ventas():
                             )
 
 
+                        # ====================================================
+                        # VALIDACIÓN STOCK
+                        # ====================================================
+
                         if (
                             cantidad
                             > stock_disponible
@@ -1347,8 +1489,12 @@ def modulo_ventas():
 
                         else:
 
+                            # =================================================
+                            # SUBTOTAL CON PRECIO EDITADO
+                            # =================================================
+
                             subtotal = round(
-                                precio_base
+                                precio_venta_editable
                                 * cantidad,
                                 2
                             )
@@ -1390,7 +1536,7 @@ def modulo_ventas():
                                             nombre_producto,
 
                                         "precio_venta":
-                                            precio_base,
+                                            precio_venta_editable,
 
                                         "cantidad":
                                             cantidad,
@@ -1460,34 +1606,45 @@ def modulo_ventas():
             )
 
 
+            # ========================================================
+            # TARJETA DE PRODUCTO
+            # ========================================================
+
+            html_producto = (
+                '<div class="product-card">'
+                f'<div class="product-name">'
+                f'📦 {prod["nombre"]}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Cantidad:</strong> '
+                f'{prod["cantidad"]:.2f} '
+                f'{prod["unidad"]}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Precio unitario:</strong> '
+                f'${prod["precio_venta"]:.2f}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Subtotal:</strong> '
+                f'${prod["subtotal"]:.2f}'
+                f'</div>'
+                f'<div class="product-details">'
+                f'<strong>Cliente:</strong> '
+                f'{prod["tipo_cliente"]}'
+                f'</div>'
+                '</div>'
+            )
+
+
             st.markdown(
-                f"""
-                <div class="product-card">
-                    <div class="product-name">
-                        📦 {prod['nombre']}
-                    </div>
-                    <div class="product-details">
-                        <strong>Cantidad:</strong>
-                        {prod['cantidad']:.2f}
-                        {prod['unidad']}
-                    </div>
-                    <div class="product-details">
-                        <strong>Precio unitario:</strong>
-                        ${prod['precio_venta']:.2f}
-                    </div>
-                    <div class="product-details">
-                        <strong>Subtotal:</strong>
-                        ${prod['subtotal']:.2f}
-                    </div>
-                    <div class="product-details">
-                        <strong>Cliente:</strong>
-                        {prod['tipo_cliente']}
-                    </div>
-                </div>
-                """,
+                html_producto,
                 unsafe_allow_html=True
             )
 
+
+            # ========================================================
+            # ELIMINAR PRODUCTO
+            # ========================================================
 
             col1, col2, col3 = (
                 st.columns(
@@ -1515,13 +1672,16 @@ def modulo_ventas():
         # TOTAL
         # ========================================================
 
+        html_total = (
+            '<div class="total-venta">'
+            f'💵 Total de la venta: '
+            f'${total_venta:.2f}'
+            '</div>'
+        )
+
+
         st.markdown(
-            f"""
-            <div class="total-venta">
-                💵 Total de la venta:
-                ${total_venta:.2f}
-            </div>
-            """,
+            html_total,
             unsafe_allow_html=True
         )
 
@@ -1650,25 +1810,32 @@ def modulo_ventas():
                             """,
                             (
                                 nuevo_id,
+
                                 prod[
                                     "cod_barra"
                                 ],
+
                                 prod[
                                     "id_producto"
                                 ],
+
                                 prod[
                                     "cantidad"
                                 ],
+
                                 prod[
                                     "tipo_cliente"
                                 ],
+
                                 round(
                                     prod[
                                         "precio_venta"
                                     ],
                                     2
                                 ),
+
                                 id_tienda,
+
                                 prod[
                                     "unidad"
                                 ],
@@ -1703,8 +1870,6 @@ def modulo_ventas():
                     ] = True
 
 
-                    # La fecha se limpiará al inicio del siguiente
-                    # rerun, antes de crear el date_input.
                     st.session_state[
                         "_reset_fecha_venta_next_run"
                     ] = True
