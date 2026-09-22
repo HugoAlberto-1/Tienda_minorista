@@ -1,13 +1,16 @@
 import streamlit as st
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from config.conexion import obtener_conexion
+
 
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo de ventas - MODO CLARO"""
+
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_ACCENT = "#3a7ca5"
-    COLOR_LIGHT_BLUE = "#e8f0fe"  # Azul muy claro para el fondo del total
+    COLOR_LIGHT_BLUE = "#e8f0fe"
     COLOR_BG = "#f5f7fa"
     COLOR_CARD = "#ffffff"
     COLOR_TEXT = "#333333"
@@ -16,13 +19,13 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
-    
+
     st.markdown(f"""
         <style>
         .stApp {{
             background-color: {COLOR_BG};
         }}
-        
+
         .module-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -30,15 +33,14 @@ def configurar_estilo():
             font-weight: bold;
             margin-bottom: 20px;
         }}
-        
+
         .module-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 30px;
         }}
-        
-        /* Título de Productos en esta venta - MÁS GRANDE */
+
         .product-section-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -47,7 +49,7 @@ def configurar_estilo():
             margin-bottom: 25px;
             margin-top: 20px;
         }}
-        
+
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
@@ -56,8 +58,7 @@ def configurar_estilo():
             margin: 15px 0;
             color: {COLOR_TEXT_DARK};
         }}
-        
-        /* Estilos para la sección de productos en venta */
+
         .product-card {{
             background: {COLOR_CARD};
             border-radius: 12px;
@@ -67,31 +68,30 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
             transition: all 0.3s ease;
         }}
-        
+
         .product-card:hover {{
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
             border-color: {COLOR_ACCENT};
         }}
-        
+
         .product-name {{
             font-size: 1.1em;
             font-weight: 600;
             color: {COLOR_PRIMARY};
             margin-bottom: 8px;
         }}
-        
+
         .product-details {{
             color: {COLOR_TEXT};
             font-size: 0.9em;
             margin: 5px 0;
         }}
-        
+
         .product-details strong {{
             color: {COLOR_PRIMARY};
         }}
-        
-        /* Total de venta - fondo azul más claro */
+
         .total-venta {{
             background: {COLOR_LIGHT_BLUE};
             color: {COLOR_PRIMARY};
@@ -103,12 +103,15 @@ def configurar_estilo():
             font-weight: bold;
             border: 1px solid {COLOR_BORDER};
         }}
-        
-        .stTextInput > label, .stSelectbox > label, .stNumberInput > label, .stDateInput > label {{
+
+        .stTextInput > label,
+        .stSelectbox > label,
+        .stNumberInput > label,
+        .stDateInput > label {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 500 !important;
         }}
-        
+
         .stTextInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
@@ -116,11 +119,11 @@ def configurar_estilo():
             color: white !important;
             padding: 10px 15px;
         }}
-        
+
         .stTextInput > div > div > input::placeholder {{
             color: rgba(255,255,255,0.7) !important;
         }}
-        
+
         .stNumberInput > div > div > input {{
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
@@ -128,34 +131,34 @@ def configurar_estilo():
             color: white !important;
             padding: 10px 15px;
         }}
-        
+
         .stSelectbox > div > div {{
             background-color: {COLOR_BUTTON};
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
         }}
-        
+
         .stSelectbox > div > div > div {{
             color: white !important;
         }}
-        
+
         .stSelectbox svg {{
             fill: white !important;
         }}
-        
+
         .stDateInput > div > div > input {{
             background-color: {COLOR_BUTTON};
             color: white !important;
             border-radius: 8px;
             border: 1px solid {COLOR_BORDER};
         }}
-        
+
         .price-text {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: 600 !important;
             font-size: 1.1em !important;
         }}
-        
+
         .stButton > button {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -164,40 +167,40 @@ def configurar_estilo():
             font-weight: 500 !important;
             transition: all 0.3s ease !important;
         }}
-        
+
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY} !important;
             transform: translateY(-1px) !important;
         }}
-        
+
         .stAlert {{
             border-radius: 8px;
         }}
-        
+
         hr {{
             border-color: {COLOR_BORDER};
         }}
-        
+
         [data-testid="stMetric"] {{
             background-color: {COLOR_HOVER};
             border-radius: 10px;
             padding: 10px;
         }}
-        
+
         [data-testid="stMetricLabel"] {{
             color: {COLOR_PRIMARY} !important;
             font-weight: 600 !important;
         }}
-        
+
         [data-testid="stMetricValue"] {{
             color: {COLOR_TEXT_DARK} !important;
             font-weight: bold !important;
         }}
-        
+
         .stCaption {{
             color: {COLOR_TEXT_DARK} !important;
         }}
-        
+
         .stMarkdown p {{
             color: {COLOR_TEXT_DARK} !important;
         }}
@@ -205,12 +208,16 @@ def configurar_estilo():
     """, unsafe_allow_html=True)
 
 
-# Constantes
+# ============================================================
+# CONSTANTES
+# ============================================================
+
 CONVERSIONES_A_LIBRAS = {
     "libras": 1,
     "arroba": 25,
     "quintal": 100,
 }
+
 
 CATEGORIAS_GRANOS = [
     "Granos y productos a granel",
@@ -218,67 +225,244 @@ CATEGORIAS_GRANOS = [
     "Sopas, pastas y consomés"
 ]
 
+
 CATEGORIAS_CARNES = [
     "Carnes y congelados"
 ]
 
+
 def obtener_unidades_por_categoria(categoria, unidad_compra=None):
+
     if categoria in CATEGORIAS_GRANOS:
-        return ["libras", "quintal", "arroba"]
+
+        return [
+            "libras",
+            "quintal",
+            "arroba"
+        ]
+
     elif categoria in CATEGORIAS_CARNES:
+
         if unidad_compra:
             return [unidad_compra]
-        return ["libras", "unidad"]
+
+        return [
+            "libras",
+            "unidad"
+        ]
+
     else:
+
         return ["unidad"]
 
 
-def modulo_ventas():
-    configurar_estilo()
-    
-    st.markdown('<div class="module-title">💵 Registro de Ventas</div>', unsafe_allow_html=True)
+# ============================================================
+# MÓDULO DE VENTAS
+# ============================================================
 
-    if not st.session_state.get("logueado") or "id_empleado" not in st.session_state or "id_tienda" not in st.session_state:
-        st.error("⚠️ Debes iniciar sesión para registrar ventas.")
+def modulo_ventas():
+
+    configurar_estilo()
+
+    st.markdown(
+        '<div class="module-title">💵 Registro de Ventas</div>',
+        unsafe_allow_html=True
+    )
+
+
+    # ============================================================
+    # VALIDACIÓN DE SESIÓN
+    # ============================================================
+
+    if (
+        not st.session_state.get("logueado")
+        or "id_empleado" not in st.session_state
+        or "id_tienda" not in st.session_state
+    ):
+
+        st.error(
+            "⚠️ Debes iniciar sesión para registrar ventas."
+        )
+
         st.markdown("---")
+
         if st.button("⬅ Volver al menú principal"):
+
             st.session_state["module"] = None
             st.rerun()
+
         return
 
+
+    # ============================================================
+    # DATOS DEL USUARIO
+    # ============================================================
+
     id_tienda = st.session_state["id_tienda"]
+
     id_empleado = st.session_state["id_empleado"]
-    nombre_empleado = st.session_state.get("nombre_empleado", "Usuario")
-    nombre_tienda = st.session_state.get("nombre_tienda", "Mi Tienda")
+
+    nombre_empleado = st.session_state.get(
+        "nombre_empleado",
+        "Usuario"
+    )
+
+    nombre_tienda = st.session_state.get(
+        "nombre_tienda",
+        "Mi Tienda"
+    )
+
+
+    # ============================================================
+    # CONEXIÓN
+    # ============================================================
 
     conn = obtener_conexion()
+
     if not conn:
-        st.error("❌ No se pudo conectar a la base de datos.")
+
+        st.error(
+            "❌ No se pudo conectar a la base de datos."
+        )
+
         st.stop()
+
 
     cursor = conn.cursor()
 
-    if "productos_vendidos" not in st.session_state:
-        st.session_state["productos_vendidos"] = []
-    if "form_data_codigo_barras" not in st.session_state:
-        st.session_state["form_data_codigo_barras"] = ""
 
-    if st.session_state.get("_reset_venta_next_run"):
-        st.session_state["_reset_venta_next_run"] = False
-        st.session_state["form_data_codigo_barras"] = ""
-        st.session_state.pop("venta_fecha", None)
-        st.session_state.pop("venta_tipo_cliente", None)
-        st.session_state.pop("venta_precio_venta", None)
-        st.session_state.pop("venta_cantidad", None)
-        st.session_state.pop("unidad_select", None)
+    # ============================================================
+    # VARIABLES DE SESIÓN
+    # ============================================================
+
+    if "productos_vendidos" not in st.session_state:
+
+        st.session_state[
+            "productos_vendidos"
+        ] = []
+
+
+    if "form_data_codigo_barras" not in st.session_state:
+
+        st.session_state[
+            "form_data_codigo_barras"
+        ] = ""
+
+
+    # ============================================================
+    # REINICIAR FORMULARIO DE PRODUCTO
+    # ============================================================
+    #
+    # IMPORTANTE:
+    #
+    # Aquí NO eliminamos venta_fecha.
+    #
+    # De esta forma, cuando se agrega un producto y Streamlit
+    # hace rerun(), la fecha seleccionada permanece.
+    #
+    # ============================================================
+
+    if st.session_state.get(
+        "_reset_venta_next_run"
+    ):
+
+        st.session_state[
+            "_reset_venta_next_run"
+        ] = False
+
+        st.session_state[
+            "form_data_codigo_barras"
+        ] = ""
+
+        st.session_state.pop(
+            "venta_tipo_cliente",
+            None
+        )
+
+        st.session_state.pop(
+            "venta_precio_venta",
+            None
+        )
+
+        st.session_state.pop(
+            "venta_cantidad",
+            None
+        )
+
+        st.session_state.pop(
+            "unidad_select",
+            None
+        )
+
+
+    # ============================================================
+    # REINICIAR FECHA DESPUÉS DE REGISTRAR UNA VENTA
+    # ============================================================
+    #
+    # Se hace antes de crear el date_input para evitar modificar
+    # una clave de widget después de haber sido instanciada.
+    #
+    # ============================================================
+
+    if st.session_state.get(
+        "_reset_fecha_venta_next_run"
+    ):
+
+        st.session_state[
+            "_reset_fecha_venta_next_run"
+        ] = False
+
+        st.session_state.pop(
+            "venta_fecha",
+            None
+        )
+
+
+    # ============================================================
+    # FECHA ACTUAL DE EL SALVADOR
+    # ============================================================
+
+    hoy_el_salvador = datetime.now(
+        ZoneInfo("America/El_Salvador")
+    ).date()
+
+
+    # ============================================================
+    # FECHA / EMPLEADO / TIENDA
+    # ============================================================
 
     col1, col2 = st.columns(2)
+
+
     with col1:
-        fecha_venta = st.date_input("📅 Fecha de la venta", datetime.now().date(), key="venta_fecha")
+
+        fecha_venta = st.date_input(
+            "📅 Fecha de la venta",
+            hoy_el_salvador,
+            key="venta_fecha"
+        )
+
+
     with col2:
-        st.markdown(f'<div class="info-box">🧑‍💼 Empleado: <strong>{nombre_empleado}</strong><br>🏪 Tienda: <strong>{nombre_tienda}</strong></div>', unsafe_allow_html=True)
+
+        st.markdown(
+            f'<div class="info-box">'
+            f'🧑‍💼 Empleado: '
+            f'<strong>{nombre_empleado}</strong>'
+            f'<br>'
+            f'🏪 Tienda: '
+            f'<strong>{nombre_tienda}</strong>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
 
     st.markdown("---")
+
+
+    # ============================================================
+    # CÓDIGO DE BARRAS
+    # ============================================================
 
     cod_barra = st.text_input(
         "🔍 Código de barras del producto",
@@ -286,364 +470,1291 @@ def modulo_ventas():
         placeholder="Ej: 123456789"
     )
 
+
     if cod_barra:
-        cursor.execute("""
-            SELECT Cod_barra, Nombre, categoria, id_producto
-            FROM Producto 
-            WHERE Cod_barra = %s AND id_tienda = %s
-        """, (cod_barra, id_tienda))
-        
+
+        cursor.execute(
+            """
+            SELECT
+                Cod_barra,
+                Nombre,
+                categoria,
+                id_producto
+            FROM Producto
+            WHERE Cod_barra = %s
+            AND id_tienda = %s
+            """,
+            (
+                cod_barra,
+                id_tienda
+            )
+        )
+
+
         producto_base = cursor.fetchone()
-        
+
+
         if not producto_base:
-            st.error("❌ Producto no encontrado en el catálogo de esta tienda.")
+
+            st.error(
+                "❌ Producto no encontrado en el catálogo de esta tienda."
+            )
+
+
         else:
-            cod_barra_real, nombre_producto, categoria, id_producto = producto_base
-            
-            st.markdown(f'<div class="info-box">✅ Producto encontrado: <strong>{nombre_producto}</strong><br>📁 Categoría: <strong>{categoria}</strong><br>🆔 ID: <strong>{id_producto}</strong></div>', unsafe_allow_html=True)
-            
-            cursor.execute("""
-                SELECT unidad, cantidad_comprada
+
+            (
+                cod_barra_real,
+                nombre_producto,
+                categoria,
+                id_producto
+            ) = producto_base
+
+
+            st.markdown(
+                f'<div class="info-box">'
+                f'✅ Producto encontrado: '
+                f'<strong>{nombre_producto}</strong>'
+                f'<br>'
+                f'📁 Categoría: '
+                f'<strong>{categoria}</strong>'
+                f'<br>'
+                f'🆔 ID: '
+                f'<strong>{id_producto}</strong>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+
+            # ========================================================
+            # COMPRAS DEL PRODUCTO
+            # ========================================================
+
+            cursor.execute(
+                """
+                SELECT
+                    unidad,
+                    cantidad_comprada
                 FROM ProductoxCompra
-                WHERE Cod_barra = %s AND id_tienda = %s
-            """, (cod_barra_real, id_tienda))
+                WHERE Cod_barra = %s
+                AND id_tienda = %s
+                """,
+                (
+                    cod_barra_real,
+                    id_tienda
+                )
+            )
+
+
             compras = cursor.fetchall()
-            
-            cursor.execute("""
-                SELECT unidad, Cantidad_vendida
+
+
+            # ========================================================
+            # VENTAS DEL PRODUCTO
+            # ========================================================
+
+            cursor.execute(
+                """
+                SELECT
+                    unidad,
+                    Cantidad_vendida
                 FROM ProductoxVenta
-                WHERE Cod_barra = %s AND id_tienda = %s
-            """, (cod_barra_real, id_tienda))
+                WHERE Cod_barra = %s
+                AND id_tienda = %s
+                """,
+                (
+                    cod_barra_real,
+                    id_tienda
+                )
+            )
+
+
             ventas = cursor.fetchall()
-            
+
+
+            # ========================================================
+            # GRANOS / PRODUCTOS CONVERSIBLES A LIBRAS
+            # ========================================================
+
             if categoria in CATEGORIAS_GRANOS:
+
                 total_comprado_libras = 0
+
+
                 for unidad, cantidad in compras:
+
                     if unidad == "libras":
+
                         total_comprado_libras += cantidad
+
                     elif unidad == "quintal":
-                        total_comprado_libras += cantidad * 100
+
+                        total_comprado_libras += (
+                            cantidad * 100
+                        )
+
                     elif unidad == "arroba":
-                        total_comprado_libras += cantidad * 25
-                
+
+                        total_comprado_libras += (
+                            cantidad * 25
+                        )
+
+
                 total_vendido_libras = 0
+
+
                 for unidad, cantidad in ventas:
+
                     if unidad == "libras":
+
                         total_vendido_libras += cantidad
+
                     elif unidad == "quintal":
-                        total_vendido_libras += cantidad * 100
+
+                        total_vendido_libras += (
+                            cantidad * 100
+                        )
+
                     elif unidad == "arroba":
-                        total_vendido_libras += cantidad * 25
-                
-                existencia_libras = total_comprado_libras - total_vendido_libras
-                
-                st.markdown('<div class="module-subtitle">📦 Existencia actual</div>', unsafe_allow_html=True)
+
+                        total_vendido_libras += (
+                            cantidad * 25
+                        )
+
+
+                existencia_libras = (
+                    total_comprado_libras
+                    - total_vendido_libras
+                )
+
+
+                st.markdown(
+                    '<div class="module-subtitle">'
+                    '📦 Existencia actual'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+
                 col1, col2, col3 = st.columns(3)
+
+
                 with col1:
-                    st.metric("Libras", f"{existencia_libras:.2f}")
+
+                    st.metric(
+                        "Libras",
+                        f"{existencia_libras:.2f}"
+                    )
+
+
                 with col2:
-                    st.metric("Quintales", f"{existencia_libras / 100:.2f}")
+
+                    st.metric(
+                        "Quintales",
+                        f"{existencia_libras / 100:.2f}"
+                    )
+
+
                 with col3:
-                    st.metric("Arrobas", f"{existencia_libras / 25:.2f}")
-                
+
+                    st.metric(
+                        "Arrobas",
+                        f"{existencia_libras / 25:.2f}"
+                    )
+
+
                 if existencia_libras <= 0:
-                    st.error("❌ Producto sin stock.")
+
+                    st.error(
+                        "❌ Producto sin stock."
+                    )
+
+
                 else:
-                    cursor.execute("""
-                        SELECT Precio_minorista, Precio_mayorista1, Precio_mayorista2
+
+                    # ====================================================
+                    # ÚLTIMOS PRECIOS CONFIGURADOS
+                    # ====================================================
+
+                    cursor.execute(
+                        """
+                        SELECT
+                            Precio_minorista,
+                            Precio_mayorista1,
+                            Precio_mayorista2
                         FROM ProductoxCompra
-                        WHERE Cod_barra = %s AND id_tienda = %s
+                        WHERE Cod_barra = %s
+                        AND id_tienda = %s
                         ORDER BY Id_compra DESC
                         LIMIT 1
-                    """, (cod_barra_real, id_tienda))
-                    
+                        """,
+                        (
+                            cod_barra_real,
+                            id_tienda
+                        )
+                    )
+
+
                     precios = cursor.fetchone()
-                    
+
+
                     if precios:
-                        precio_por_libra_minorista = float(precios[0]) if precios[0] else 0
-                        precio_por_libra_mayorista1 = float(precios[1]) if precios[1] else 0
-                        precio_por_libra_mayorista2 = float(precios[2]) if precios[2] else 0
+
+                        precio_por_libra_minorista = (
+                            float(precios[0])
+                            if precios[0]
+                            else 0
+                        )
+
+                        precio_por_libra_mayorista1 = (
+                            float(precios[1])
+                            if precios[1]
+                            else 0
+                        )
+
+                        precio_por_libra_mayorista2 = (
+                            float(precios[2])
+                            if precios[2]
+                            else 0
+                        )
+
+
                     else:
-                        st.warning("⚠️ No hay precios configurados.")
+
+                        st.warning(
+                            "⚠️ No hay precios configurados."
+                        )
+
                         precio_por_libra_minorista = 0
                         precio_por_libra_mayorista1 = 0
                         precio_por_libra_mayorista2 = 0
-                    
-                    st.markdown('<div class="module-subtitle">💰 Precios configurados</div>', unsafe_allow_html=True)
+
+
+                    st.markdown(
+                        '<div class="module-subtitle">'
+                        '💰 Precios configurados'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+
+
                     col1, col2, col3 = st.columns(3)
+
+
                     with col1:
-                        st.metric("Minorista", f"${precio_por_libra_minorista:.2f}")
+
+                        st.metric(
+                            "Minorista",
+                            f"${precio_por_libra_minorista:.2f}"
+                        )
+
+
                     with col2:
-                        st.metric("Mayorista 1", f"${precio_por_libra_mayorista1:.2f}")
+
+                        st.metric(
+                            "Mayorista 1",
+                            f"${precio_por_libra_mayorista1:.2f}"
+                        )
+
+
                     with col3:
-                        st.metric("Mayorista 2", f"${precio_por_libra_mayorista2:.2f}")
-                    
-                    unidades_disponibles = ["libras", "quintal", "arroba"]
-                    
+
+                        st.metric(
+                            "Mayorista 2",
+                            f"${precio_por_libra_mayorista2:.2f}"
+                        )
+
+
+                    unidades_disponibles = [
+                        "libras",
+                        "quintal",
+                        "arroba"
+                    ]
+
+
                     tipo_cliente = st.selectbox(
                         "🧾 Seleccione el tipo de cliente",
-                        ["Minorista", "Mayorista 1", "Mayorista 2"],
+                        [
+                            "Minorista",
+                            "Mayorista 1",
+                            "Mayorista 2"
+                        ],
                         key="venta_tipo_cliente"
                     )
-                    
+
+
                     if tipo_cliente == "Minorista":
-                        precio_por_libra = precio_por_libra_minorista
+
+                        precio_por_libra = (
+                            precio_por_libra_minorista
+                        )
+
+
                     elif tipo_cliente == "Mayorista 1":
-                        precio_por_libra = precio_por_libra_mayorista1
+
+                        precio_por_libra = (
+                            precio_por_libra_mayorista1
+                        )
+
+
                     else:
-                        precio_por_libra = precio_por_libra_mayorista2
-                    
+
+                        precio_por_libra = (
+                            precio_por_libra_mayorista2
+                        )
+
+
                     if precio_por_libra <= 0:
-                        st.error(f"❌ No hay precio para {tipo_cliente}.")
+
+                        st.error(
+                            f"❌ No hay precio para {tipo_cliente}."
+                        )
+
+
                     else:
-                        st.markdown(f'<p class="price-text">💰 Precio de venta por libra: ${precio_por_libra:.2f}</p>', unsafe_allow_html=True)
-                        
+
+                        st.markdown(
+                            f'<p class="price-text">'
+                            f'💰 Precio de venta por libra: '
+                            f'${precio_por_libra:.2f}'
+                            f'</p>',
+                            unsafe_allow_html=True
+                        )
+
+
                         unidad_venta = st.selectbox(
                             "📏 Unidad de venta",
                             unidades_disponibles,
                             key="unidad_select"
                         )
-                        
-                        st.info("💡 **Factores de conversión:** 1 quintal = 100 libras | 1 arroba = 25 libras")
-                        
+
+
+                        st.info(
+                            "💡 **Factores de conversión:** "
+                            "1 quintal = 100 libras | "
+                            "1 arroba = 25 libras"
+                        )
+
+
+                        # ================================================
+                        # LIBRAS
+                        # ================================================
+
                         if unidad_venta == "libras":
-                            stock_disponible = existencia_libras
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} libras")
-                            cantidad = st.number_input("📦 Cantidad vendida (libras)", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
+
+                            stock_disponible = (
+                                existencia_libras
+                            )
+
+                            st.caption(
+                                f"📦 Stock disponible: "
+                                f"{stock_disponible:.2f} libras"
+                            )
+
+                            cantidad = st.number_input(
+                                "📦 Cantidad vendida (libras)",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
+
                             cantidad_en_libras = cantidad
                             cantidad_original = cantidad
+
+
+                        # ================================================
+                        # QUINTAL
+                        # ================================================
+
                         elif unidad_venta == "quintal":
-                            stock_disponible = existencia_libras / 100
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} quintales")
-                            cantidad = st.number_input("📦 Cantidad vendida (quintales)", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
-                            cantidad_en_libras = cantidad * 100
+
+                            stock_disponible = (
+                                existencia_libras / 100
+                            )
+
+                            st.caption(
+                                f"📦 Stock disponible: "
+                                f"{stock_disponible:.2f} quintales"
+                            )
+
+                            cantidad = st.number_input(
+                                "📦 Cantidad vendida (quintales)",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
+
+                            cantidad_en_libras = (
+                                cantidad * 100
+                            )
+
                             cantidad_original = cantidad
-                            st.caption(f"🔄 {cantidad:.2f} quintal(es) = {cantidad_en_libras:.2f} libras")
+
+
+                            st.caption(
+                                f"🔄 {cantidad:.2f} quintal(es) "
+                                f"= {cantidad_en_libras:.2f} libras"
+                            )
+
+
+                        # ================================================
+                        # ARROBA
+                        # ================================================
+
                         else:
-                            stock_disponible = existencia_libras / 25
-                            st.caption(f"📦 Stock disponible: {stock_disponible:.2f} arrobas")
-                            cantidad = st.number_input("📦 Cantidad vendida (arrobas)", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
-                            cantidad_en_libras = cantidad * 25
+
+                            stock_disponible = (
+                                existencia_libras / 25
+                            )
+
+                            st.caption(
+                                f"📦 Stock disponible: "
+                                f"{stock_disponible:.2f} arrobas"
+                            )
+
+                            cantidad = st.number_input(
+                                "📦 Cantidad vendida (arrobas)",
+                                min_value=0.01,
+                                step=0.01,
+                                format="%.2f",
+                                key="venta_cantidad"
+                            )
+
+                            cantidad_en_libras = (
+                                cantidad * 25
+                            )
+
                             cantidad_original = cantidad
-                            st.caption(f"🔄 {cantidad:.2f} arroba(s) = {cantidad_en_libras:.2f} libras")
-                        
-                        subtotal = round(precio_por_libra * cantidad_en_libras, 2)
-                        st.markdown(f'<p class="price-text">🧾 Subtotal: ${subtotal:.2f}</p>', unsafe_allow_html=True)
-                        
-                        if cantidad_en_libras > existencia_libras:
-                            st.error(f"❌ No hay suficiente stock. Stock disponible: {stock_disponible:.2f} {unidad_venta}")
+
+
+                            st.caption(
+                                f"🔄 {cantidad:.2f} arroba(s) "
+                                f"= {cantidad_en_libras:.2f} libras"
+                            )
+
+
+                        subtotal = round(
+                            precio_por_libra
+                            * cantidad_en_libras,
+                            2
+                        )
+
+
+                        st.markdown(
+                            f'<p class="price-text">'
+                            f'🧾 Subtotal: ${subtotal:.2f}'
+                            f'</p>',
+                            unsafe_allow_html=True
+                        )
+
+
+                        if (
+                            cantidad_en_libras
+                            > existencia_libras
+                        ):
+
+                            st.error(
+                                f"❌ No hay suficiente stock. "
+                                f"Stock disponible: "
+                                f"{stock_disponible:.2f} "
+                                f"{unidad_venta}"
+                            )
+
+
                         else:
-                            col1, col2, col3 = st.columns([1, 2, 1])
+
+                            col1, col2, col3 = (
+                                st.columns(
+                                    [1, 2, 1]
+                                )
+                            )
+
+
                             with col2:
-                                if st.button("🛒 Agregar producto a la venta", use_container_width=True, type="primary"):
+
+                                if st.button(
+                                    "🛒 Agregar producto a la venta",
+                                    use_container_width=True,
+                                    type="primary"
+                                ):
+
                                     producto_venta = {
-                                        "cod_barra": cod_barra_real,
-                                        "id_producto": id_producto,
-                                        "nombre": nombre_producto,
-                                        "precio_venta": precio_por_libra,
-                                        "cantidad": cantidad_original,
-                                        "unidad": unidad_venta,
-                                        "subtotal": subtotal,
-                                        "tipo_cliente": tipo_cliente,
+
+                                        "cod_barra":
+                                            cod_barra_real,
+
+                                        "id_producto":
+                                            id_producto,
+
+                                        "nombre":
+                                            nombre_producto,
+
+                                        "precio_venta":
+                                            precio_por_libra,
+
+                                        "cantidad":
+                                            cantidad_original,
+
+                                        "unidad":
+                                            unidad_venta,
+
+                                        "subtotal":
+                                            subtotal,
+
+                                        "tipo_cliente":
+                                            tipo_cliente,
                                     }
-                                    st.session_state["productos_vendidos"].append(producto_venta)
-                                    st.session_state["_reset_venta_next_run"] = True
-                                    st.success("✅ Producto agregado a la venta.")
+
+
+                                    st.session_state[
+                                        "productos_vendidos"
+                                    ].append(
+                                        producto_venta
+                                    )
+
+
+                                    st.session_state[
+                                        "_reset_venta_next_run"
+                                    ] = True
+
+
+                                    st.success(
+                                        "✅ Producto agregado a la venta."
+                                    )
+
+
                                     st.rerun()
-            
+
+
+            # ========================================================
+            # OTROS PRODUCTOS
+            # ========================================================
+
             else:
+
                 existencias = {}
+
+
                 for unidad, cantidad in compras:
-                    existencias[unidad] = existencias.get(unidad, 0) + cantidad
+
+                    existencias[unidad] = (
+                        existencias.get(
+                            unidad,
+                            0
+                        )
+                        + cantidad
+                    )
+
+
                 for unidad, cantidad in ventas:
-                    existencias[unidad] = existencias.get(unidad, 0) - cantidad
-                
-                st.markdown('<div class="module-subtitle">📦 Existencia actual</div>', unsafe_allow_html=True)
-                
+
+                    existencias[unidad] = (
+                        existencias.get(
+                            unidad,
+                            0
+                        )
+                        - cantidad
+                    )
+
+
+                st.markdown(
+                    '<div class="module-subtitle">'
+                    '📦 Existencia actual'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
+
                 if existencias:
-                    cols = st.columns(len(existencias))
-                    for idx, (unidad, cantidad) in enumerate(existencias.items()):
+
+                    cols = st.columns(
+                        len(existencias)
+                    )
+
+
+                    for idx, (
+                        unidad,
+                        cantidad
+                    ) in enumerate(
+                        existencias.items()
+                    ):
+
                         if cantidad > 0:
+
                             with cols[idx]:
-                                st.metric(f"{unidad.capitalize()}", f"{cantidad:.2f}")
+
+                                st.metric(
+                                    f"{unidad.capitalize()}",
+                                    f"{cantidad:.2f}"
+                                )
+
+
                 else:
-                    st.info("No hay stock disponible")
-                
-                tiene_stock = any(c > 0 for c in existencias.values())
+
+                    st.info(
+                        "No hay stock disponible"
+                    )
+
+
+                tiene_stock = any(
+                    c > 0
+                    for c in existencias.values()
+                )
+
+
                 if not tiene_stock:
-                    st.error("❌ Producto sin stock.")
+
+                    st.error(
+                        "❌ Producto sin stock."
+                    )
+
+
                 else:
-                    cursor.execute("""
-                        SELECT Precio_minorista, Precio_mayorista1, Precio_mayorista2
+
+                    cursor.execute(
+                        """
+                        SELECT
+                            Precio_minorista,
+                            Precio_mayorista1,
+                            Precio_mayorista2
                         FROM ProductoxCompra
-                        WHERE Cod_barra = %s AND id_tienda = %s
+                        WHERE Cod_barra = %s
+                        AND id_tienda = %s
                         ORDER BY Id_compra DESC
                         LIMIT 1
-                    """, (cod_barra_real, id_tienda))
-                    
+                        """,
+                        (
+                            cod_barra_real,
+                            id_tienda
+                        )
+                    )
+
+
                     precios = cursor.fetchone()
+
+
                     if precios:
-                        precio_minorista = float(precios[0]) if precios[0] else 0
-                        precio_mayorista1 = float(precios[1]) if precios[1] else 0
-                        precio_mayorista2 = float(precios[2]) if precios[2] else 0
+
+                        precio_minorista = (
+                            float(precios[0])
+                            if precios[0]
+                            else 0
+                        )
+
+                        precio_mayorista1 = (
+                            float(precios[1])
+                            if precios[1]
+                            else 0
+                        )
+
+                        precio_mayorista2 = (
+                            float(precios[2])
+                            if precios[2]
+                            else 0
+                        )
+
+
                     else:
-                        precio_minorista = precio_mayorista1 = precio_mayorista2 = 0
-                    
+
+                        precio_minorista = 0
+                        precio_mayorista1 = 0
+                        precio_mayorista2 = 0
+
+
                     if precio_minorista > 0:
-                        st.markdown('<div class="module-subtitle">💰 Precios configurados</div>', unsafe_allow_html=True)
-                        col1, col2, col3 = st.columns(3)
+
+                        st.markdown(
+                            '<div class="module-subtitle">'
+                            '💰 Precios configurados'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+
+
+                        col1, col2, col3 = (
+                            st.columns(3)
+                        )
+
+
                         with col1:
-                            st.metric("Minorista", f"${precio_minorista:.2f}")
+
+                            st.metric(
+                                "Minorista",
+                                f"${precio_minorista:.2f}"
+                            )
+
+
                         with col2:
-                            st.metric("Mayorista 1", f"${precio_mayorista1:.2f}")
+
+                            st.metric(
+                                "Mayorista 1",
+                                f"${precio_mayorista1:.2f}"
+                            )
+
+
                         with col3:
-                            st.metric("Mayorista 2", f"${precio_mayorista2:.2f}")
-                    
+
+                            st.metric(
+                                "Mayorista 2",
+                                f"${precio_mayorista2:.2f}"
+                            )
+
+
                     if categoria in CATEGORIAS_CARNES:
-                        unidades_con_stock = [u for u, c in existencias.items() if c > 0]
-                        unidades_disponibles = [unidades_con_stock[0]] if unidades_con_stock else ["unidad"]
+
+                        unidades_con_stock = [
+                            u
+                            for u, c
+                            in existencias.items()
+                            if c > 0
+                        ]
+
+
+                        unidades_disponibles = (
+                            [unidades_con_stock[0]]
+                            if unidades_con_stock
+                            else ["unidad"]
+                        )
+
+
                     else:
-                        unidades_disponibles = ["unidad"]
-                    
+
+                        unidades_disponibles = [
+                            "unidad"
+                        ]
+
+
                     tipo_cliente = st.selectbox(
                         "🧾 Seleccione el tipo de cliente",
-                        ["Minorista", "Mayorista 1", "Mayorista 2"],
+                        [
+                            "Minorista",
+                            "Mayorista 1",
+                            "Mayorista 2"
+                        ],
                         key="venta_tipo_cliente"
                     )
-                    
+
+
                     if tipo_cliente == "Minorista":
-                        precio_base = precio_minorista
+
+                        precio_base = (
+                            precio_minorista
+                        )
+
+
                     elif tipo_cliente == "Mayorista 1":
-                        precio_base = precio_mayorista1
+
+                        precio_base = (
+                            precio_mayorista1
+                        )
+
+
                     else:
-                        precio_base = precio_mayorista2
-                    
+
+                        precio_base = (
+                            precio_mayorista2
+                        )
+
+
                     if precio_base <= 0:
-                        st.error(f"❌ No hay precio para {tipo_cliente}.")
+
+                        st.error(
+                            f"❌ No hay precio para {tipo_cliente}."
+                        )
+
+
                     else:
-                        st.markdown(f'<p class="price-text">💰 Precio de venta: ${precio_base:.2f}</p>', unsafe_allow_html=True)
-                        unidad_venta = st.selectbox("📏 Unidad de venta", unidades_disponibles, key="unidad_select")
-                        stock_disponible = existencias.get(unidad_venta, 0)
-                        st.caption(f"📦 Stock disponible: {stock_disponible:.2f} {unidad_venta}")
-                        
+
+                        st.markdown(
+                            f'<p class="price-text">'
+                            f'💰 Precio de venta: '
+                            f'${precio_base:.2f}'
+                            f'</p>',
+                            unsafe_allow_html=True
+                        )
+
+
+                        unidad_venta = st.selectbox(
+                            "📏 Unidad de venta",
+                            unidades_disponibles,
+                            key="unidad_select"
+                        )
+
+
+                        stock_disponible = (
+                            existencias.get(
+                                unidad_venta,
+                                0
+                            )
+                        )
+
+
+                        st.caption(
+                            f"📦 Stock disponible: "
+                            f"{stock_disponible:.2f} "
+                            f"{unidad_venta}"
+                        )
+
+
                         if unidad_venta == "unidad":
-                            cantidad = st.number_input(f"📦 Cantidad vendida ({unidad_venta})", min_value=1, step=1, format="%d", key="venta_cantidad")
+
+                            cantidad = (
+                                st.number_input(
+                                    f"📦 Cantidad vendida "
+                                    f"({unidad_venta})",
+                                    min_value=1,
+                                    step=1,
+                                    format="%d",
+                                    key="venta_cantidad"
+                                )
+                            )
+
+
                         else:
-                            cantidad = st.number_input(f"📦 Cantidad vendida ({unidad_venta})", min_value=0.01, step=0.01, format="%.2f", key="venta_cantidad")
-                        
-                        if cantidad > stock_disponible:
-                            st.error(f"❌ Stock insuficiente. Disponible: {stock_disponible:.2f} {unidad_venta}")
+
+                            cantidad = (
+                                st.number_input(
+                                    f"📦 Cantidad vendida "
+                                    f"({unidad_venta})",
+                                    min_value=0.01,
+                                    step=0.01,
+                                    format="%.2f",
+                                    key="venta_cantidad"
+                                )
+                            )
+
+
+                        if (
+                            cantidad
+                            > stock_disponible
+                        ):
+
+                            st.error(
+                                f"❌ Stock insuficiente. "
+                                f"Disponible: "
+                                f"{stock_disponible:.2f} "
+                                f"{unidad_venta}"
+                            )
+
+
                         else:
-                            subtotal = round(precio_base * cantidad, 2)
-                            st.markdown(f'<p class="price-text">🧾 Subtotal: ${subtotal:.2f}</p>', unsafe_allow_html=True)
-                            
-                            col1, col2, col3 = st.columns([1, 2, 1])
+
+                            subtotal = round(
+                                precio_base
+                                * cantidad,
+                                2
+                            )
+
+
+                            st.markdown(
+                                f'<p class="price-text">'
+                                f'🧾 Subtotal: '
+                                f'${subtotal:.2f}'
+                                f'</p>',
+                                unsafe_allow_html=True
+                            )
+
+
+                            col1, col2, col3 = (
+                                st.columns(
+                                    [1, 2, 1]
+                                )
+                            )
+
+
                             with col2:
-                                if st.button("🛒 Agregar producto a la venta", use_container_width=True, type="primary"):
+
+                                if st.button(
+                                    "🛒 Agregar producto a la venta",
+                                    use_container_width=True,
+                                    type="primary"
+                                ):
+
                                     producto_venta = {
-                                        "cod_barra": cod_barra_real,
-                                        "id_producto": id_producto,
-                                        "nombre": nombre_producto,
-                                        "precio_venta": precio_base,
-                                        "cantidad": cantidad,
-                                        "unidad": unidad_venta,
-                                        "subtotal": subtotal,
-                                        "tipo_cliente": tipo_cliente,
+
+                                        "cod_barra":
+                                            cod_barra_real,
+
+                                        "id_producto":
+                                            id_producto,
+
+                                        "nombre":
+                                            nombre_producto,
+
+                                        "precio_venta":
+                                            precio_base,
+
+                                        "cantidad":
+                                            cantidad,
+
+                                        "unidad":
+                                            unidad_venta,
+
+                                        "subtotal":
+                                            subtotal,
+
+                                        "tipo_cliente":
+                                            tipo_cliente,
                                     }
-                                    st.session_state["productos_vendidos"].append(producto_venta)
-                                    st.session_state["_reset_venta_next_run"] = True
-                                    st.success("✅ Producto agregado a la venta.")
+
+
+                                    st.session_state[
+                                        "productos_vendidos"
+                                    ].append(
+                                        producto_venta
+                                    )
+
+
+                                    st.session_state[
+                                        "_reset_venta_next_run"
+                                    ] = True
+
+
+                                    st.success(
+                                        "✅ Producto agregado a la venta."
+                                    )
+
+
                                     st.rerun()
+
+
+    # ============================================================
+    # PRODUCTOS DE LA VENTA
+    # ============================================================
 
     st.markdown("---")
 
-    # ============================================
-    # SECCIÓN DE PRODUCTOS EN ESTA VENTA CON ESTILO CORPORATIVO
-    # ============================================
-    if st.session_state["productos_vendidos"]:
-        # Título más grande
-        st.markdown('<div class="product-section-title">🧾 Productos en esta venta</div>', unsafe_allow_html=True)
+
+    if st.session_state[
+        "productos_vendidos"
+    ]:
+
+
+        st.markdown(
+            '<div class="product-section-title">'
+            '🧾 Productos en esta venta'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+
         total_venta = 0.0
-        
-        for i, prod in enumerate(st.session_state["productos_vendidos"]):
-            total_venta += prod["subtotal"]
-            
-            # Tarjeta de producto con estilo corporativo
-            st.markdown(f"""
+
+
+        for i, prod in enumerate(
+            st.session_state[
+                "productos_vendidos"
+            ]
+        ):
+
+            total_venta += (
+                prod["subtotal"]
+            )
+
+
+            st.markdown(
+                f"""
                 <div class="product-card">
-                    <div class="product-name">📦 {prod['nombre']}</div>
-                    <div class="product-details"><strong>Cantidad:</strong> {prod['cantidad']:.2f} {prod['unidad']}</div>
-                    <div class="product-details"><strong>Precio unitario:</strong> ${prod['precio_venta']:.2f}</div>
-                    <div class="product-details"><strong>Subtotal:</strong> ${prod['subtotal']:.2f}</div>
-                    <div class="product-details"><strong>Cliente:</strong> {prod['tipo_cliente']}</div>
+                    <div class="product-name">
+                        📦 {prod['nombre']}
+                    </div>
+                    <div class="product-details">
+                        <strong>Cantidad:</strong>
+                        {prod['cantidad']:.2f}
+                        {prod['unidad']}
+                    </div>
+                    <div class="product-details">
+                        <strong>Precio unitario:</strong>
+                        ${prod['precio_venta']:.2f}
+                    </div>
+                    <div class="product-details">
+                        <strong>Subtotal:</strong>
+                        ${prod['subtotal']:.2f}
+                    </div>
+                    <div class="product-details">
+                        <strong>Cliente:</strong>
+                        {prod['tipo_cliente']}
+                    </div>
                 </div>
-            """, unsafe_allow_html=True)
-            
-            # Botón de eliminar centrado
-            col1, col2, col3 = st.columns([1, 3, 1])
+                """,
+                unsafe_allow_html=True
+            )
+
+
+            col1, col2, col3 = (
+                st.columns(
+                    [1, 3, 1]
+                )
+            )
+
+
             with col2:
-                if st.button(f"🗑️ Eliminar", key=f"eliminar_venta_{i}", use_container_width=True):
-                    st.session_state["productos_vendidos"].pop(i)
+
+                if st.button(
+                    "🗑️ Eliminar",
+                    key=f"eliminar_venta_{i}",
+                    use_container_width=True
+                ):
+
+                    st.session_state[
+                        "productos_vendidos"
+                    ].pop(i)
+
                     st.rerun()
-        
-        # Total de la venta con fondo azul más claro
-        st.markdown(f"""
+
+
+        # ========================================================
+        # TOTAL
+        # ========================================================
+
+        st.markdown(
+            f"""
             <div class="total-venta">
-                💵 Total de la venta: ${total_venta:.2f}
+                💵 Total de la venta:
+                ${total_venta:.2f}
             </div>
-        """, unsafe_allow_html=True)
-        
-        # Botón de registrar venta centrado
-        col1, col2, col3 = st.columns([1, 2, 1])
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        # ========================================================
+        # REGISTRAR VENTA
+        # ========================================================
+
+        col1, col2, col3 = (
+            st.columns(
+                [1, 2, 1]
+            )
+        )
+
+
         with col2:
-            if st.button("✅ Registrar venta", use_container_width=True, type="primary"):
+
+            if st.button(
+                "✅ Registrar venta",
+                use_container_width=True,
+                type="primary"
+            ):
+
                 try:
-                    cursor.execute("SELECT MAX(Id_venta) FROM Venta WHERE id_tienda = %s", (id_tienda,))
-                    ultimo_id = cursor.fetchone()[0]
-                    nuevo_id = 1 if ultimo_id is None else int(ultimo_id) + 1
+
+                    # ====================================================
+                    # OBTENER NUEVO ID
+                    # ====================================================
+
                     cursor.execute(
-                        "INSERT INTO Venta (Id_venta, Fecha, Id_empleado, id_tienda) VALUES (%s, %s, %s, %s)",
-                        (nuevo_id, fecha_venta, id_empleado, id_tienda)
+                        """
+                        SELECT MAX(Id_venta)
+                        FROM Venta
+                        WHERE id_tienda = %s
+                        """,
+                        (id_tienda,)
                     )
-                    for prod in st.session_state["productos_vendidos"]:
+
+
+                    ultimo_id = (
+                        cursor.fetchone()[0]
+                    )
+
+
+                    nuevo_id = (
+                        1
+                        if ultimo_id is None
+                        else int(ultimo_id) + 1
+                    )
+
+
+                    # ====================================================
+                    # REGISTRAR CABECERA DE VENTA
+                    # ====================================================
+
+                    cursor.execute(
+                        """
+                        INSERT INTO Venta
+                        (
+                            Id_venta,
+                            Fecha,
+                            Id_empleado,
+                            id_tienda
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            %s,
+                            %s
+                        )
+                        """,
+                        (
+                            nuevo_id,
+                            fecha_venta,
+                            id_empleado,
+                            id_tienda
+                        )
+                    )
+
+
+                    # ====================================================
+                    # REGISTRAR PRODUCTOS
+                    # ====================================================
+
+                    for prod in st.session_state[
+                        "productos_vendidos"
+                    ]:
+
+
                         if "id_producto" not in prod:
-                            st.error(f"❌ Error: El producto {prod.get('nombre', 'desconocido')} no tiene id_producto")
+
+                            st.error(
+                                f"❌ Error: El producto "
+                                f"{prod.get('nombre', 'desconocido')} "
+                                f"no tiene id_producto"
+                            )
+
                             continue
-                        
+
+
                         cursor.execute(
                             """
                             INSERT INTO ProductoxVenta
-                            (Id_venta, Cod_barra, id_producto, Cantidad_vendida, Tipo_de_cliente, Precio_Venta, id_tienda, unidad)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            (
+                                Id_venta,
+                                Cod_barra,
+                                id_producto,
+                                Cantidad_vendida,
+                                Tipo_de_cliente,
+                                Precio_Venta,
+                                id_tienda,
+                                unidad
+                            )
+                            VALUES
+                            (
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s,
+                                %s
+                            )
                             """,
                             (
                                 nuevo_id,
-                                prod["cod_barra"],
-                                prod["id_producto"],
-                                prod["cantidad"],
-                                prod["tipo_cliente"],
-                                round(prod["precio_venta"], 2),
+                                prod[
+                                    "cod_barra"
+                                ],
+                                prod[
+                                    "id_producto"
+                                ],
+                                prod[
+                                    "cantidad"
+                                ],
+                                prod[
+                                    "tipo_cliente"
+                                ],
+                                round(
+                                    prod[
+                                        "precio_venta"
+                                    ],
+                                    2
+                                ),
                                 id_tienda,
-                                prod["unidad"],
+                                prod[
+                                    "unidad"
+                                ],
                             ),
                         )
+
+
+                    # ====================================================
+                    # CONFIRMAR TRANSACCIÓN
+                    # ====================================================
+
                     conn.commit()
-                    st.success(f"✅ Venta registrada exitosamente con ID {nuevo_id}.")
-                    st.session_state["productos_vendidos"] = []
-                    st.session_state["_reset_venta_next_run"] = True
+
+
+                    st.success(
+                        f"✅ Venta registrada exitosamente "
+                        f"con ID {nuevo_id}."
+                    )
+
+
+                    # ====================================================
+                    # LIMPIAR VENTA
+                    # ====================================================
+
+                    st.session_state[
+                        "productos_vendidos"
+                    ] = []
+
+
+                    st.session_state[
+                        "_reset_venta_next_run"
+                    ] = True
+
+
+                    # La fecha se limpiará al inicio del siguiente
+                    # rerun, antes de crear el date_input.
+                    st.session_state[
+                        "_reset_fecha_venta_next_run"
+                    ] = True
+
+
                     st.rerun()
+
+
                 except Exception as e:
+
                     conn.rollback()
-                    st.error(f"⚠️ Error al registrar la venta: {e}")
-    
+
+
+                    st.error(
+                        f"⚠️ Error al registrar la venta: {e}"
+                    )
+
+
+    # ============================================================
+    # VOLVER
+    # ============================================================
+
     st.divider()
-    col1, col2, col3 = st.columns([1, 2, 1])
+
+
+    col1, col2, col3 = (
+        st.columns(
+            [1, 2, 1]
+        )
+    )
+
+
     with col2:
-        if st.button("🔙 Volver al menú principal", use_container_width=True):
-            st.session_state["module"] = None
-            st.session_state["productos_vendidos"] = []
-            st.session_state["_reset_venta_next_run"] = True
+
+        if st.button(
+            "🔙 Volver al menú principal",
+            use_container_width=True
+        ):
+
+            st.session_state[
+                "module"
+            ] = None
+
+
+            st.session_state[
+                "productos_vendidos"
+            ] = []
+
+
+            st.session_state[
+                "_reset_venta_next_run"
+            ] = True
+
+
             st.rerun()
-    
+
+
     cursor.close()
     conn.close()
