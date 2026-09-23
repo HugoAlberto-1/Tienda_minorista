@@ -182,6 +182,26 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
 
+
+        /* Pestañas principales tipo dashboard */
+        button[data-baseweb="tab"] {
+            font-weight: 700;
+            padding-left: 0.9rem;
+            padding-right: 0.9rem;
+        }
+
+        div[data-testid="stExpander"] {
+            border-radius: 12px;
+            border-color: {COLOR_BORDER};
+            background: #ffffff;
+        }
+
+        .block-container {
+            padding-top: 1.2rem;
+            padding-bottom: 2rem;
+            max-width: 1500px;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -1457,20 +1477,17 @@ def modulo_pronosticos():
     configurar_estilo()
 
     st.markdown(
-        '<div class="pronostico-title">📈 Pronóstico y Punto de Reorden</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
         """
-        <div class="pronostico-subtitle">
-            Análisis de rotación, cobertura, reposición y limpieza de inventario
+        <div class="dashboard-shell">
+            <div class="section-kicker">Panel administrativo de inventario</div>
+            <div class="pronostico-title">📈 Pronóstico e inventario</div>
+            <div class="pronostico-subtitle">
+                Decisiones de compra, rotación y reabastecimiento
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-    st.caption("✅ Versión activa: decisiones por tienda · v2")
 
     # --------------------------------------------------------
     # Validación
@@ -1508,58 +1525,54 @@ def modulo_pronosticos():
     # Parámetros
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="section-title">⚙️ Configuración del pronóstico y reorden</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        "Estos parámetros permiten adaptar la recomendación "
-        "de compra a la forma real en que trabajas."
-    )
-
-    p1, p2 = st.columns(2)
-
-    with p1:
-        dias_historial = st.selectbox(
-            "Historial de ventas",
-            [30, 60, 90, 180, 365],
-            index=2,
-            format_func=lambda x: f"{x} días",
-            help=(
-                "Período utilizado para analizar "
-                "la demanda reciente."
-            ),
+    with st.expander("⚙️ Configuración del análisis", expanded=False):
+        st.caption(
+            "Ajusta únicamente los parámetros de visualización y recomendación. "
+            "La lógica del modelo se conserva sin cambios."
         )
 
-    with p2:
-        cobertura_objetivo = st.number_input(
-            "Cobertura objetivo",
-            min_value=7,
-            max_value=180,
-            value=30,
-            step=1,
-            help=(
-                "Cantidad de días que deseas cubrir "
-                "con cada reposición."
-            ),
+        p1, p2 = st.columns(2)
+
+        with p1:
+            dias_historial = st.selectbox(
+                "Historial de ventas",
+                [30, 60, 90, 180, 365],
+                index=2,
+                format_func=lambda x: f"{x} días",
+                help=(
+                    "Período utilizado para analizar "
+                    "la demanda reciente."
+                ),
+            )
+
+        with p2:
+            cobertura_objetivo = st.number_input(
+                "Cobertura objetivo",
+                min_value=7,
+                max_value=180,
+                value=30,
+                step=1,
+                help=(
+                    "Cantidad de días que deseas cubrir "
+                    "con cada reposición."
+                ),
+            )
+
+        dias_limpieza = st.slider(
+            "Considerar producto para limpieza si lleva sin vender:",
+            min_value=30,
+            max_value=365,
+            value=90,
+            step=15,
+            format="%d días",
         )
 
-    dias_limpieza = st.slider(
-        "Considerar producto para limpieza si lleva sin vender:",
-        min_value=30,
-        max_value=365,
-        value=90,
-        step=15,
-        format="%d días",
-    )
-
-    st.caption(
-        "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-        "2 % de la mediana de todas las ventas mensuales completas. "
-        "El historial seleccionado arriba afecta al pronóstico reciente, "
-        "no a la mediana mensual."
-    )
+        st.caption(
+            "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
+            "2 % de la mediana de todas las ventas mensuales completas. "
+            "El historial seleccionado arriba afecta al pronóstico reciente, "
+            "no a la mediana mensual."
+        )
 
     fecha_fin = datetime.now().date()
 
@@ -1663,10 +1676,7 @@ def modulo_pronosticos():
     # FILTROS GENERALES
     # ========================================================
 
-    st.markdown(
-        '<div class="section-title">🎛️ Filtros del análisis</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="section-title">🎛️ Filtros rápidos</div>', unsafe_allow_html=True)
 
     categoria_lista = (
         ["Todas"] +
