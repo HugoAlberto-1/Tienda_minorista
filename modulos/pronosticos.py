@@ -39,9 +39,17 @@ UNIDADES_PESO = [
 ]
 
 
-# Porcentaje acordado para el stock de seguridad: 2 % de la mediana
-# de las ventas MENSUALES del historial completo por producto y tienda.
-PORCENTAJE_SEGURIDAD = 0.02
+# ============================================================
+# PARÁMETROS FIJOS DEL MODELO DE REORDEN
+#
+# Antes eran configurables desde la pantalla principal, pero en la
+# práctica casi no cambian y solo agregaban ruido visual. Se dejan
+# aquí como constantes: si en algún momento necesitas ajustarlos,
+# basta con modificar estos dos valores.
+# ============================================================
+
+DIAS_REPOSICION = 7   # días que tarda en llegar un pedido nuevo
+DIAS_SEGURIDAD = 7    # colchón adicional de días de inventario
 
 
 # ============================================================
@@ -266,10 +274,7 @@ def formatear_cantidad(valor, medida):
     try:
         valor = float(valor)
     except Exception:
-        return "Sin datos"
-
-    if not np.isfinite(valor):
-        return "Sin datos"
+        valor = 0
 
     if medida == "lb":
         return f"{valor:,.2f} lb"
@@ -475,52 +480,6 @@ def obtener_compras():
 
 
 # ============================================================
-# LEAD TIME POR PRODUCTO Y TIENDA
-# ============================================================
-
-def obtener_lead_times():
-    """Proveedor de la compra más reciente de cada producto/tienda.
-
-    Se asume Compra.id_proveedor -> proveedores.id_proveedor y
-    ProductoxCompra.Id_compra -> Compra.Id_compra. No se inventa un
-    proveedor ni se asigna un plazo fijo cuando falta la relación.
-    """
-    columnas = ["Código", "id_tienda", "Proveedor", "Lead time"]
-    conn = obtener_conexion()
-    if not conn:
-        st.error("No se pudo conectar para consultar los proveedores.")
-        return pd.DataFrame(columns=columnas)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT pc.cod_barra, pc.id_tienda, c.id_proveedor,
-                   pr.lead_time, c.Fecha, c.Id_compra
-            FROM ProductoxCompra pc
-            INNER JOIN Compra c ON pc.Id_compra = c.Id_compra
-            LEFT JOIN proveedores pr ON c.id_proveedor = pr.id_proveedor
-            ORDER BY c.Fecha DESC, c.Id_compra DESC
-        """)
-        registros = cursor.fetchall()
-        datos = pd.DataFrame(registros, columns=[
-            "Código", "id_tienda", "Proveedor", "Lead time",
-            "Fecha compra", "ID compra"
-        ])
-        if datos.empty:
-            return pd.DataFrame(columns=columnas)
-        # Primera compra = la más reciente (sin mezclar proveedores).
-        datos = datos.drop_duplicates(["Código", "id_tienda"], keep="first")
-        datos["Lead time"] = pd.to_numeric(datos["Lead time"], errors="coerce")
-        datos.loc[datos["Lead time"] <= 0, "Lead time"] = np.nan
-        return datos[columnas]
-    except Exception as e:
-        st.error(f"❌ No se pudo obtener el lead time de proveedores: {e}")
-        return pd.DataFrame(columns=columnas)
-    finally:
-        cursor.close()
-        conn.close()
-
-
-# ============================================================
 # HISTORIAL DE VENTAS
 # ============================================================
 
@@ -706,39 +665,6 @@ def calcular_pronostico_30_dias(
 
 
 # ============================================================
-# STOCK DE SEGURIDAD: HISTORIAL MENSUAL COMPLETO
-# ============================================================
-
-def calcular_seguridad_mensual(ventas_producto, fecha_fin):
-    """(mediana mensual, stock de seguridad, meses completos).
-
-    Agrupa todas las ventas del producto/tienda por mes calendario,
-    incluyendo meses intermedios sin ventas. Descarta el mes actual
-    porque todavía no está completo. No confunde falta de historia
-    con demanda cero: devuelve NaN cuando no hay meses completos.
-    """
-    if ventas_producto.empty:
-        return np.nan, np.nan, 0
-    fecha = pd.Timestamp(fecha_fin).normalize()
-    datos = ventas_producto.copy()
-    datos["Fecha"] = pd.to_datetime(datos["Fecha"], errors="coerce")
-    datos = datos[
-        datos["Fecha"].notna() &
-        (datos["Fecha"] < fecha.replace(day=1))
-    ].copy()
-    if datos.empty:
-        return np.nan, np.nan, 0
-    datos["Mes"] = datos["Fecha"].dt.to_period("M")
-    totales = datos.groupby("Mes")["Cantidad_Base"].sum()
-    # Meses sin ventas entre la primera venta y el mes anterior al actual.
-    ultimo_mes = fecha.to_period("M") - 1
-    meses = pd.period_range(totales.index.min(), ultimo_mes, freq="M")
-    totales = totales.reindex(meses, fill_value=0.0)
-    mediana = float(totales.median())
-    return mediana, mediana * PORCENTAJE_SEGURIDAD, len(totales)
-
-
-# ============================================================
 # CLASIFICACIÓN DE ROTACIÓN
 # ============================================================
 
@@ -781,7 +707,8 @@ def construir_analisis(
     ventas,
     fecha_fin,
     dias_historial,
-    lead_times,
+    dias_reposicion,
+    dias_seguridad,
     cobertura_objetivo,
     dias_limpieza,
 ):
@@ -793,11 +720,6 @@ def construir_analisis(
     fecha_fin = pd.Timestamp(fecha_fin)
     fecha_inicio = fecha_fin - pd.Timedelta(
         days=dias_historial - 1
-    )
-    # La relación proveedor-producto se conserva por tienda.
-    productos = productos.merge(
-        lead_times, how="left", on=["Código", "id_tienda"],
-        validate="many_to_one"
     )
 
     for _, prod in productos.iterrows():
@@ -935,36 +857,41 @@ def construir_analisis(
         )
 
         # ----------------------------------------------------
-        # Reorden = demanda diaria * LT del proveedor + SS mensual.
-        # Mediana: TODOS los meses completos del historial de ventas.
+        # Punto de reorden
+        #
+        # Demanda durante tiempo de reposición
+        # + inventario de seguridad
         # ----------------------------------------------------
-        mediana_mensual, stock_seguridad, meses_historial = (
-            calcular_seguridad_mensual(ventas_prod, fecha_fin)
+
+        punto_reorden = demanda_diaria * (
+            dias_reposicion + dias_seguridad
         )
-        lead_time = pd.to_numeric(prod["Lead time"], errors="coerce")
-        datos_reorden_ok = (
-            pd.notna(lead_time) and lead_time > 0 and
-            pd.notna(stock_seguridad)
+
+        # ----------------------------------------------------
+        # Stock objetivo
+        #
+        # Queremos cubrir:
+        # cobertura objetivo
+        # + tiempo de reposición
+        # + seguridad
+        # ----------------------------------------------------
+
+        stock_objetivo = demanda_diaria * (
+            cobertura_objetivo +
+            dias_reposicion +
+            dias_seguridad
         )
-        if datos_reorden_ok:
-            punto_reorden = demanda_diaria * float(lead_time) + stock_seguridad
-            stock_objetivo = (
-                demanda_diaria * (cobertura_objetivo + float(lead_time))
-                + stock_seguridad
-            )
-            compra_sugerida = max(0.0, stock_objetivo - stock)
-        else:
-            # No presentar un cero inventado ni recomendar compras con
-            # proveedor / historial mensual incompletos.
-            punto_reorden = np.nan
-            stock_objetivo = np.nan
-            compra_sugerida = np.nan
+
+        compra_sugerida = max(
+            0,
+            stock_objetivo - stock
+        )
 
         # ----------------------------------------------------
         # Próximo reorden
         # ----------------------------------------------------
 
-        if not datos_reorden_ok or demanda_diaria <= 0:
+        if demanda_diaria <= 0:
             dias_para_reorden = np.inf
 
         elif stock <= punto_reorden:
@@ -982,13 +909,8 @@ def construir_analisis(
         accion = ""
         prioridad = 99
 
-        # No asignar una recomendación cuantitativa si faltan datos.
-        if not datos_reorden_ok:
-            accion = "⚪ Revisar datos de reorden"
-            prioridad = 7
-
         # Producto con stock pero sin ventas
-        elif stock > 0 and demanda_diaria <= 0:
+        if stock > 0 and demanda_diaria <= 0:
 
             if (
                 dias_sin_venta is None
@@ -1054,10 +976,7 @@ def construir_analisis(
         # Texto próximo reorden
         # ----------------------------------------------------
 
-        if not datos_reorden_ok:
-            proximo_reorden_texto = "Sin datos"
-
-        elif demanda_diaria <= 0:
+        if demanda_diaria <= 0:
             proximo_reorden_texto = "No comprar"
 
         elif dias_para_reorden <= 0:
@@ -1111,11 +1030,6 @@ def construir_analisis(
             "Tienda": prod["Tienda"],
 
             "Medida": medida,
-            "Proveedor": prod["Proveedor"],
-            "Lead time": float(lead_time) if pd.notna(lead_time) else np.nan,
-            "Mediana mensual": round(mediana_mensual, 2),
-            "Stock seguridad": round(stock_seguridad, 2),
-            "Meses historial": meses_historial,
 
             "Stock": round(stock, 2),
 
@@ -1186,9 +1100,6 @@ MAPA_INDICADORES = {
     "% Rotación": "Rotación %",
     "Rotación (nivel)": "Nivel rotación",
     "Punto de reorden": "Punto reorden",
-    "Stock de seguridad": "Stock seguridad",
-    "Mediana mensual": "Mediana mensual",
-    "Lead time (días)": "Lead time",
     "Cuánto comprar": "Compra sugerida",
     "Recomendación": "Acción",
     "Tendencia": "Tendencia",
@@ -1200,8 +1111,6 @@ MAPA_INDICADORES = {
 INDICADORES_CANTIDAD = [
     "Stock actual",
     "Punto de reorden",
-    "Stock de seguridad",
-    "Mediana mensual",
     "Cuánto comprar",
 ]
 
@@ -1211,8 +1120,6 @@ INDICADORES_DEFAULT = [
     "Duración estimada",
     "% Rotación",
     "Punto de reorden",
-    "Stock de seguridad",
-    "Lead time (días)",
     "Cuánto comprar",
     "Recomendación",
 ]
@@ -1267,11 +1174,6 @@ def construir_tabla_indicadores(
                     r["Medida"]
                 ),
                 axis=1,
-            )
-
-        elif indicador == "Lead time (días)":
-            resultado[indicador] = df_subset[columna_origen].apply(
-                lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
             )
 
         elif indicador == "% Rotación":
@@ -1347,13 +1249,6 @@ def preparar_tabla_decision(df):
         axis=1,
     )
 
-    tabla["Stock seguridad"] = tabla.apply(
-        lambda r: formatear_cantidad(r["Stock seguridad"], r["Medida"]), axis=1
-    )
-    tabla["Lead time (días)"] = tabla["Lead time"].apply(
-        lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
-    )
-
     tabla["Comprar"] = tabla.apply(
         lambda r: formatear_cantidad(
             r["Compra sugerida"],
@@ -1371,8 +1266,6 @@ def preparar_tabla_decision(df):
         "Nivel rotación",
         "Pronóstico",
         "Reorden",
-        "Stock seguridad",
-        "Lead time (días)",
         "Comprar",
         "Próximo reorden",
         "Tendencia",
@@ -1543,10 +1436,9 @@ def modulo_pronosticos():
     )
 
     st.caption(
-        "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-        "2 % de la mediana de todas las ventas mensuales completas. "
-        "El historial seleccionado arriba afecta al pronóstico reciente, "
-        "no a la mediana mensual."
+        f"ℹ️ El punto de reorden asume un tiempo de reposición fijo "
+        f"de {DIAS_REPOSICION} días y un stock de seguridad fijo de "
+        f"{DIAS_SEGURIDAD} días."
     )
 
     fecha_fin = datetime.now().date()
@@ -1563,7 +1455,6 @@ def modulo_pronosticos():
         productos = obtener_productos()
         compras = obtener_compras()
         ventas = obtener_ventas()
-        lead_times = obtener_lead_times()
 
     if productos.empty:
         st.warning(
@@ -1636,7 +1527,8 @@ def modulo_pronosticos():
         ventas=ventas,
         fecha_fin=fecha_fin,
         dias_historial=dias_historial,
-        lead_times=lead_times,
+        dias_reposicion=DIAS_REPOSICION,
+        dias_seguridad=DIAS_SEGURIDAD,
         cobertura_objetivo=cobertura_objetivo,
         dias_limpieza=dias_limpieza,
     )
@@ -1646,15 +1538,6 @@ def modulo_pronosticos():
             "⚠️ No fue posible construir el análisis."
         )
         return
-
-    incompletos = df["Acción"].eq("⚪ Revisar datos de reorden").sum()
-    if incompletos:
-        st.warning(
-            f"⚠️ {incompletos} producto(s)/tienda sin lead time válido o "
-            "sin meses completos de ventas. Se muestra 'Sin datos' "
-            "en lugar de calcular un reorden con valores inventados. "
-            "Se usa el proveedor de la compra más reciente."
-        )
 
     # ========================================================
     # FILTROS GENERALES
@@ -1689,17 +1572,6 @@ def modulo_pronosticos():
             df_filtrado["Categoría"] ==
             categoria
         ]
-
-    pendientes = df_filtrado[
-        df_filtrado["Acción"] == "⚪ Revisar datos de reorden"
-    ]
-    if not pendientes.empty:
-        with st.expander(f"⚪ Revisar datos de reorden ({len(pendientes)})"):
-            st.dataframe(
-                pendientes[["Producto", "Tienda", "Código", "Proveedor",
-                            "Lead time", "Meses historial"]],
-                use_container_width=True, hide_index=True
-            )
 
     # ========================================================
     # RESUMEN EJECUTIVO
@@ -2219,31 +2091,33 @@ def modulo_pronosticos():
 
             ### Punto de reorden
 
-            **Punto de reorden = demanda diaria × lead time del proveedor
-            + stock de seguridad**.
+            **Punto de reorden = demanda diaria ×
+            (tiempo de reposición + stock de seguridad)**
 
-            - Lead time: columna `proveedores.lead_time`, vinculada a
-              `Compra.id_proveedor` de la compra más reciente del producto
-              en la tienda. Si el proveedor cambia, se usa el más reciente.
-            - Stock de seguridad: **2 % de la mediana mensual** de todo el
-              historial de ventas de ese producto en esa tienda. Se excluye
-              el mes actual incompleto; los meses intermedios sin ventas
-              se contabilizan como cero.
-            - El selector de historial afecta únicamente al pronóstico de
-              demanda reciente (30 a 365 días), no al stock de seguridad.
-            - Si faltan proveedor, lead time positivo o ventas en meses
-              completos, se indica **Sin datos** en vez de inventar cifras.
+            Se utilizan valores fijos para mantener la pantalla simple:
+
+            - Tiempo de reposición: **{DIAS_REPOSICION} días**
+            - Stock de seguridad: **{DIAS_SEGURIDAD} días**
+
+            Si en tu operación estos tiempos varían mucho de un
+            producto a otro (por ejemplo, proveedores distintos con
+            tiempos de entrega distintos), lo ideal a futuro sería
+            registrarlos por producto o por proveedor en la base de
+            datos; por ahora se manejan como un promedio general para
+            todos los productos y tiendas.
 
             ---
 
             ### Cuánto comprar
 
-            Stock objetivo = demanda diaria × (cobertura objetivo +
-            lead time del proveedor) + stock de seguridad.
+            El sistema estima cuánto inventario debería existir para
+            cubrir:
 
-            Compra sugerida = máximo entre cero y (stock objetivo - stock).
-            La cantidad sigue siendo una estimación que se debe adaptar a
-            las presentaciones reales de compra.
+            - la cobertura objetivo;
+            - el tiempo de reposición;
+            - el stock de seguridad.
+
+            Después resta el inventario existente.
 
             ---
 
