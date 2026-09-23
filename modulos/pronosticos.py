@@ -1540,9 +1540,11 @@ def modulo_pronosticos():
     # Contenedores reservados para controlar el orden visual:
     # 1. filtros principales
     # 2. configuración avanzada
-    # 3. sección de atención
+    # 3. información de la tienda / administrador y datos de reorden
+    # 4. sección de atención
     filtros_principales = st.container()
     configuracion_avanzada = st.container()
+    contexto_tienda = st.container()
     atencion_principal = st.container()
 
     # --------------------------------------------------------
@@ -1688,26 +1690,20 @@ def modulo_pronosticos():
                 id_tienda_sesion
             ].copy()
 
-        st.markdown(
-            f"""
+        mensaje_contexto_tienda = f"""
             <div class="info-box">
                 🏪 <strong>Tienda:</strong>
                 {nombre_tienda_sesion}
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        """
 
     else:
-        st.markdown(
-            """
+        mensaje_contexto_tienda = """
             <div class="info-box">
                 👑 <strong>Administrador:</strong>
                 visualización global de inventario y pronósticos.
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        """
 
     # --------------------------------------------------------
     # Construcción del análisis
@@ -1807,6 +1803,46 @@ def modulo_pronosticos():
     df_tienda_vista = df_filtrado[
         df_filtrado["id_tienda"] == tienda_seleccionada
     ].copy()
+
+    # ========================================================
+    # CONTEXTO DE LA TIENDA Y DATOS DE REORDEN
+    # ========================================================
+
+    pendientes = df_tienda_vista[
+        df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
+    ]
+
+    with contexto_tienda:
+        st.markdown(
+            mensaje_contexto_tienda,
+            unsafe_allow_html=True,
+        )
+
+        if not pendientes.empty:
+            st.warning(
+                f"⚠️ {len(pendientes)} producto(s) de "
+                f"{nombre_tienda_seleccionada} sin lead time válido o "
+                "sin meses completos de ventas. El reorden se muestra "
+                "como 'Sin datos'. Se usa el proveedor de la compra más reciente."
+            )
+
+            with st.expander(
+                f"⚪ Revisar datos de reorden ({len(pendientes)})"
+            ):
+                st.dataframe(
+                    pendientes[
+                        [
+                            "Producto",
+                            "Tienda",
+                            "Código",
+                            "Proveedor",
+                            "Lead time",
+                            "Meses historial",
+                        ]
+                    ],
+                    use_container_width=True,
+                    hide_index=True,
+                )
 
     # ========================================================
     # ¿QUÉ NECESITA ATENCIÓN?
@@ -1912,23 +1948,6 @@ def modulo_pronosticos():
             ''',
             unsafe_allow_html=True,
         )
-
-    pendientes = df_tienda_vista[
-        df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
-    ]
-    if not pendientes.empty:
-        st.warning(
-            f"⚠️ {len(pendientes)} producto(s) de "
-            f"{nombre_tienda_seleccionada} sin lead time válido o "
-            "sin meses completos de ventas. El reorden se muestra "
-            "como 'Sin datos'. Se usa el proveedor de la compra más reciente."
-        )
-        with st.expander(f"⚪ Revisar datos de reorden ({len(pendientes)})"):
-            st.dataframe(
-                pendientes[["Producto", "Tienda", "Código", "Proveedor",
-                            "Lead time", "Meses historial"]],
-                use_container_width=True, hide_index=True
-            )
 
     # ========================================================
     # VISTA POR TIENDA: TODOS LOS PRODUCTOS DE UNA TIENDA
