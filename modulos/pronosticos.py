@@ -117,6 +117,71 @@ def configurar_estilo():
             text-transform: uppercase;
         }}
 
+        /* Tarjetas de atención */
+        .attention-card {{
+            background: white;
+            border: 1px solid {COLOR_BORDER};
+            border-radius: 12px;
+            padding: 14px 12px;
+            min-height: 118px;
+            box-shadow: 0 2px 7px rgba(0,0,0,0.05);
+        }}
+
+        .attention-card.critical {{
+            border-top: 5px solid #dc3545;
+            background: #fff7f8;
+        }}
+
+        .attention-card.warning {{
+            border-top: 5px solid #f0b429;
+            background: #fffdf5;
+        }}
+
+        .attention-card.orange {{
+            border-top: 5px solid #e67e22;
+            background: #fff9f3;
+        }}
+
+        .attention-card.stop {{
+            border-top: 5px solid #6c757d;
+            background: #f8f9fa;
+        }}
+
+        .attention-card.cleanup {{
+            border-top: 5px solid #8e6bbf;
+            background: #fbf9ff;
+        }}
+
+        .attention-card-title {{
+            font-size: 0.88em;
+            font-weight: 700;
+            color: {COLOR_TEXT};
+            margin-bottom: 8px;
+        }}
+
+        .attention-card-number {{
+            font-size: 2em;
+            font-weight: 800;
+            color: {COLOR_PRIMARY};
+            line-height: 1;
+        }}
+
+        .attention-card-text {{
+            font-size: 0.82em;
+            color: {COLOR_MUTED};
+            margin-top: 5px;
+        }}
+
+        .maintain-card {{
+            background: #ffffff;
+            border: 1px solid {COLOR_BORDER};
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: {COLOR_MUTED};
+            font-size: 0.90em;
+            margin-top: 8px;
+        }}
+
         .decision-card {{
             background: white;
             border: 1px solid {COLOR_BORDER};
@@ -1476,6 +1541,10 @@ def modulo_pronosticos():
     # aparezcan visualmente inmediatamente después del encabezado.
     filtros_principales = st.container()
 
+    # Este contenedor se reserva justo después de los filtros para
+    # mostrar el resumen de productos que requieren atención.
+    atencion_principal = st.container()
+
     # --------------------------------------------------------
     # Validación
     # --------------------------------------------------------
@@ -1737,6 +1806,111 @@ def modulo_pronosticos():
         df_filtrado["id_tienda"] == tienda_seleccionada
     ].copy()
 
+    # ========================================================
+    # ¿QUÉ NECESITA ATENCIÓN?
+    # ========================================================
+    # Los conteos usan exactamente la clasificación ya calculada
+    # en la columna "Acción"; no modifican ninguna condición.
+    comprar_ahora = int(
+        df_tienda_vista["Acción"].eq("🔴 Comprar ahora").sum()
+    )
+    proximos = int(
+        df_tienda_vista["Acción"].eq("🟡 Próximo a comprar").sum()
+    )
+    reducir = int(
+        df_tienda_vista["Acción"].eq("🟠 Reducir compra").sum()
+    )
+    no_comprar = int(
+        df_tienda_vista["Acción"].eq("🚫 No comprar").sum()
+    )
+    limpieza = int(
+        df_tienda_vista["Acción"].eq("🧹 Limpieza de inventario").sum()
+    )
+    mantener = int(
+        df_tienda_vista["Acción"].eq("🟢 Mantener").sum()
+    )
+
+    def texto_productos(cantidad):
+        return "producto" if cantidad == 1 else "productos"
+
+    with atencion_principal:
+        st.markdown(
+            '<div class="section-title">🚨 ¿Qué necesita atención?</div>',
+            unsafe_allow_html=True,
+        )
+
+        a1, a2, a3, a4, a5 = st.columns(5)
+
+        with a1:
+            st.markdown(
+                f'''
+                <div class="attention-card critical">
+                    <div class="attention-card-title">🔴 Comprar ahora</div>
+                    <div class="attention-card-number">{comprar_ahora}</div>
+                    <div class="attention-card-text">{texto_productos(comprar_ahora)}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        with a2:
+            st.markdown(
+                f'''
+                <div class="attention-card warning">
+                    <div class="attention-card-title">🟡 Próximos a comprar</div>
+                    <div class="attention-card-number">{proximos}</div>
+                    <div class="attention-card-text">{texto_productos(proximos)}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        with a3:
+            st.markdown(
+                f'''
+                <div class="attention-card orange">
+                    <div class="attention-card-title">🟠 Reducir compra</div>
+                    <div class="attention-card-number">{reducir}</div>
+                    <div class="attention-card-text">{texto_productos(reducir)}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        with a4:
+            st.markdown(
+                f'''
+                <div class="attention-card stop">
+                    <div class="attention-card-title">🚫 No comprar</div>
+                    <div class="attention-card-number">{no_comprar}</div>
+                    <div class="attention-card-text">{texto_productos(no_comprar)}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        with a5:
+            st.markdown(
+                f'''
+                <div class="attention-card cleanup">
+                    <div class="attention-card-title">🧹 Limpieza de inventario</div>
+                    <div class="attention-card-number">{limpieza}</div>
+                    <div class="attention-card-text">{texto_productos(limpieza)}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
+
+        st.markdown(
+            f'''
+            <div class="maintain-card">
+                🟢 <strong>Mantener:</strong> {mantener} {texto_productos(mantener)}
+                con nivel de inventario razonable.
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
+
     pendientes = df_tienda_vista[
         df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
     ]
@@ -1753,93 +1927,6 @@ def modulo_pronosticos():
                             "Lead time", "Meses historial"]],
                 use_container_width=True, hide_index=True
             )
-
-    # ========================================================
-    # RESUMEN EJECUTIVO
-    # ========================================================
-
-    st.markdown("---")
-
-    st.markdown(
-        f'<div class="section-title">📌 Resumen para toma de decisiones · {nombre_tienda_seleccionada}</div>',
-        unsafe_allow_html=True
-    )
-    st.caption(
-        f"Resultados de {nombre_tienda_seleccionada}, "
-        "según la categoría seleccionada."
-    )
-
-    comprar_ahora = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🔴 Comprar ahora"
-        ]
-    )
-
-    proximos = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟡 Próximo a comprar"
-        ]
-    )
-
-    reducir = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟠 Reducir compra"
-        ]
-    )
-
-    no_comprar = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🚫 No comprar"
-        ]
-    )
-
-    limpieza = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🧹 Limpieza de inventario"
-        ]
-    )
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-
-    with c1:
-        tarjeta_resumen(
-            "🔴",
-            comprar_ahora,
-            "Comprar ahora"
-        )
-
-    with c2:
-        tarjeta_resumen(
-            "🟡",
-            proximos,
-            "Próximos"
-        )
-
-    with c3:
-        tarjeta_resumen(
-            "🟠",
-            reducir,
-            "Reducir compra"
-        )
-
-    with c4:
-        tarjeta_resumen(
-            "🚫",
-            no_comprar,
-            "No comprar"
-        )
-
-    with c5:
-        tarjeta_resumen(
-            "🧹",
-            limpieza,
-            "Limpieza"
-        )
 
     # ========================================================
     # VISTA POR TIENDA: TODOS LOS PRODUCTOS DE UNA TIENDA
@@ -2025,7 +2112,6 @@ def modulo_pronosticos():
 
     # Todas las pestañas usan exclusivamente df_tienda_vista.
     # De esta forma los contadores y los productos son coherentes.
-    mantener = int(df_tienda_vista["Acción"].eq("🟢 Mantener").sum())
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         [
             f"🔴 Comprar ahora ({comprar_ahora})",
