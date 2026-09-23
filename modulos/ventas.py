@@ -1715,9 +1715,7 @@ def modulo_ventas():
                         """
                         SELECT MAX(Id_venta)
                         FROM Venta
-                        WHERE id_tienda = %s
-                        """,
-                        (id_tienda,)
+                        """
                     )
 
 
