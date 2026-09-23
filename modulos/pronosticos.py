@@ -182,6 +182,38 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
 
+
+        /* Dashboard */
+        .dashboard-context {
+            background: #ffffff;
+            border: 1px solid #e6ebf1;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin: 8px 0 16px 0;
+            color: #4b5563;
+            font-size: 0.92rem;
+        }
+
+        .metric-card.subdued {
+            opacity: 0.78;
+            box-shadow: none;
+        }
+
+        div[data-baseweb="tab-list"] {
+            gap: 8px;
+        }
+
+        button[data-baseweb="tab"] {
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+        }
+
+        div[data-testid="stExpander"] {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e6ebf1;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -1190,116 +1222,8 @@ def construir_analisis(
 
 
 # ============================================================
-# MATRIZ PRODUCTO x TIENDA (VISTA PRINCIPAL)
+# TABLAS Y COMPONENTES VISUALES DEL DASHBOARD
 # ============================================================
-
-# Etiquetas amigables -> columna real del análisis.
-MAPA_INDICADORES = {
-    "Stock actual": "Stock",
-    "Duración estimada": "Cobertura",
-    "% Rotación": "Rotación %",
-    "Rotación (nivel)": "Nivel rotación",
-    "Punto de reorden": "Punto reorden",
-    "Stock de seguridad": "Stock seguridad",
-    "Mediana mensual": "Mediana mensual",
-    "Lead time (días)": "Lead time",
-    "Cuánto comprar": "Compra sugerida",
-    "Recomendación": "Acción",
-    "Tendencia": "Tendencia",
-    "Próximo reorden": "Próximo reorden",
-}
-
-# Indicadores que representan una cantidad de producto y por lo
-# tanto deben mostrarse con su unidad (lb / uds).
-INDICADORES_CANTIDAD = [
-    "Stock actual",
-    "Punto de reorden",
-    "Stock de seguridad",
-    "Mediana mensual",
-    "Cuánto comprar",
-]
-
-# Set fijo de indicadores que se muestran en las tablas principales.
-INDICADORES_DEFAULT = [
-    "Stock actual",
-    "Duración estimada",
-    "% Rotación",
-    "Punto de reorden",
-    "Stock de seguridad",
-    "Lead time (días)",
-    "Cuánto comprar",
-    "Recomendación",
-]
-
-
-def construir_tabla_indicadores(
-    df_subset,
-    columna_fila,
-    indicadores,
-    columnas_extra=None,
-    orden_por=None,
-    ascendente=True,
-):
-    """
-    Arma una tabla ya formateada a partir de un subconjunto que
-    representa UNA sola tienda o UN solo producto:
-
-    - Si df_subset ya está filtrado a una tienda, usa
-      columna_fila="Producto" -> una fila por producto de esa tienda.
-    - Si df_subset ya está filtrado a un producto, usa
-      columna_fila="Tienda" -> una fila por tienda donde existe
-      ese producto, para poder compararlas entre sí.
-    """
-
-    if df_subset.empty:
-        return pd.DataFrame()
-
-    df_subset = df_subset.copy()
-
-    if orden_por is not None and orden_por in df_subset.columns:
-        df_subset = df_subset.sort_values(
-            orden_por,
-            ascending=ascendente
-        )
-    else:
-        df_subset = df_subset.sort_values(columna_fila)
-
-    df_subset = df_subset.reset_index(drop=True)
-
-    columnas_extra = columnas_extra or []
-
-    resultado = df_subset[[columna_fila] + columnas_extra].copy()
-
-    for indicador in indicadores:
-
-        columna_origen = MAPA_INDICADORES[indicador]
-
-        if indicador in INDICADORES_CANTIDAD:
-            resultado[indicador] = df_subset.apply(
-                lambda r: formatear_cantidad(
-                    r[columna_origen],
-                    r["Medida"]
-                ),
-                axis=1,
-            )
-
-        elif indicador == "Lead time (días)":
-            resultado[indicador] = df_subset[columna_origen].apply(
-                lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
-            )
-
-        elif indicador == "% Rotación":
-            resultado[indicador] = df_subset[
-                columna_origen
-            ].apply(
-                lambda x: f"{x:.1f}%"
-            )
-
-        else:
-            resultado[indicador] = df_subset[columna_origen]
-
-    return resultado
-
 
 def calcular_altura_tabla(
     n_filas,
@@ -1308,137 +1232,205 @@ def calcular_altura_tabla(
     minimo=120,
     maximo=480,
 ):
-    """
-    Calcula una altura razonable para st.dataframe según la
-    cantidad de filas que va a mostrar, para no dejar espacio en
-    blanco cuando hay pocos productos ni cortar la tabla cuando
-    hay muchos (a partir de cierto punto se activa el scroll).
-    """
-
     if n_filas <= 0:
         return minimo
 
     altura = alto_encabezado + (n_filas * alto_fila)
-
     return int(min(maximo, max(minimo, altura)))
 
 
-# ============================================================
-# TABLAS DE DECISIONES
-# ============================================================
+def preparar_tabla_inventario(df):
+    """
+    Prepara únicamente la vista de la tabla principal.
+    No modifica ninguna columna ni cálculo interno del análisis.
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    tabla = df.copy().sort_values("Producto").reset_index(drop=True)
+
+    tabla["Stock actual"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Duración del inventario"] = tabla["Cobertura"]
+    tabla["Rotación 30 días"] = pd.to_numeric(
+        tabla["Rotación %"], errors="coerce"
+    ).fillna(0.0)
+    tabla["Punto de reorden"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Punto reorden"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Stock de seguridad"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Stock seguridad"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Lead time"] = tabla["Lead time"].apply(
+        lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
+    )
+    tabla["Compra sugerida"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Compra sugerida"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Recomendación"] = tabla["Acción"]
+
+    return tabla[
+        [
+            "Producto",
+            "Código",
+            "Stock actual",
+            "Rotación 30 días",
+            "Duración del inventario",
+            "Punto de reorden",
+            "Stock de seguridad",
+            "Lead time",
+            "Compra sugerida",
+            "Recomendación",
+        ]
+    ]
+
+
+def preparar_tabla_comparativa(df):
+    """
+    Prepara la vista comparativa entre tiendas usando la Rotación %
+    ya calculada en construir_analisis.
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    tabla = df.copy().sort_values("Rotación %", ascending=False).reset_index(drop=True)
+
+    tabla["Rotación 30 días"] = pd.to_numeric(
+        tabla["Rotación %"], errors="coerce"
+    ).fillna(0.0)
+    tabla["Stock actual"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Duración del inventario"] = tabla["Cobertura"]
+    tabla["Punto de reorden"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Punto reorden"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Compra sugerida"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Compra sugerida"], r["Medida"]),
+        axis=1,
+    )
+    tabla["Recomendación"] = tabla["Acción"]
+
+    return tabla[
+        [
+            "Tienda",
+            "Rotación 30 días",
+            "Stock actual",
+            "Duración del inventario",
+            "Punto de reorden",
+            "Compra sugerida",
+            "Recomendación",
+        ]
+    ]
+
 
 def preparar_tabla_decision(df):
+    """
+    Tabla simplificada para toma de decisiones.
+    Conserva todos los datos en el DataFrame original; solo limita
+    las columnas visibles al administrador.
+    """
     if df.empty:
         return pd.DataFrame()
 
     tabla = df.copy()
 
     tabla["Stock actual"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Stock"],
-            r["Medida"]
-        ),
+        lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
         axis=1,
     )
-
-    tabla["Pronóstico"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Pronóstico 30d"],
-            r["Medida"]
-        ),
+    tabla["Duración del inventario"] = tabla["Cobertura"]
+    tabla["Punto de reorden"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Punto reorden"], r["Medida"]),
         axis=1,
     )
-
-    tabla["Reorden"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Punto reorden"],
-            r["Medida"]
-        ),
+    tabla["Compra sugerida"] = tabla.apply(
+        lambda r: formatear_cantidad(r["Compra sugerida"], r["Medida"]),
         axis=1,
     )
-
-    tabla["Stock seguridad"] = tabla.apply(
-        lambda r: formatear_cantidad(r["Stock seguridad"], r["Medida"]), axis=1
-    )
-    tabla["Lead time (días)"] = tabla["Lead time"].apply(
+    tabla["Lead time"] = tabla["Lead time"].apply(
         lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
     )
+    tabla["Rotación 30 días"] = pd.to_numeric(
+        tabla["Rotación %"], errors="coerce"
+    ).fillna(0.0)
+    tabla["Recomendación"] = tabla["Acción"]
 
-    tabla["Comprar"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Compra sugerida"],
-            r["Medida"]
-        ),
-        axis=1,
-    )
-
-    columnas = [
-        "Producto",
-        "Código",
-        "Tienda",
-        "Stock actual",
-        "Cobertura",
-        "Nivel rotación",
-        "Pronóstico",
-        "Reorden",
-        "Stock seguridad",
-        "Lead time (días)",
-        "Comprar",
-        "Próximo reorden",
-        "Tendencia",
-        "Acción",
+    return tabla[
+        [
+            "Producto",
+            "Stock actual",
+            "Duración del inventario",
+            "Punto de reorden",
+            "Compra sugerida",
+            "Próximo reorden",
+            "Lead time",
+            "Rotación 30 días",
+            "Tendencia",
+            "Recomendación",
+        ]
     ]
-
-    return tabla[columnas].rename(columns={"Acción": "Recomendación"})
 
 
 def preparar_tabla_limpieza(df):
-    """
-    Tabla enfocada en responder una sola pregunta por producto/tienda:
-    ¿sigue teniendo sentido seguir vendiendo esto, o se debería retirar?
-    """
-
     if df.empty:
         return pd.DataFrame()
 
     tabla = df.copy()
 
     tabla["Stock actual"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Stock"],
-            r["Medida"]
-        ),
+        lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
         axis=1,
     )
+    tabla["Rotación 30 días"] = pd.to_numeric(
+        tabla["Rotación %"], errors="coerce"
+    ).fillna(0.0)
+    tabla["Recomendación"] = tabla["Acción"]
 
-    tabla["¿Sigue vendiendo?"] = np.where(
-        tabla["Demanda diaria"] > 0,
-        "Sí, pero muy poco",
-        "No",
-    )
-
-    columnas = [
-        "Producto",
-        "Código",
-        "Tienda",
-        "Stock actual",
-        "Última venta",
-        "Días sin vender",
-        "¿Sigue vendiendo?",
-        "Acción",
+    return tabla[
+        [
+            "Producto",
+            "Stock actual",
+            "Última venta",
+            "Días sin vender",
+            "Rotación 30 días",
+            "Recomendación",
+        ]
     ]
 
-    return tabla[columnas].rename(columns={"Acción": "Recomendación"})
+
+def config_columnas_rotacion():
+    return {
+        "Rotación 30 días": st.column_config.ProgressColumn(
+            "Rotación 30 días",
+            help=(
+                "Porcentaje del inventario disponible que realmente salió "
+                "por ventas durante los últimos 30 días."
+            ),
+            min_value=0,
+            max_value=100,
+            format="%.1f%%",
+        )
+    }
 
 
 # ============================================================
 # TARJETAS DE RESUMEN
 # ============================================================
 
-def tarjeta_resumen(icono, valor, etiqueta):
+def tarjeta_resumen(icono, valor, etiqueta, discreta=False):
+    clase = "metric-card subdued" if discreta else "metric-card"
+
     st.markdown(
         f"""
-        <div class="metric-card">
+        <div class="{clase}">
             <div class="metric-icon">{icono}</div>
             <div class="metric-number">{valor}</div>
             <div class="metric-label">{etiqueta}</div>
@@ -1456,30 +1448,27 @@ def modulo_pronosticos():
 
     configurar_estilo()
 
+    # --------------------------------------------------------
+    # Encabezado
+    # --------------------------------------------------------
     st.markdown(
-        '<div class="pronostico-title">📈 Pronóstico y Punto de Reorden</div>',
+        '<div class="pronostico-title">📈 Pronóstico e inventario</div>',
         unsafe_allow_html=True,
     )
-
     st.markdown(
         """
         <div class="pronostico-subtitle">
-            Análisis de rotación, cobertura, reposición y limpieza de inventario
+            Decisiones de compra, rotación y reabastecimiento
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.caption("✅ Versión activa: decisiones por tienda · v2")
-
     # --------------------------------------------------------
     # Validación
     # --------------------------------------------------------
-
     if not st.session_state.get("logueado"):
-        st.error(
-            "❌ Debes iniciar sesión para acceder a este módulo."
-        )
+        st.error("❌ Debes iniciar sesión para acceder a este módulo.")
 
         if st.button(
             "⬅ Volver al menú principal",
@@ -1487,90 +1476,19 @@ def modulo_pronosticos():
         ):
             st.session_state["module"] = None
             st.rerun()
-
         return
 
-    rol = st.session_state.get(
-        "nivel_usuario",
-        ""
-    )
-
-    id_tienda_sesion = st.session_state.get(
-        "id_tienda"
-    )
-
+    rol = st.session_state.get("nivel_usuario", "")
+    id_tienda_sesion = st.session_state.get("id_tienda")
     nombre_tienda_sesion = st.session_state.get(
         "nombre_tienda",
         "Mi Tienda"
     )
 
     # --------------------------------------------------------
-    # Parámetros
-    # --------------------------------------------------------
-
-    st.markdown(
-        '<div class="section-title">⚙️ Configuración del pronóstico y reorden</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        "Estos parámetros permiten adaptar la recomendación "
-        "de compra a la forma real en que trabajas."
-    )
-
-    p1, p2 = st.columns(2)
-
-    with p1:
-        dias_historial = st.selectbox(
-            "Historial de ventas",
-            [30, 60, 90, 180, 365],
-            index=2,
-            format_func=lambda x: f"{x} días",
-            help=(
-                "Período utilizado para analizar "
-                "la demanda reciente."
-            ),
-        )
-
-    with p2:
-        cobertura_objetivo = st.number_input(
-            "Cobertura objetivo",
-            min_value=7,
-            max_value=180,
-            value=30,
-            step=1,
-            help=(
-                "Cantidad de días que deseas cubrir "
-                "con cada reposición."
-            ),
-        )
-
-    dias_limpieza = st.slider(
-        "Considerar producto para limpieza si lleva sin vender:",
-        min_value=30,
-        max_value=365,
-        value=90,
-        step=15,
-        format="%d días",
-    )
-
-    st.caption(
-        "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-        "2 % de la mediana de todas las ventas mensuales completas. "
-        "El historial seleccionado arriba afecta al pronóstico reciente, "
-        "no a la mediana mensual."
-    )
-
-    fecha_fin = datetime.now().date()
-
-    # --------------------------------------------------------
     # Carga de información
     # --------------------------------------------------------
-
-    with st.spinner(
-        "Analizando compras, ventas e inventario..."
-    ):
-
+    with st.spinner("Analizando compras, ventas e inventario..."):
         tiendas = obtener_tiendas()
         productos = obtener_productos()
         compras = obtener_compras()
@@ -1578,70 +1496,159 @@ def modulo_pronosticos():
         lead_times = obtener_lead_times()
 
     if productos.empty:
-        st.warning(
-            "⚠️ No se encontraron productos registrados."
-        )
+        st.warning("⚠️ No se encontraron productos registrados.")
         return
 
     if tiendas.empty:
-        st.warning(
-            "⚠️ No se encontraron tiendas activas."
-        )
+        st.warning("⚠️ No se encontraron tiendas activas.")
         return
 
     # --------------------------------------------------------
     # Restricciones por usuario
     # --------------------------------------------------------
-
     if rol != "Administrador":
-
         productos = productos[
-            productos["id_tienda"] ==
-            id_tienda_sesion
+            productos["id_tienda"] == id_tienda_sesion
         ].copy()
 
         tiendas = tiendas[
-            tiendas["id_tienda"] ==
-            id_tienda_sesion
+            tiendas["id_tienda"] == id_tienda_sesion
         ].copy()
 
         if not compras.empty:
             compras = compras[
-                compras["id_tienda"] ==
-                id_tienda_sesion
+                compras["id_tienda"] == id_tienda_sesion
             ].copy()
 
         if not ventas.empty:
             ventas = ventas[
-                ventas["id_tienda"] ==
-                id_tienda_sesion
+                ventas["id_tienda"] == id_tienda_sesion
             ].copy()
 
-        st.markdown(
-            f"""
-            <div class="info-box">
-                🏪 <strong>Tienda:</strong>
-                {nombre_tienda_sesion}
-            </div>
-            """,
-            unsafe_allow_html=True,
+    # --------------------------------------------------------
+    # Filtros principales
+    # --------------------------------------------------------
+    tiendas_disponibles = (
+        tiendas.sort_values("Tienda")
+        .drop_duplicates("id_tienda")
+        .copy()
+    )
+    opciones_tiendas = tiendas_disponibles["id_tienda"].tolist()
+
+    if not opciones_tiendas:
+        st.info("No hay tiendas disponibles para el análisis.")
+        return
+
+    nombres_por_id = dict(
+        zip(
+            tiendas_disponibles["id_tienda"],
+            tiendas_disponibles["Tienda"]
+        )
+    )
+
+    categorias_disponibles = (
+        productos["Categoría"]
+        .dropna()
+        .astype(str)
+        .sort_values()
+        .unique()
+        .tolist()
+    )
+    categoria_lista = ["Todas"] + categorias_disponibles
+
+    f1, f2 = st.columns(2)
+
+    with f1:
+        tienda_seleccionada = st.selectbox(
+            "🏪 Tienda",
+            opciones_tiendas,
+            format_func=lambda id_: nombres_por_id.get(
+                id_,
+                f"Tienda {id_}"
+            ),
+            key="tienda_analisis_pronostico",
+            disabled=(rol != "Administrador"),
         )
 
-    else:
-        st.markdown(
-            """
-            <div class="info-box">
-                👑 <strong>Administrador:</strong>
-                visualización global de inventario y pronósticos.
-            </div>
-            """,
-            unsafe_allow_html=True,
+    with f2:
+        categoria = st.selectbox(
+            "📁 Categoría",
+            categoria_lista,
+            key="categoria_pronostico",
         )
+
+    nombre_tienda_seleccionada = nombres_por_id[
+        tienda_seleccionada
+    ]
+
+    categoria_contexto = (
+        "Todas las categorías"
+        if categoria == "Todas"
+        else categoria
+    )
+
+    st.markdown(
+        f"""
+        <div class="dashboard-context">
+            Analizando: <strong>{nombre_tienda_seleccionada}</strong>
+            &nbsp;·&nbsp; {categoria_contexto}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # --------------------------------------------------------
+    # Configuración avanzada
+    # --------------------------------------------------------
+    with st.expander("⚙️ Configuración avanzada", expanded=False):
+        st.caption(
+            "Ajusta estos parámetros solo cuando necesites cambiar "
+            "el horizonte del análisis o la política de inventario."
+        )
+
+        p1, p2 = st.columns(2)
+
+        with p1:
+            dias_historial = st.selectbox(
+                "Historial de ventas",
+                [30, 60, 90, 180, 365],
+                index=2,
+                format_func=lambda x: f"{x} días",
+                help="Período utilizado para analizar la demanda reciente.",
+            )
+
+        with p2:
+            cobertura_objetivo = st.number_input(
+                "Cobertura objetivo",
+                min_value=7,
+                max_value=180,
+                value=30,
+                step=1,
+                help=(
+                    "Cantidad de días que deseas cubrir "
+                    "con cada reposición."
+                ),
+            )
+
+        dias_limpieza = st.slider(
+            "Considerar producto para limpieza si lleva sin vender:",
+            min_value=30,
+            max_value=365,
+            value=90,
+            step=15,
+            format="%d días",
+        )
+
+        st.caption(
+            "Reorden = demanda diaria × lead time del proveedor + "
+            "2 % de la mediana de todas las ventas mensuales completas."
+        )
+
+    fecha_fin = datetime.now().date()
 
     # --------------------------------------------------------
     # Construcción del análisis
     # --------------------------------------------------------
-
     df = construir_analisis(
         productos=productos,
         compras=compras,
@@ -1654,582 +1661,442 @@ def modulo_pronosticos():
     )
 
     if df.empty:
-        st.warning(
-            "⚠️ No fue posible construir el análisis."
-        )
+        st.warning("⚠️ No fue posible construir el análisis.")
         return
-
-    # ========================================================
-    # FILTROS GENERALES
-    # ========================================================
-
-    st.markdown(
-        '<div class="section-title">🎛️ Filtros del análisis</div>',
-        unsafe_allow_html=True
-    )
-
-    categoria_lista = (
-        ["Todas"] +
-        sorted(
-            df["Categoría"]
-            .dropna()
-            .astype(str)
-            .unique()
-            .tolist()
-        )
-    )
-
-    categoria = st.selectbox(
-        "📁 Categoría",
-        categoria_lista,
-        key="categoria_pronostico",
-    )
 
     df_filtrado = df.copy()
 
     if categoria != "Todas":
         df_filtrado = df_filtrado[
-            df_filtrado["Categoría"] ==
-            categoria
-        ]
+            df_filtrado["Categoría"] == categoria
+        ].copy()
 
-    # Una sola tienda controla la tabla, el resumen y el centro de decisiones.
-    # El comparativo entre tiendas sigue usando df_filtrado (solo categoría).
-    tiendas_disponibles = tiendas.sort_values("Tienda").drop_duplicates("id_tienda")
-    opciones_tiendas = tiendas_disponibles["id_tienda"].tolist()
-    if not opciones_tiendas:
-        st.info("No hay tiendas disponibles para el análisis.")
-        return
-
-    nombres_por_id = dict(zip(
-        tiendas_disponibles["id_tienda"], tiendas_disponibles["Tienda"]
-    ))
-    tienda_seleccionada = st.selectbox(
-        "🏪 Tienda para el análisis y centro de decisiones",
-        opciones_tiendas,
-        format_func=lambda id_: nombres_por_id.get(id_, f"Tienda {id_}"),
-        key="tienda_analisis_pronostico",
-    )
-    nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
     df_tienda_vista = df_filtrado[
         df_filtrado["id_tienda"] == tienda_seleccionada
     ].copy()
 
+    # --------------------------------------------------------
+    # Datos incompletos
+    # --------------------------------------------------------
     pendientes = df_tienda_vista[
         df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
-    ]
+    ].copy()
+
     if not pendientes.empty:
-        st.warning(
-            f"⚠️ {len(pendientes)} producto(s) de "
-            f"{nombre_tienda_seleccionada} sin lead time válido o "
-            "sin meses completos de ventas. El reorden se muestra "
-            "como 'Sin datos'. Se usa el proveedor de la compra más reciente."
+        st.caption(
+            f"⚠️ {len(pendientes)} producto(s) necesitan revisión de datos."
         )
-        with st.expander(f"⚪ Revisar datos de reorden ({len(pendientes)})"):
+
+        with st.expander(
+            f"⚠️ Revisar datos incompletos ({len(pendientes)})",
+            expanded=False
+        ):
             st.dataframe(
-                pendientes[["Producto", "Tienda", "Código", "Proveedor",
-                            "Lead time", "Meses historial"]],
-                use_container_width=True, hide_index=True
+                pendientes[
+                    [
+                        "Producto",
+                        "Código",
+                        "Proveedor",
+                        "Lead time",
+                        "Meses historial",
+                    ]
+                ],
+                use_container_width=True,
+                hide_index=True,
             )
 
-    # ========================================================
-    # RESUMEN EJECUTIVO
-    # ========================================================
-
-    st.markdown("---")
+    # --------------------------------------------------------
+    # Resumen de decisiones
+    # --------------------------------------------------------
+    comprar_ahora = int(
+        df_tienda_vista["Acción"].eq("🔴 Comprar ahora").sum()
+    )
+    proximos = int(
+        df_tienda_vista["Acción"].eq("🟡 Próximo a comprar").sum()
+    )
+    reducir = int(
+        df_tienda_vista["Acción"].eq("🟠 Reducir compra").sum()
+    )
+    no_comprar = int(
+        df_tienda_vista["Acción"].eq("🚫 No comprar").sum()
+    )
+    limpieza = int(
+        df_tienda_vista["Acción"].eq("🧹 Limpieza de inventario").sum()
+    )
+    mantener = int(
+        df_tienda_vista["Acción"].eq("🟢 Mantener").sum()
+    )
 
     st.markdown(
-        f'<div class="section-title">📌 Resumen para toma de decisiones · {nombre_tienda_seleccionada}</div>',
+        '<div class="section-title">🚨 ¿Qué necesita atención?</div>',
         unsafe_allow_html=True
     )
-    st.caption(
-        f"Resultados de {nombre_tienda_seleccionada}, "
-        "según la categoría seleccionada."
-    )
 
-    comprar_ahora = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🔴 Comprar ahora"
-        ]
-    )
-
-    proximos = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟡 Próximo a comprar"
-        ]
-    )
-
-    reducir = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟠 Reducir compra"
-        ]
-    )
-
-    no_comprar = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🚫 No comprar"
-        ]
-    )
-
-    limpieza = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🧹 Limpieza de inventario"
-        ]
-    )
-
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
 
     with c1:
-        tarjeta_resumen(
-            "🔴",
-            comprar_ahora,
-            "Comprar ahora"
-        )
-
+        tarjeta_resumen("🔴", comprar_ahora, "Comprar ahora")
     with c2:
-        tarjeta_resumen(
-            "🟡",
-            proximos,
-            "Próximos"
-        )
-
+        tarjeta_resumen("🟡", proximos, "Próximos")
     with c3:
-        tarjeta_resumen(
-            "🟠",
-            reducir,
-            "Reducir compra"
-        )
-
+        tarjeta_resumen("🟠", reducir, "Reducir compra")
     with c4:
-        tarjeta_resumen(
-            "🚫",
-            no_comprar,
-            "No comprar"
-        )
-
+        tarjeta_resumen("🚫", no_comprar, "No comprar")
     with c5:
-        tarjeta_resumen(
-            "🧹",
-            limpieza,
-            "Limpieza"
-        )
-
-    # ========================================================
-    # VISTA POR TIENDA: TODOS LOS PRODUCTOS DE UNA TIENDA
-    # ========================================================
+        tarjeta_resumen("🧹", limpieza, "Limpieza")
+    with c6:
+        tarjeta_resumen("🟢", mantener, "Mantener", discreta=True)
 
     st.markdown("---")
 
-    st.markdown(
-        '<div class="section-title">📋 Punto de reorden y compra sugerida por tienda</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        f"Productos de {nombre_tienda_seleccionada}. "
-        "Para cambiar la tienda, utiliza el selector de Filtros del análisis."
-    )
-
-    if df_tienda_vista.empty:
-        st.info("No hay productos de esta categoría en la tienda seleccionada.")
-    else:
-        tabla_tienda = construir_tabla_indicadores(
-            df_tienda_vista,
-            columna_fila="Producto",
-            indicadores=INDICADORES_DEFAULT,
-            columnas_extra=["Código"],
-            orden_por="Producto",
-        )
-
-        st.dataframe(
-            tabla_tienda,
-            use_container_width=True,
-            hide_index=True,
-            height=calcular_altura_tabla(len(tabla_tienda)),
-        )
-
-    with st.expander(
-        "ℹ️ ¿Cómo leer esta tabla?"
-    ):
-        st.markdown(
-            """
-            **Stock actual:** cantidad que existe actualmente en esta tienda.
-
-            **Duración estimada:** aproximadamente cuánto tiempo durará
-            ese inventario al ritmo de venta pronosticado (equivalente
-            a "compré 10 y me duraron 5 meses").
-
-            **% Rotación:** porcentaje del inventario que estuvo disponible
-            durante los últimos 30 días y que realmente salió por ventas.
-            Un porcentaje bajo indica poco movimiento; un porcentaje alto
-            indica que una mayor parte del inventario disponible se vendió.
-            Se calcula con ventas reales, no con el pronóstico.
-
-            **Punto de reorden:** nivel de inventario en el cual
-            conviene volver a comprar.
-
-            **Cuánto comprar:** cantidad estimada necesaria para
-            alcanzar la cobertura objetivo.
-
-            **Recomendación:** acción sugerida para ese producto en
-            esta tienda.
-            """
-        )
-
     # ========================================================
-    # COMPARATIVO DE ROTACIÓN DE UN PRODUCTO ENTRE TIENDAS
+    # PESTAÑAS PRINCIPALES
     # ========================================================
-
-    st.markdown("---")
-
-    st.markdown(
-        '<div class="section-title">📊 Comparativo de rotación de un producto entre tiendas</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        "Elige un producto y compáralo entre todas tus tiendas: útil "
-        "para detectar, por ejemplo, que el mismo producto rota rápido "
-        "en una tienda y casi no se mueve en otra."
-    )
-
-    productos_disponibles = sorted(
-        df_filtrado["Producto"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-    if not productos_disponibles:
-        st.info(
-            "No hay productos disponibles con los filtros actuales."
-        )
-    else:
-
-        producto_comparar = st.selectbox(
-            "📦 Producto",
-            productos_disponibles,
-            key="producto_comparar_pronostico",
-        )
-
-        df_producto_comparar = df_filtrado[
-            df_filtrado["Producto"] == producto_comparar
-        ].copy()
-
-        # Para el comparativo se utiliza el MISMO porcentaje de rotación
-        # calculado en la tabla principal. Así una tienda con mayor porcentaje
-        # es aquella donde una mayor proporción del inventario disponible
-        # realmente se vendió durante los últimos 30 días.
-        df_valido = df_producto_comparar[
-            (df_producto_comparar["Stock"] + df_producto_comparar["Ventas 30d"]) > 0
-        ].copy()
-
-        if df_valido.empty:
-            st.info(
-                "Este producto no tiene inventario ni ventas recientes "
-                "en las tiendas donde está registrado."
-            )
-        elif df_valido["Ventas 30d"].max() <= 0:
-            st.info(
-                "Este producto tiene inventario registrado, pero no presenta "
-                "ventas en los últimos 30 días en ninguna tienda."
-            )
-        else:
-            fila_mejor = df_valido.sort_values(
-                "Rotación %",
-                ascending=False
-            ).iloc[0]
-
-            st.success(
-                f"📈 En **{fila_mejor['Tienda']}** es donde este producto "
-                f"presenta mayor movimiento: su rotación es de "
-                f"**{fila_mejor['Rotación %']:.1f}%** en los últimos 30 días."
-            )
-
-            if len(df_valido) > 1:
-                fila_peor = df_valido.sort_values(
-                    "Rotación %",
-                    ascending=True
-                ).iloc[0]
-
-                if fila_peor["Tienda"] != fila_mejor["Tienda"]:
-                    st.caption(
-                        f"🐢 En **{fila_peor['Tienda']}** presenta el menor "
-                        f"movimiento, con una rotación de "
-                        f"{fila_peor['Rotación %']:.1f}%."
-                    )
-
-        tabla_producto = construir_tabla_indicadores(
-            df_producto_comparar,
-            columna_fila="Tienda",
-            indicadores=INDICADORES_DEFAULT,
-            orden_por="Rotación %",
-            ascendente=False,
-        )
-
-        st.dataframe(
-            tabla_producto,
-            use_container_width=True,
-            hide_index=True,
-            height=calcular_altura_tabla(len(tabla_producto)),
-        )
-
-        st.caption(
-            "La tabla está ordenada desde la tienda con mayor % de rotación "
-            "hasta la de menor % de rotación, usando el movimiento real de "
-            "los últimos 30 días."
-        )
-
-    # ========================================================
-    # CENTRO DE DECISIONES
-    # ========================================================
-
-    st.markdown("---")
-
-    st.markdown(
-        f'<div class="section-title">🧠 Centro de decisiones · {nombre_tienda_seleccionada}</div>',
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        f"Productos de {nombre_tienda_seleccionada}, agrupados por acción. "
-        "La categoría elegida también se aplica a estas recomendaciones."
-    )
-
-    # Todas las pestañas usan exclusivamente df_tienda_vista.
-    # De esta forma los contadores y los productos son coherentes.
-    mantener = int(df_tienda_vista["Acción"].eq("🟢 Mantener").sum())
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    tab_inventario, tab_comparar, tab_recomendaciones = st.tabs(
         [
-            f"🔴 Comprar ahora ({comprar_ahora})",
-            f"🟡 Próximos a comprar ({proximos})",
-            f"🟠 Reducir compra ({reducir})",
-            f"🚫 No comprar ({no_comprar})",
-            f"🧹 Limpieza ({limpieza})",
-            f"🟢 Mantener ({mantener})",
+            "📦 Inventario y reorden",
+            "📊 Comparar tiendas",
+            "🧠 Recomendaciones",
         ]
     )
 
-    # --------------------------------------------------------
-    # COMPRAR AHORA
-    # --------------------------------------------------------
-
-    with tab1:
-
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🔴 Comprar ahora"
-        ].copy()
-
-        datos = datos.sort_values(
-            [
-                "Días para reorden",
-                "Cobertura días"
-            ],
-            ascending=True
+    # ========================================================
+    # TAB 1: INVENTARIO Y REORDEN
+    # ========================================================
+    with tab_inventario:
+        st.markdown(
+            f"### Inventario de {nombre_tienda_seleccionada}"
+        )
+        st.caption(
+            "Consulta el estado del inventario, su movimiento y "
+            "las necesidades de reabastecimiento."
         )
 
-        if datos.empty:
-            st.success(
-                "✅ Ningún producto requiere compra inmediata."
-            )
-        else:
-            st.warning(
-                f"⚠️ {len(datos)} producto(s) "
-                "alcanzaron su punto de reorden."
-            )
-
-            st.dataframe(
-                preparar_tabla_decision(datos),
-                use_container_width=True,
-                hide_index=True,
-            )
-
-    # --------------------------------------------------------
-    # PRÓXIMOS
-    # --------------------------------------------------------
-
-    with tab2:
-
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟡 Próximo a comprar"
-        ].copy()
-
-        datos = datos.sort_values(
-            "Días para reorden"
-        )
-
-        if datos.empty:
-            st.success(
-                "✅ No hay compras próximas detectadas."
-            )
-        else:
+        if df_tienda_vista.empty:
             st.info(
-                "Estos productos todavía tienen inventario, "
-                "pero se aproximan al nivel de reorden."
-            )
-
-            st.dataframe(
-                preparar_tabla_decision(datos),
-                use_container_width=True,
-                hide_index=True,
-            )
-
-    # --------------------------------------------------------
-    # REDUCIR
-    # --------------------------------------------------------
-
-    with tab3:
-
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟠 Reducir compra"
-        ].copy()
-
-        datos = datos.sort_values(
-            "Cobertura días",
-            ascending=False
-        )
-
-        if datos.empty:
-            st.success(
-                "✅ No se detectaron compras que deban reducirse."
+                "No hay productos de esta categoría en la tienda seleccionada."
             )
         else:
-            st.warning(
-                "Estos productos tienen más inventario del "
-                "necesario respecto a su ritmo actual de venta "
-                "en esa tienda."
+            tabla_tienda = preparar_tabla_inventario(
+                df_tienda_vista
             )
 
             st.dataframe(
-                preparar_tabla_decision(datos),
+                tabla_tienda,
                 use_container_width=True,
                 hide_index=True,
+                height=calcular_altura_tabla(len(tabla_tienda)),
+                column_config=config_columnas_rotacion(),
             )
 
-    # --------------------------------------------------------
-    # NO COMPRAR
-    # --------------------------------------------------------
-
-    with tab4:
-
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🚫 No comprar"
-        ].copy()
-
-        datos = datos.sort_values(
-            "Cobertura días",
-            ascending=False
-        )
-
-        if datos.empty:
-            st.success(
-                "✅ No hay productos marcados como 'No comprar'."
-            )
-        else:
-            st.error(
-                "No se recomienda reabastecer estos productos "
-                "por el momento."
-            )
-
-            st.dataframe(
-                preparar_tabla_decision(datos),
-                use_container_width=True,
-                hide_index=True,
-            )
-
-    # --------------------------------------------------------
-    # LIMPIEZA
-    # --------------------------------------------------------
-
-    with tab5:
-
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🧹 Limpieza de inventario"
-        ].copy()
-
-        datos = datos.sort_values(
-            "Días sin vender",
-            ascending=False
-        )
-
-        if datos.empty:
-            st.success(
-                "✅ No se detectaron productos para limpieza."
-            )
-        else:
-
-            st.error(
-                "Estos productos tienen inventario pero llevan "
-                "demasiado tiempo sin venderse en esa tienda."
-            )
-
-            tabla_limpieza = preparar_tabla_limpieza(
-                datos
-            )
-
-            st.dataframe(
-                tabla_limpieza,
-                use_container_width=True,
-                hide_index=True,
-            )
-
+        with st.expander(
+            "ℹ️ ¿Cómo interpretar estos indicadores?",
+            expanded=False
+        ):
             st.markdown(
                 """
-                **Acciones posibles:**
-                realizar promoción, disminuir el precio si corresponde,
-                no volver a comprar temporalmente o trasladar inventario
-                hacia una tienda donde el mismo producto tenga mayor
-                rotación.
+                **Stock actual:** cantidad disponible actualmente.
+
+                **Rotación 30 días:** porcentaje del inventario disponible
+                que realmente salió por ventas durante los últimos 30 días.
+
+                **Duración del inventario:** tiempo aproximado que durará
+                el stock actual al ritmo pronosticado de ventas.
+
+                **Punto de reorden:** nivel de inventario en el que conviene
+                iniciar una nueva compra.
+
+                **Stock de seguridad:** reserva adicional utilizada para
+                protegerse ante variaciones de demanda.
+
+                **Lead time:** días que tarda el proveedor en entregar.
+
+                **Compra sugerida:** cantidad estimada que debería comprarse
+                para alcanzar la cobertura objetivo.
+
+                **Recomendación:** acción sugerida por el sistema.
                 """
             )
 
-    # --------------------------------------------------------
-    # MANTENER
-    # --------------------------------------------------------
+    # ========================================================
+    # TAB 2: COMPARAR TIENDAS
+    # ========================================================
+    with tab_comparar:
+        st.markdown("### Comparativa de rotación entre tiendas")
+        st.caption(
+            "Selecciona un producto para identificar dónde presenta "
+            "mayor o menor movimiento."
+        )
 
-    with tab6:
+        productos_disponibles = sorted(
+            df_filtrado["Producto"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
 
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "🟢 Mantener"
-        ].copy()
-
-        if datos.empty:
+        if not productos_disponibles:
             st.info(
-                "No hay productos clasificados como mantener."
+                "No hay productos disponibles con los filtros actuales."
             )
         else:
-            st.success(
-                "✅ Estos productos presentan un nivel de "
-                "inventario razonable según su demanda."
+            producto_comparar = st.selectbox(
+                "📦 Producto",
+                productos_disponibles,
+                key="producto_comparar_pronostico",
+            )
+
+            df_producto_comparar = df_filtrado[
+                df_filtrado["Producto"] == producto_comparar
+            ].copy()
+
+            df_valido = df_producto_comparar[
+                (
+                    df_producto_comparar["Stock"]
+                    + df_producto_comparar["Ventas 30d"]
+                ) > 0
+            ].copy()
+
+            if df_valido.empty:
+                st.info(
+                    "Este producto no tiene inventario ni ventas recientes "
+                    "en las tiendas donde está registrado."
+                )
+            elif df_valido["Ventas 30d"].max() <= 0:
+                st.info(
+                    "Este producto tiene inventario registrado, pero no presenta "
+                    "ventas en los últimos 30 días en ninguna tienda."
+                )
+            else:
+                orden_rotacion = df_valido.sort_values(
+                    "Rotación %",
+                    ascending=False
+                )
+
+                fila_mejor = orden_rotacion.iloc[0]
+                fila_peor = orden_rotacion.iloc[-1]
+
+                m1, m2 = st.columns(2)
+
+                with m1:
+                    st.success(
+                        f"📈 **Mayor movimiento:** {fila_mejor['Tienda']} "
+                        f"con {fila_mejor['Rotación %']:.1f}%."
+                    )
+
+                with m2:
+                    if len(orden_rotacion) > 1:
+                        st.info(
+                            f"🐢 **Menor movimiento:** {fila_peor['Tienda']} "
+                            f"con {fila_peor['Rotación %']:.1f}%."
+                        )
+
+                grafica = orden_rotacion[
+                    ["Tienda", "Rotación %"]
+                ].set_index("Tienda")
+
+                st.bar_chart(
+                    grafica,
+                    y="Rotación %",
+                    use_container_width=True,
+                )
+
+            tabla_producto = preparar_tabla_comparativa(
+                df_producto_comparar
             )
 
             st.dataframe(
-                preparar_tabla_decision(datos),
+                tabla_producto,
                 use_container_width=True,
                 hide_index=True,
+                height=calcular_altura_tabla(len(tabla_producto)),
+                column_config=config_columnas_rotacion(),
             )
+
+            st.caption(
+                "La tabla está ordenada de mayor a menor rotación "
+                "usando el movimiento real de los últimos 30 días."
+            )
+
+    # ========================================================
+    # TAB 3: RECOMENDACIONES
+    # ========================================================
+    with tab_recomendaciones:
+        st.markdown(
+            f"### Recomendaciones · {nombre_tienda_seleccionada}"
+        )
+        st.caption(
+            "Productos agrupados por la acción sugerida por el sistema."
+        )
+
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+            [
+                f"🔴 Comprar ahora ({comprar_ahora})",
+                f"🟡 Próximos ({proximos})",
+                f"🟠 Reducir ({reducir})",
+                f"🚫 No comprar ({no_comprar})",
+                f"🧹 Limpieza ({limpieza})",
+                f"🟢 Mantener ({mantener})",
+            ]
+        )
+
+        with tab1:
+            datos = df_tienda_vista[
+                df_tienda_vista["Acción"] == "🔴 Comprar ahora"
+            ].copy().sort_values(
+                ["Días para reorden", "Cobertura días"],
+                ascending=True
+            )
+
+            if datos.empty:
+                st.success("✅ Ningún producto requiere compra inmediata.")
+            else:
+                st.warning(
+                    f"⚠️ {len(datos)} producto(s) alcanzaron su punto de reorden."
+                )
+                tabla = preparar_tabla_decision(datos)
+                st.dataframe(
+                    tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=config_columnas_rotacion(),
+                )
+
+        with tab2:
+            datos = df_tienda_vista[
+                df_tienda_vista["Acción"] == "🟡 Próximo a comprar"
+            ].copy().sort_values("Días para reorden")
+
+            if datos.empty:
+                st.success("✅ No hay compras próximas detectadas.")
+            else:
+                st.info(
+                    "Estos productos todavía tienen inventario, "
+                    "pero se aproximan al nivel de reorden."
+                )
+                tabla = preparar_tabla_decision(datos)
+                st.dataframe(
+                    tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=config_columnas_rotacion(),
+                )
+
+        with tab3:
+            datos = df_tienda_vista[
+                df_tienda_vista["Acción"] == "🟠 Reducir compra"
+            ].copy().sort_values(
+                "Cobertura días",
+                ascending=False
+            )
+
+            if datos.empty:
+                st.success(
+                    "✅ No se detectaron compras que deban reducirse."
+                )
+            else:
+                st.warning(
+                    "Estos productos tienen más inventario del necesario "
+                    "respecto a su ritmo actual de venta."
+                )
+                tabla = preparar_tabla_decision(datos)
+                st.dataframe(
+                    tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=config_columnas_rotacion(),
+                )
+
+        with tab4:
+            datos = df_tienda_vista[
+                df_tienda_vista["Acción"] == "🚫 No comprar"
+            ].copy().sort_values(
+                "Cobertura días",
+                ascending=False
+            )
+
+            if datos.empty:
+                st.success(
+                    "✅ No hay productos marcados como 'No comprar'."
+                )
+            else:
+                st.error(
+                    "No se recomienda reabastecer estos productos "
+                    "por el momento."
+                )
+                tabla = preparar_tabla_decision(datos)
+                st.dataframe(
+                    tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=config_columnas_rotacion(),
+                )
+
+        with tab5:
+            datos = df_tienda_vista[
+                df_tienda_vista["Acción"] == "🧹 Limpieza de inventario"
+            ].copy().sort_values(
+                "Días sin vender",
+                ascending=False
+            )
+
+            if datos.empty:
+                st.success("✅ No se detectaron productos para limpieza.")
+            else:
+                st.error(
+                    "Estos productos tienen inventario pero llevan "
+                    "demasiado tiempo sin venderse."
+                )
+
+                tabla = preparar_tabla_limpieza(datos)
+
+                st.dataframe(
+                    tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=config_columnas_rotacion(),
+                )
+
+                st.markdown(
+                    """
+                    **Acciones posibles:**
+                    - realizar promoción;
+                    - disminuir el precio si corresponde;
+                    - no volver a comprar temporalmente;
+                    - trasladar inventario hacia una tienda donde el
+                      producto tenga mayor rotación.
+                    """
+                )
+
+        with tab6:
+            datos = df_tienda_vista[
+                df_tienda_vista["Acción"] == "🟢 Mantener"
+            ].copy()
+
+            if datos.empty:
+                st.info("No hay productos clasificados como mantener.")
+            else:
+                st.success(
+                    "✅ Estos productos presentan un nivel de inventario "
+                    "razonable según su demanda."
+                )
+                tabla = preparar_tabla_decision(datos)
+                st.dataframe(
+                    tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=config_columnas_rotacion(),
+                )
 
     # ========================================================
     # EXPLICACIÓN DEL MODELO
     # ========================================================
-
     st.markdown("---")
 
     with st.expander(
-        "🧮 ¿Cómo se realizan las recomendaciones?"
+        "🧮 ¿Cómo se calculan las recomendaciones?",
+        expanded=False
     ):
-
         st.markdown(
             f"""
             ### Pronóstico
@@ -2245,7 +2112,7 @@ def modulo_pronosticos():
 
             ---
 
-            ### % de rotación
+            ### Rotación 30 días
 
             El porcentaje de rotación refleja el movimiento real del producto
             dentro del inventario durante los últimos 30 días:
@@ -2253,11 +2120,9 @@ def modulo_pronosticos():
             **Rotación % = ventas reales de los últimos 30 días /
             (stock actual + ventas reales de los últimos 30 días) × 100**.
 
-            - Un porcentaje cercano a 0 % indica poco o ningún movimiento.
-            - Un porcentaje más alto indica que una mayor proporción del
-              inventario disponible salió por ventas.
-            - Este indicador utiliza ventas reales y no modifica el pronóstico,
-              el punto de reorden, el stock de seguridad ni la compra sugerida.
+            Un porcentaje cercano a 0 % indica poco o ningún movimiento.
+            Un porcentaje más alto indica que una mayor proporción del
+            inventario disponible salió por ventas.
 
             ---
 
@@ -2268,26 +2133,23 @@ def modulo_pronosticos():
 
             - Lead time: columna `Proveedor.lead_time`, vinculada a
               `Compra.id_proveedor` de la compra más reciente del producto
-              en la tienda. Si el proveedor cambia, se usa el más reciente.
+              en la tienda.
             - Stock de seguridad: **2 % de la mediana mensual** de todo el
-              historial de ventas de ese producto en esa tienda. Se excluye
-              el mes actual incompleto; los meses intermedios sin ventas
-              se contabilizan como cero.
+              historial de ventas de ese producto en esa tienda.
             - El selector de historial afecta únicamente al pronóstico de
-              demanda reciente (30 a 365 días), no al stock de seguridad.
+              demanda reciente, no al stock de seguridad.
             - Si faltan proveedor, lead time positivo o ventas en meses
-              completos, se indica **Sin datos** en vez de inventar cifras.
+              completos, se indica **Sin datos**.
 
             ---
 
-            ### Cuánto comprar
+            ### Compra sugerida
 
             Stock objetivo = demanda diaria × (cobertura objetivo +
             lead time del proveedor) + stock de seguridad.
 
-            Compra sugerida = máximo entre cero y (stock objetivo - stock).
-            La cantidad sigue siendo una estimación que se debe adaptar a
-            las presentaciones reales de compra.
+            Compra sugerida = máximo entre cero y
+            (stock objetivo - stock).
 
             ---
 
@@ -2299,23 +2161,16 @@ def modulo_pronosticos():
 
             ---
 
-            ### Importante
-
-            Estas recomendaciones son de apoyo para toma de decisiones.
-            A medida que tu base de datos acumule más ventas,
-            el pronóstico tendrá más información histórica disponible.
+            Estas recomendaciones sirven como apoyo para la toma de decisiones.
             """
         )
 
     # ========================================================
     # VOLVER
     # ========================================================
-
     st.markdown("---")
 
-    col1, col2, col3 = st.columns(
-        [1, 2, 1]
-    )
+    col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
         if st.button(
