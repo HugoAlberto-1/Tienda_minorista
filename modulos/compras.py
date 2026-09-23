@@ -176,11 +176,12 @@ def configurar_estilo():
         }}
 
         /* ============================================================
-           SELECTBOX - MISMO ESTILO QUE EL TEXT INPUT
+           SELECTBOX - MISMO ESTILO VISUAL QUE EL TEXT INPUT
            ============================================================ */
 
-        /* Caja completa */
-        .stSelectbox [data-baseweb="select"] > div {{
+        /* Caja principal */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div {{
             background-color: {COLOR_PRIMARY} !important;
             border: 1px solid {COLOR_BORDER} !important;
             border-radius: 8px !important;
@@ -188,55 +189,52 @@ def configurar_estilo():
             min-height: 40px !important;
             height: 40px !important;
 
-            padding-left: 10px !important;
-            padding-right: 10px !important;
-
             box-shadow: none !important;
 
             color: white !important;
             -webkit-text-fill-color: white !important;
         }}
 
+        /* Todo el contenido visible */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div * {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
+        }}
+
         /* Texto seleccionado */
-        .stSelectbox [data-baseweb="select"] > div > div {{
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] span {{
             color: white !important;
             -webkit-text-fill-color: white !important;
             opacity: 1 !important;
         }}
 
-        /* Texto dentro del select */
-        .stSelectbox [data-baseweb="select"] span {{
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-            opacity: 1 !important;
-        }}
-
-        /* Divs internos */
-        .stSelectbox [data-baseweb="select"] div {{
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-        }}
-
-        /* Input interno generado por Streamlit */
-        .stSelectbox [data-baseweb="select"] input {{
+        /* Input interno */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] input {{
             color: white !important;
             -webkit-text-fill-color: white !important;
         }}
 
         /* Flecha */
-        .stSelectbox [data-baseweb="select"] svg {{
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] svg {{
             fill: white !important;
             color: white !important;
         }}
 
-        /* Selectbox deshabilitado */
-        .stSelectbox [data-baseweb="select"] [aria-disabled="true"] {{
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-            opacity: 1 !important;
+        /* Al seleccionar/enfocar */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div:focus-within {{
+            background-color: {COLOR_PRIMARY} !important;
+            border-color: {COLOR_BORDER} !important;
+            box-shadow: none !important;
         }}
 
-        .stSelectbox [aria-disabled="true"] {{
+        /* Deshabilitado */
+        div[data-testid="stSelectbox"] [aria-disabled="true"] {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
             -webkit-text-fill-color: white !important;
@@ -298,29 +296,17 @@ def obtener_unidades_por_categoria(categoria):
     """Devuelve las unidades disponibles según la categoría del producto"""
 
     if categoria in CATEGORIAS_GRANOS:
-
-        return [
-            "libras",
-            "quintal",
-            "arroba"
-        ]
+        return ["libras", "quintal", "arroba"]
 
     elif categoria == "Carnes y congelados":
-
-        return [
-            "libras",
-            "unidad"
-        ]
+        return ["libras", "unidad"]
 
     else:
-
-        return [
-            "unidad"
-        ]
+        return ["unidad"]
 
 
 # ============================================================
-# OBTENER ID PRODUCTO
+# OBTENER ID DEL PRODUCTO
 # ============================================================
 
 def obtener_id_producto(
@@ -352,7 +338,7 @@ def obtener_id_producto(
 
 
 # ============================================================
-# OBTENER PRÓXIMO ID DE COMPRA
+# PRÓXIMO ID DE COMPRA
 # ============================================================
 
 def obtener_proximo_id_compra(cursor):
@@ -387,6 +373,7 @@ def modulo_compras():
         '<div class="module-title">🧾 Registro de Compras</div>',
         unsafe_allow_html=True
     )
+
 
     # ========================================================
     # VALIDACIÓN DE SESIÓN
@@ -1455,7 +1442,7 @@ def modulo_compras():
 
 
     # ========================================================
-    # AGREGAR OTRO PRODUCTO
+    # AGREGAR PRODUCTO DESPUÉS DE ACTUALIZAR
     # ========================================================
 
     if st.session_state.get(
