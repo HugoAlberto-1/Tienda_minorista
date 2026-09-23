@@ -425,6 +425,13 @@ def modulo_compras():
         ] = ""
 
 
+    if "mostrar_agregar_producto" not in st.session_state:
+
+        st.session_state[
+            "mostrar_agregar_producto"
+        ] = False
+
+
     # ============================================================
     # TIPO DE COMPRA
     # ============================================================
@@ -1042,6 +1049,11 @@ def modulo_compras():
                     )
 
 
+                    st.session_state[
+                        "mostrar_agregar_producto"
+                    ] = True
+
+
                 # ========================================================
                 # AGREGAR PRODUCTO
                 # ========================================================
@@ -1111,6 +1123,41 @@ def modulo_compras():
                 st.error(
                     "⚠️ Código de barras inválido."
                 )
+
+
+    if st.session_state.get("mostrar_agregar_producto"):
+
+        col1, col2, col3 = st.columns(
+            [1, 2, 1]
+        )
+
+        with col2:
+
+            if st.button(
+                "➕ Agregar producto",
+                use_container_width=True,
+                key="btn_agregar_producto_despues_actualizar"
+            ):
+
+                st.session_state[
+                    "mostrar_agregar_producto"
+                ] = False
+
+                st.session_state[
+                    "_reset_form_next_run"
+                ] = True
+
+                st.session_state.pop(
+                    "unidad_select",
+                    None
+                )
+
+                st.session_state.pop(
+                    "form_data_precio_compra",
+                    None
+                )
+
+                st.rerun()
 
 
     # ============================================================
