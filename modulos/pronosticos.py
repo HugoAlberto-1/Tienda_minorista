@@ -1457,20 +1457,20 @@ def modulo_pronosticos():
     configurar_estilo()
 
     st.markdown(
-        '<div class="pronostico-title">📈 Pronóstico y Punto de Reorden</div>',
+        '<div class="pronostico-title">📈 Pronóstico e inventario</div>',
         unsafe_allow_html=True,
     )
 
     st.markdown(
         """
         <div class="pronostico-subtitle">
-            Análisis de rotación, cobertura, reposición y limpieza de inventario
+            Decisiones de compra, rotación y reabastecimiento
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.caption("✅ Versión activa: decisiones por tienda · v2")
+    # Versión interna del módulo: decisiones por tienda · v2
 
     # --------------------------------------------------------
     # Validación
