@@ -481,7 +481,7 @@ def obtener_compras():
 def obtener_lead_times():
     """Proveedor de la compra más reciente de cada producto/tienda.
 
-    Se asume Compra.id_proveedor -> proveedores.id_proveedor y
+    Se asume Compra.id_proveedor -> Proveedor.id_proveedor y
     ProductoxCompra.Id_compra -> Compra.Id_compra. No se inventa un
     proveedor ni se asigna un plazo fijo cuando falta la relación.
     """
@@ -497,7 +497,7 @@ def obtener_lead_times():
                    pr.lead_time, c.Fecha, c.Id_compra
             FROM ProductoxCompra pc
             INNER JOIN Compra c ON pc.Id_compra = c.Id_compra
-            LEFT JOIN proveedores pr ON c.id_proveedor = pr.id_proveedor
+            LEFT JOIN Proveedor pr ON c.id_proveedor = pr.id_proveedor
             ORDER BY c.Fecha DESC, c.Id_compra DESC
         """)
         registros = cursor.fetchall()
@@ -2231,7 +2231,7 @@ def modulo_pronosticos():
             **Punto de reorden = demanda diaria × lead time del proveedor
             + stock de seguridad**.
 
-            - Lead time: columna `proveedores.lead_time`, vinculada a
+            - Lead time: columna `Proveedor.lead_time`, vinculada a
               `Compra.id_proveedor` de la compra más reciente del producto
               en la tienda. Si el proveedor cambia, se usa el más reciente.
             - Stock de seguridad: **2 % de la mediana mensual** de todo el
