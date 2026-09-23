@@ -1425,12 +1425,24 @@ def config_columnas_rotacion():
 # TARJETAS DE RESUMEN
 # ============================================================
 
-def tarjeta_resumen(icono, valor, etiqueta, discreta=False):
+def tarjeta_resumen(icono, valor, etiqueta, tono="azul", discreta=False):
+    """Tarjeta visual del dashboard. No modifica ninguna lógica de negocio."""
     clase = "metric-card subdued" if discreta else "metric-card"
+
+    colores = {
+        "rojo": "#dc3545",
+        "amarillo": "#f0ad4e",
+        "naranja": "#fd7e14",
+        "gris": "#6c757d",
+        "morado": "#7b61a8",
+        "verde": "#2e8b57",
+        "azul": COLOR_PRIMARY,
+    }
+    color = colores.get(tono, COLOR_PRIMARY)
 
     st.markdown(
         f"""
-        <div class="{clase}">
+        <div class="{clase}" style="border-top: 5px solid {color};">
             <div class="metric-icon">{icono}</div>
             <div class="metric-number">{valor}</div>
             <div class="metric-label">{etiqueta}</div>
@@ -1556,26 +1568,33 @@ def modulo_pronosticos():
     )
     categoria_lista = ["Todas"] + categorias_disponibles
 
-    f1, f2 = st.columns(2)
-
-    with f1:
-        tienda_seleccionada = st.selectbox(
-            "🏪 Tienda",
-            opciones_tiendas,
-            format_func=lambda id_: nombres_por_id.get(
-                id_,
-                f"Tienda {id_}"
-            ),
-            key="tienda_analisis_pronostico",
-            disabled=(rol != "Administrador"),
+    with st.container(border=True):
+        st.markdown("#### 🔎 Filtros principales")
+        st.caption(
+            "Selecciona la tienda y la categoría que deseas analizar. "
+            "Todo el dashboard se actualizará con estos filtros."
         )
 
-    with f2:
-        categoria = st.selectbox(
-            "📁 Categoría",
-            categoria_lista,
-            key="categoria_pronostico",
-        )
+        f1, f2 = st.columns(2)
+
+        with f1:
+            tienda_seleccionada = st.selectbox(
+                "🏪 Tienda",
+                opciones_tiendas,
+                format_func=lambda id_: nombres_por_id.get(
+                    id_,
+                    f"Tienda {id_}"
+                ),
+                key="tienda_analisis_pronostico",
+                disabled=(rol != "Administrador"),
+            )
+
+        with f2:
+            categoria = st.selectbox(
+                "📁 Categoría",
+                categoria_lista,
+                key="categoria_pronostico",
+            )
 
     nombre_tienda_seleccionada = nombres_por_id[
         tienda_seleccionada
@@ -1727,31 +1746,58 @@ def modulo_pronosticos():
         df_tienda_vista["Acción"].eq("🟢 Mantener").sum()
     )
 
-    st.markdown(
-        '<div class="section-title">🚨 ¿Qué necesita atención?</div>',
-        unsafe_allow_html=True
-    )
+    with st.container(border=True):
+        st.markdown(
+            '<div class="section-title">🚨 ¿Qué necesita atención?</div>',
+            unsafe_allow_html=True
+        )
+        st.caption(
+            "Resumen rápido de las decisiones sugeridas para la tienda "
+            "y categoría seleccionadas."
+        )
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
 
-    with c1:
-        tarjeta_resumen("🔴", comprar_ahora, "Comprar ahora")
-    with c2:
-        tarjeta_resumen("🟡", proximos, "Próximos")
-    with c3:
-        tarjeta_resumen("🟠", reducir, "Reducir compra")
-    with c4:
-        tarjeta_resumen("🚫", no_comprar, "No comprar")
-    with c5:
-        tarjeta_resumen("🧹", limpieza, "Limpieza")
-    with c6:
-        tarjeta_resumen("🟢", mantener, "Mantener", discreta=True)
+        with c1:
+            tarjeta_resumen(
+                "🔴", comprar_ahora, "Comprar ahora", tono="rojo"
+            )
+        with c2:
+            tarjeta_resumen(
+                "🟡", proximos, "Próximos", tono="amarillo"
+            )
+        with c3:
+            tarjeta_resumen(
+                "🟠", reducir, "Reducir compra", tono="naranja"
+            )
+        with c4:
+            tarjeta_resumen(
+                "🚫", no_comprar, "No comprar", tono="gris"
+            )
+        with c5:
+            tarjeta_resumen(
+                "🧹", limpieza, "Limpieza", tono="morado"
+            )
+        with c6:
+            tarjeta_resumen(
+                "🟢", mantener, "Mantener",
+                tono="verde", discreta=True
+            )
 
     st.markdown("---")
 
     # ========================================================
     # PESTAÑAS PRINCIPALES
     # ========================================================
+    st.markdown(
+        '<div class="section-title">📊 Panel de análisis</div>',
+        unsafe_allow_html=True
+    )
+    st.caption(
+        "Usa las pestañas para consultar inventario, comparar el movimiento "
+        "entre tiendas o revisar las recomendaciones del sistema."
+    )
+
     tab_inventario, tab_comparar, tab_recomendaciones = st.tabs(
         [
             "📦 Inventario y reorden",
@@ -1765,11 +1811,11 @@ def modulo_pronosticos():
     # ========================================================
     with tab_inventario:
         st.markdown(
-            f"### Inventario de {nombre_tienda_seleccionada}"
+            f"### 📦 Inventario y reorden · {nombre_tienda_seleccionada}"
         )
-        st.caption(
-            "Consulta el estado del inventario, su movimiento y "
-            "las necesidades de reabastecimiento."
+        st.info(
+            "Esta vista reúne stock, movimiento, duración del inventario, "
+            "punto de reorden y compra sugerida en una sola tabla."
         )
 
         if df_tienda_vista.empty:
@@ -1822,10 +1868,11 @@ def modulo_pronosticos():
     # TAB 2: COMPARAR TIENDAS
     # ========================================================
     with tab_comparar:
-        st.markdown("### Comparativa de rotación entre tiendas")
-        st.caption(
-            "Selecciona un producto para identificar dónde presenta "
-            "mayor o menor movimiento."
+        st.markdown("### 📊 Comparativa de rotación entre tiendas")
+        st.info(
+            "Selecciona un producto. La gráfica y la tabla usan el MISMO "
+            "porcentaje de rotación calculado con ventas reales de los "
+            "últimos 30 días."
         )
 
         productos_disponibles = sorted(
@@ -1923,10 +1970,11 @@ def modulo_pronosticos():
     # ========================================================
     with tab_recomendaciones:
         st.markdown(
-            f"### Recomendaciones · {nombre_tienda_seleccionada}"
+            f"### 🧠 Recomendaciones · {nombre_tienda_seleccionada}"
         )
-        st.caption(
-            "Productos agrupados por la acción sugerida por el sistema."
+        st.info(
+            "Aquí los productos se agrupan por acción para que el "
+            "administrador pueda decidir qué comprar, reducir o revisar."
         )
 
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
