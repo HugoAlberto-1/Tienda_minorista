@@ -194,11 +194,9 @@ def modulo_proveedor():
     configurar_estilo()
 
     st.markdown(
-        '<div class="module-title">'
-        '🚚 Registrar Proveedor'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>',
+    unsafe_allow_html=True
+)
 
     # ======================================================
     # VALIDAR SESIÓN
