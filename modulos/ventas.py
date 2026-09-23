@@ -381,6 +381,13 @@ def modulo_ventas():
         ] = ""
 
 
+    if "editar_venta_indice" not in st.session_state:
+
+        st.session_state[
+            "editar_venta_indice"
+        ] = None
+
+
     # ============================================================
     # REINICIAR FORMULARIO DEL PRODUCTO
     # ============================================================
@@ -487,10 +494,18 @@ def modulo_ventas():
     # CÓDIGO DE BARRAS
     # ============================================================
 
+    codigo_barras_disabled = (
+        st.session_state[
+            "editar_venta_indice"
+        ] is not None
+    )
+
+
     cod_barra = st.text_input(
         "🔍 Código de barras del producto",
         key="form_data_codigo_barras",
-        placeholder="Ej: 123456789"
+        placeholder="Ej: 123456789",
+        disabled=codigo_barras_disabled
     )
 
 
@@ -1050,8 +1065,18 @@ def modulo_ventas():
 
                             with col2:
 
+                                boton_venta_texto = (
+                                    "💾 Actualizar producto de la venta"
+                                    if st.session_state[
+                                        "editar_venta_indice"
+                                    ] is not None
+                                    else
+                                    "🛒 Agregar producto a la venta"
+                                )
+
+
                                 if st.button(
-                                    "🛒 Agregar producto a la venta",
+                                    boton_venta_texto,
                                     use_container_width=True,
                                     type="primary"
                                 ):
@@ -1084,21 +1109,42 @@ def modulo_ventas():
                                     }
 
 
-                                    st.session_state[
-                                        "productos_vendidos"
-                                    ].append(
-                                        producto_venta
-                                    )
+                                    if st.session_state[
+                                        "editar_venta_indice"
+                                    ] is not None:
+
+                                        st.session_state[
+                                            "productos_vendidos"
+                                        ][
+                                            st.session_state[
+                                                "editar_venta_indice"
+                                            ]
+                                        ] = producto_venta
+
+                                        st.session_state[
+                                            "editar_venta_indice"
+                                        ] = None
+
+                                        st.success(
+                                            "✅ Producto actualizado en la venta."
+                                        )
+
+                                    else:
+
+                                        st.session_state[
+                                            "productos_vendidos"
+                                        ].append(
+                                            producto_venta
+                                        )
+
+                                        st.success(
+                                            "✅ Producto agregado a la venta."
+                                        )
 
 
                                     st.session_state[
                                         "_reset_venta_next_run"
                                     ] = True
-
-
-                                    st.success(
-                                        "✅ Producto agregado a la venta."
-                                    )
 
 
                                     st.rerun()
@@ -1518,8 +1564,18 @@ def modulo_ventas():
 
                             with col2:
 
+                                boton_venta_texto = (
+                                    "💾 Actualizar producto de la venta"
+                                    if st.session_state[
+                                        "editar_venta_indice"
+                                    ] is not None
+                                    else
+                                    "🛒 Agregar producto a la venta"
+                                )
+
+
                                 if st.button(
-                                    "🛒 Agregar producto a la venta",
+                                    boton_venta_texto,
                                     use_container_width=True,
                                     type="primary"
                                 ):
@@ -1552,21 +1608,42 @@ def modulo_ventas():
                                     }
 
 
-                                    st.session_state[
-                                        "productos_vendidos"
-                                    ].append(
-                                        producto_venta
-                                    )
+                                    if st.session_state[
+                                        "editar_venta_indice"
+                                    ] is not None:
+
+                                        st.session_state[
+                                            "productos_vendidos"
+                                        ][
+                                            st.session_state[
+                                                "editar_venta_indice"
+                                            ]
+                                        ] = producto_venta
+
+                                        st.session_state[
+                                            "editar_venta_indice"
+                                        ] = None
+
+                                        st.success(
+                                            "✅ Producto actualizado en la venta."
+                                        )
+
+                                    else:
+
+                                        st.session_state[
+                                            "productos_vendidos"
+                                        ].append(
+                                            producto_venta
+                                        )
+
+                                        st.success(
+                                            "✅ Producto agregado a la venta."
+                                        )
 
 
                                     st.session_state[
                                         "_reset_venta_next_run"
                                     ] = True
-
-
-                                    st.success(
-                                        "✅ Producto agregado a la venta."
-                                    )
 
 
                                     st.rerun()
@@ -1643,14 +1720,56 @@ def modulo_ventas():
 
 
             # ========================================================
-            # ELIMINAR PRODUCTO
+            # EDITAR / ELIMINAR PRODUCTO
             # ========================================================
 
-            col1, col2, col3 = (
-                st.columns(
-                    [1, 3, 1]
-                )
+            col1, col2 = st.columns(
+                [1, 1]
             )
+
+
+            with col1:
+
+                if st.button(
+                    "✏️ Editar",
+                    key=f"editar_venta_{i}",
+                    use_container_width=True
+                ):
+
+                    st.session_state[
+                        "editar_venta_indice"
+                    ] = i
+
+                    st.session_state[
+                        "form_data_codigo_barras"
+                    ] = prod["cod_barra"]
+
+                    st.session_state[
+                        "venta_tipo_cliente"
+                    ] = prod["tipo_cliente"]
+
+                    st.session_state[
+                        "venta_precio_venta"
+                    ] = float(
+                        prod["precio_venta"]
+                    )
+
+                    st.session_state[
+                        "_precio_venta_contexto"
+                    ] = (
+                        prod["cod_barra"],
+                        prod["tipo_cliente"]
+                    )
+
+                    st.session_state[
+                        "venta_cantidad"
+                    ] = prod["cantidad"]
+
+                    st.session_state[
+                        "unidad_select"
+                    ] = prod["unidad"]
+
+                    st.rerun()
 
 
             with col2:
@@ -1664,6 +1783,16 @@ def modulo_ventas():
                     st.session_state[
                         "productos_vendidos"
                     ].pop(i)
+
+                    if (
+                        st.session_state[
+                            "editar_venta_indice"
+                        ] == i
+                    ):
+
+                        st.session_state[
+                            "editar_venta_indice"
+                        ] = None
 
                     st.rerun()
 
@@ -1864,6 +1993,11 @@ def modulo_ventas():
 
 
                     st.session_state[
+                        "editar_venta_indice"
+                    ] = None
+
+
+                    st.session_state[
                         "_reset_venta_next_run"
                     ] = True
 
@@ -1915,6 +2049,11 @@ def modulo_ventas():
             st.session_state[
                 "productos_vendidos"
             ] = []
+
+
+            st.session_state[
+                "editar_venta_indice"
+            ] = None
 
 
             st.session_state[
