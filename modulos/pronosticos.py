@@ -1460,6 +1460,8 @@ def modulo_pronosticos():
         unsafe_allow_html=True,
     )
 
+    st.caption("✅ Versión activa: decisiones por tienda · v2")
+
     # --------------------------------------------------------
     # Validación
     # --------------------------------------------------------
@@ -1727,7 +1729,7 @@ def modulo_pronosticos():
     st.markdown("---")
 
     st.markdown(
-        '<div class="section-title">📌 Resumen para toma de decisiones</div>',
+        f'<div class="section-title">📌 Resumen para toma de decisiones · {nombre_tienda_seleccionada}</div>',
         unsafe_allow_html=True
     )
     st.caption(
@@ -1968,7 +1970,7 @@ def modulo_pronosticos():
     st.markdown("---")
 
     st.markdown(
-        '<div class="section-title">🧠 Centro de decisiones</div>',
+        f'<div class="section-title">🧠 Centro de decisiones · {nombre_tienda_seleccionada}</div>',
         unsafe_allow_html=True
     )
 
@@ -1977,14 +1979,17 @@ def modulo_pronosticos():
         "La categoría elegida también se aplica a estas recomendaciones."
     )
 
+    # Todas las pestañas usan exclusivamente df_tienda_vista.
+    # De esta forma los contadores y los productos son coherentes.
+    mantener = int(df_tienda_vista["Acción"].eq("🟢 Mantener").sum())
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         [
-            "🔴 Comprar ahora",
-            "🟡 Próximos a comprar",
-            "🟠 Reducir compra",
-            "🚫 No comprar",
-            "🧹 Limpieza",
-            "🟢 Mantener",
+            f"🔴 Comprar ahora ({comprar_ahora})",
+            f"🟡 Próximos a comprar ({proximos})",
+            f"🟠 Reducir compra ({reducir})",
+            f"🚫 No comprar ({no_comprar})",
+            f"🧹 Limpieza ({limpieza})",
+            f"🟢 Mantener ({mantener})",
         ]
     )
 
