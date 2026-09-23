@@ -1541,10 +1541,6 @@ def modulo_pronosticos():
     # aparezcan visualmente inmediatamente después del encabezado.
     filtros_principales = st.container()
 
-    # Este contenedor se reserva justo después de los filtros para
-    # mostrar el resumen de productos que requieren atención.
-    atencion_principal = st.container()
-
     # --------------------------------------------------------
     # Validación
     # --------------------------------------------------------
@@ -1629,6 +1625,10 @@ def modulo_pronosticos():
             "El historial seleccionado arriba afecta al pronóstico reciente, "
             "no a la mediana mensual."
         )
+
+    # Se reserva aquí para que visualmente aparezca DESPUÉS
+    # de "⚙️ Configuración avanzada".
+    atencion_principal = st.container()
 
     fecha_fin = datetime.now().date()
 
