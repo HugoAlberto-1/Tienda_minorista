@@ -1509,15 +1509,10 @@ def modulo_pronosticos():
     )
 
     # --------------------------------------------------------
-    # Configuración avanzada
+    # CONFIGURACIÓN AVANZADA
     # --------------------------------------------------------
 
     with st.expander("⚙️ Configuración avanzada", expanded=False):
-
-        st.caption(
-            "Estos parámetros permiten adaptar la recomendación "
-            "de compra a la forma real en que trabajas."
-        )
 
         p1, p2 = st.columns(2)
 
@@ -1552,7 +1547,7 @@ def modulo_pronosticos():
             max_value=365,
             value=90,
             step=15,
-            format="%d días",
+            format="%d días sin ventas",
             help=(
                 "Cantidad de días sin ventas a partir de la cual "
                 "un producto puede considerarse para limpieza de inventario."
