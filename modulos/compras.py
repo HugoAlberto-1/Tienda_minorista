@@ -20,6 +20,7 @@ def configurar_estilo():
 
     st.markdown(f"""
         <style>
+
         .stApp {{
             background-color: {COLOR_BG};
         }}
@@ -93,7 +94,9 @@ def configurar_estilo():
             border: 1px solid {COLOR_BORDER};
         }}
 
-        /* Labels en color oscuro */
+        /* ============================================================
+           LABELS
+           ============================================================ */
 
         .stTextInput > label,
         .stSelectbox > label,
@@ -103,7 +106,9 @@ def configurar_estilo():
             font-weight: 500 !important;
         }}
 
-        /* RADIO BUTTONS */
+        /* ============================================================
+           RADIO BUTTONS
+           ============================================================ */
 
         .stRadio div[role="radiogroup"] label {{
             color: {COLOR_TEXT_DARK} !important;
@@ -117,14 +122,14 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK} !important;
         }}
 
-
         /* ============================================================
-           TEXT INPUT
+           TEXT INPUT - AZUL CON TEXTO BLANCO
            ============================================================ */
 
         .stTextInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
+            -webkit-text-fill-color: white !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
             padding: 10px 15px !important;
@@ -132,8 +137,8 @@ def configurar_estilo():
 
         .stTextInput > div > div > input::placeholder {{
             color: rgba(255,255,255,0.7) !important;
+            -webkit-text-fill-color: rgba(255,255,255,0.7) !important;
         }}
-
 
         /* ============================================================
            NUMBER INPUT
@@ -142,6 +147,7 @@ def configurar_estilo():
         .stNumberInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
+            -webkit-text-fill-color: white !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
             padding: 10px 15px !important;
@@ -156,7 +162,6 @@ def configurar_estilo():
             color: white !important;
         }}
 
-
         /* ============================================================
            DATE INPUT
            ============================================================ */
@@ -164,42 +169,55 @@ def configurar_estilo():
         .stDateInput > div > div > input {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
+            -webkit-text-fill-color: white !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
             padding: 10px 15px !important;
         }}
 
-
         /* ============================================================
-           SELECTBOX AZUL CON TEXTO BLANCO
+           SELECTBOX - MISMO ESTILO QUE EL TEXT INPUT
            ============================================================ */
 
-        /* Fondo del selectbox */
+        /* Caja completa */
         .stSelectbox [data-baseweb="select"] > div {{
             background-color: {COLOR_PRIMARY} !important;
-            border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
+            border-radius: 8px !important;
+
+            min-height: 40px !important;
+            height: 40px !important;
+
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+
+            box-shadow: none !important;
+
             color: white !important;
+            -webkit-text-fill-color: white !important;
         }}
 
         /* Texto seleccionado */
         .stSelectbox [data-baseweb="select"] > div > div {{
             color: white !important;
             -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
         }}
 
-        /* Spans internos */
+        /* Texto dentro del select */
         .stSelectbox [data-baseweb="select"] span {{
             color: white !important;
             -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
         }}
 
         /* Divs internos */
         .stSelectbox [data-baseweb="select"] div {{
             color: white !important;
+            -webkit-text-fill-color: white !important;
         }}
 
-        /* Input interno */
+        /* Input interno generado por Streamlit */
         .stSelectbox [data-baseweb="select"] input {{
             color: white !important;
             -webkit-text-fill-color: white !important;
@@ -215,8 +233,15 @@ def configurar_estilo():
         .stSelectbox [data-baseweb="select"] [aria-disabled="true"] {{
             color: white !important;
             -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
         }}
 
+        .stSelectbox [aria-disabled="true"] {{
+            background-color: {COLOR_PRIMARY} !important;
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
+        }}
 
         /* ============================================================
            BOTONES
@@ -270,7 +295,7 @@ CATEGORIAS_GRANOS = [
 
 
 def obtener_unidades_por_categoria(categoria):
-    """Devuelve las unidades disponibles según la categoría"""
+    """Devuelve las unidades disponibles según la categoría del producto"""
 
     if categoria in CATEGORIAS_GRANOS:
 
@@ -327,7 +352,7 @@ def obtener_id_producto(
 
 
 # ============================================================
-# PRÓXIMO ID COMPRA
+# OBTENER PRÓXIMO ID DE COMPRA
 # ============================================================
 
 def obtener_proximo_id_compra(cursor):
@@ -359,30 +384,22 @@ def modulo_compras():
     configurar_estilo()
 
     st.markdown(
-        '<div class="module-title">'
-        '🧾 Registro de Compras'
-        '</div>',
+        '<div class="module-title">🧾 Registro de Compras</div>',
         unsafe_allow_html=True
     )
-
 
     # ========================================================
     # VALIDACIÓN DE SESIÓN
     # ========================================================
 
     if (
-        not st.session_state.get(
-            "logueado"
-        )
-        or "id_empleado"
-        not in st.session_state
-        or "id_tienda"
-        not in st.session_state
+        not st.session_state.get("logueado")
+        or "id_empleado" not in st.session_state
+        or "id_tienda" not in st.session_state
     ):
 
         st.error(
-            "⚠️ Debes iniciar sesión "
-            "para registrar compras."
+            "⚠️ Debes iniciar sesión para registrar compras."
         )
 
         st.markdown("---")
@@ -445,8 +462,7 @@ def modulo_compras():
     if not conn:
 
         st.error(
-            "❌ No se pudo conectar "
-            "a la base de datos."
+            "❌ No se pudo conectar a la base de datos."
         )
 
         st.stop()
@@ -504,8 +520,7 @@ def modulo_compras():
     if not productos:
 
         st.warning(
-            "⚠️ No hay productos disponibles "
-            "para esta tienda."
+            "⚠️ No hay productos disponibles para esta tienda."
         )
 
         cursor.close()
@@ -694,8 +709,7 @@ def modulo_compras():
     else:
 
         st.warning(
-            "⚠️ No hay proveedores registrados "
-            "para esta tienda."
+            "⚠️ No hay proveedores registrados para esta tienda."
         )
 
         id_proveedor = None
@@ -1349,8 +1363,7 @@ def modulo_compras():
 
 
                     st.success(
-                        "✅ Producto actualizado "
-                        "correctamente."
+                        "✅ Producto actualizado correctamente."
                     )
 
 
@@ -1422,8 +1435,7 @@ def modulo_compras():
 
 
                     st.success(
-                        "✅ Producto agregado "
-                        "a la compra."
+                        "✅ Producto agregado a la compra."
                     )
 
 
@@ -1443,7 +1455,7 @@ def modulo_compras():
 
 
     # ========================================================
-    # AGREGAR OTRO PRODUCTO DESPUÉS DE EDITAR
+    # AGREGAR OTRO PRODUCTO
     # ========================================================
 
     if st.session_state.get(
@@ -2033,5 +2045,4 @@ def modulo_compras():
 
 
     cursor.close()
-
     conn.close()
