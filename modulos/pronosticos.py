@@ -1537,9 +1537,13 @@ def modulo_pronosticos():
 
     # Versión interna del módulo: decisiones por tienda · v2
 
-    # Este contenedor se reserva aquí para que los filtros principales
-    # aparezcan visualmente inmediatamente después del encabezado.
+    # Contenedores reservados para controlar el orden visual:
+    # 1. filtros principales
+    # 2. configuración avanzada
+    # 3. sección de atención
     filtros_principales = st.container()
+    configuracion_avanzada = st.container()
+    atencion_principal = st.container()
 
     # --------------------------------------------------------
     # Validación
@@ -1577,58 +1581,56 @@ def modulo_pronosticos():
     # CONFIGURACIÓN AVANZADA
     # --------------------------------------------------------
 
-    with st.expander("⚙️ Configuración avanzada", expanded=False):
+    with configuracion_avanzada:
+        with st.expander("⚙️ Configuración avanzada", expanded=False):
 
-        p1, p2 = st.columns(2)
+            p1, p2 = st.columns(2)
 
-        with p1:
-            dias_historial = st.selectbox(
-                "Historial de ventas",
-                [30, 60, 90, 180, 365],
-                index=2,
-                format_func=lambda x: f"{x} días",
+            with p1:
+                dias_historial = st.selectbox(
+                    "Historial de ventas",
+                    [30, 60, 90, 180, 365],
+                    index=2,
+                    format_func=lambda x: f"{x} días",
+                    help=(
+                        "Período utilizado para analizar "
+                        "la demanda reciente."
+                    ),
+                )
+
+            with p2:
+                cobertura_objetivo = st.number_input(
+                    "Cobertura objetivo",
+                    min_value=7,
+                    max_value=180,
+                    value=30,
+                    step=1,
+                    help=(
+                        "Cantidad de días que deseas cubrir "
+                        "con cada reposición."
+                    ),
+                )
+
+            dias_limpieza = st.slider(
+                "Limpieza después de",
+                min_value=30,
+                max_value=365,
+                value=90,
+                step=15,
+                format="%d días sin ventas",
                 help=(
-                    "Período utilizado para analizar "
-                    "la demanda reciente."
+                    "Cantidad de días sin ventas a partir de la cual "
+                    "un producto puede considerarse para limpieza de inventario."
                 ),
             )
 
-        with p2:
-            cobertura_objetivo = st.number_input(
-                "Cobertura objetivo",
-                min_value=7,
-                max_value=180,
-                value=30,
-                step=1,
-                help=(
-                    "Cantidad de días que deseas cubrir "
-                    "con cada reposición."
-                ),
+            st.caption(
+                "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
+                "2 % de la mediana de todas las ventas mensuales completas. "
+                "El historial seleccionado arriba afecta al pronóstico reciente, "
+                "no a la mediana mensual."
             )
 
-        dias_limpieza = st.slider(
-            "Limpieza después de",
-            min_value=30,
-            max_value=365,
-            value=90,
-            step=15,
-            format="%d días sin ventas",
-            help=(
-                "Cantidad de días sin ventas a partir de la cual "
-                "un producto puede considerarse para limpieza de inventario."
-            ),
-        )
-
-        st.caption(
-            "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-            "2 % de la mediana de todas las ventas mensuales completas. "
-            "El historial seleccionado arriba afecta al pronóstico reciente, "
-            "no a la mediana mensual."
-        )
-
-    # Se reserva aquí para que visualmente aparezca DESPUÉS
-    # de "⚙️ Configuración avanzada".
-    atencion_principal = st.container()
 
     fecha_fin = datetime.now().date()
 
