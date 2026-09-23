@@ -1647,15 +1647,6 @@ def modulo_pronosticos():
         )
         return
 
-    incompletos = df["Acción"].eq("⚪ Revisar datos de reorden").sum()
-    if incompletos:
-        st.warning(
-            f"⚠️ {incompletos} producto(s)/tienda sin lead time válido o "
-            "sin meses completos de ventas. Se muestra 'Sin datos' "
-            "en lugar de calcular un reorden con valores inventados. "
-            "Se usa el proveedor de la compra más reciente."
-        )
-
     # ========================================================
     # FILTROS GENERALES
     # ========================================================
@@ -1690,10 +1681,38 @@ def modulo_pronosticos():
             categoria
         ]
 
-    pendientes = df_filtrado[
-        df_filtrado["Acción"] == "⚪ Revisar datos de reorden"
+    # Una sola tienda controla la tabla, el resumen y el centro de decisiones.
+    # El comparativo entre tiendas sigue usando df_filtrado (solo categoría).
+    tiendas_disponibles = tiendas.sort_values("Tienda").drop_duplicates("id_tienda")
+    opciones_tiendas = tiendas_disponibles["id_tienda"].tolist()
+    if not opciones_tiendas:
+        st.info("No hay tiendas disponibles para el análisis.")
+        return
+
+    nombres_por_id = dict(zip(
+        tiendas_disponibles["id_tienda"], tiendas_disponibles["Tienda"]
+    ))
+    tienda_seleccionada = st.selectbox(
+        "🏪 Tienda para el análisis y centro de decisiones",
+        opciones_tiendas,
+        format_func=lambda id_: nombres_por_id.get(id_, f"Tienda {id_}"),
+        key="tienda_analisis_pronostico",
+    )
+    nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
+    df_tienda_vista = df_filtrado[
+        df_filtrado["id_tienda"] == tienda_seleccionada
+    ].copy()
+
+    pendientes = df_tienda_vista[
+        df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
     ]
     if not pendientes.empty:
+        st.warning(
+            f"⚠️ {len(pendientes)} producto(s) de "
+            f"{nombre_tienda_seleccionada} sin lead time válido o "
+            "sin meses completos de ventas. El reorden se muestra "
+            "como 'Sin datos'. Se usa el proveedor de la compra más reciente."
+        )
         with st.expander(f"⚪ Revisar datos de reorden ({len(pendientes)})"):
             st.dataframe(
                 pendientes[["Producto", "Tienda", "Código", "Proveedor",
@@ -1711,38 +1730,42 @@ def modulo_pronosticos():
         '<div class="section-title">📌 Resumen para toma de decisiones</div>',
         unsafe_allow_html=True
     )
+    st.caption(
+        f"Resultados de {nombre_tienda_seleccionada}, "
+        "según la categoría seleccionada."
+    )
 
     comprar_ahora = len(
-        df_filtrado[
-            df_filtrado["Acción"] ==
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🔴 Comprar ahora"
         ]
     )
 
     proximos = len(
-        df_filtrado[
-            df_filtrado["Acción"] ==
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🟡 Próximo a comprar"
         ]
     )
 
     reducir = len(
-        df_filtrado[
-            df_filtrado["Acción"] ==
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🟠 Reducir compra"
         ]
     )
 
     no_comprar = len(
-        df_filtrado[
-            df_filtrado["Acción"] ==
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🚫 No comprar"
         ]
     )
 
     limpieza = len(
-        df_filtrado[
-            df_filtrado["Acción"] ==
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🧹 Limpieza de inventario"
         ]
     )
@@ -1796,34 +1819,13 @@ def modulo_pronosticos():
     )
 
     st.caption(
-        "Elige una tienda a la vez para ver, producto por producto, su "
-        "stock, rotación, punto de reorden y cuánto conviene comprar "
-        "en esa tienda."
+        f"Productos de {nombre_tienda_seleccionada}. "
+        "Para cambiar la tienda, utiliza el selector de Filtros del análisis."
     )
 
-    nombres_tiendas = (
-        df_filtrado["Tienda"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-    if not nombres_tiendas:
-        st.info(
-            "No hay tiendas disponibles con los filtros actuales."
-        )
+    if df_tienda_vista.empty:
+        st.info("No hay productos de esta categoría en la tienda seleccionada.")
     else:
-
-        tienda_vista = st.selectbox(
-            "🏪 Tienda",
-            sorted(nombres_tiendas),
-            key="tienda_vista_pronostico",
-        )
-
-        df_tienda_vista = df_filtrado[
-            df_filtrado["Tienda"] == tienda_vista
-        ].copy()
-
         tabla_tienda = construir_tabla_indicadores(
             df_tienda_vista,
             columna_fila="Producto",
@@ -1971,9 +1973,8 @@ def modulo_pronosticos():
     )
 
     st.caption(
-        "Los mismos productos de la tabla de arriba, ahora agrupados "
-        "por la acción recomendada — útil cuando quieres trabajar "
-        "una lista a la vez (por ejemplo, todo lo que hay que comprar hoy)."
+        f"Productos de {nombre_tienda_seleccionada}, agrupados por acción. "
+        "La categoría elegida también se aplica a estas recomendaciones."
     )
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
@@ -1993,8 +1994,8 @@ def modulo_pronosticos():
 
     with tab1:
 
-        datos = df_filtrado[
-            df_filtrado["Acción"] ==
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🔴 Comprar ahora"
         ].copy()
 
@@ -2028,8 +2029,8 @@ def modulo_pronosticos():
 
     with tab2:
 
-        datos = df_filtrado[
-            df_filtrado["Acción"] ==
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🟡 Próximo a comprar"
         ].copy()
 
@@ -2059,8 +2060,8 @@ def modulo_pronosticos():
 
     with tab3:
 
-        datos = df_filtrado[
-            df_filtrado["Acción"] ==
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🟠 Reducir compra"
         ].copy()
 
@@ -2092,8 +2093,8 @@ def modulo_pronosticos():
 
     with tab4:
 
-        datos = df_filtrado[
-            df_filtrado["Acción"] ==
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🚫 No comprar"
         ].copy()
 
@@ -2124,8 +2125,8 @@ def modulo_pronosticos():
 
     with tab5:
 
-        datos = df_filtrado[
-            df_filtrado["Acción"] ==
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🧹 Limpieza de inventario"
         ].copy()
 
@@ -2171,8 +2172,8 @@ def modulo_pronosticos():
 
     with tab6:
 
-        datos = df_filtrado[
-            df_filtrado["Acción"] ==
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
             "🟢 Mantener"
         ].copy()
 
