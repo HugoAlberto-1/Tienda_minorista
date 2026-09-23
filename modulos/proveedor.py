@@ -255,8 +255,7 @@ def modulo_proveedor():
 
         </div>
         """,
-        unsafe_allow_html=True
-    )
+        unsafe_allow_html=True)
 
 
     # ======================================================
