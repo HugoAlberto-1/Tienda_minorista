@@ -1721,22 +1721,101 @@ def modulo_pronosticos():
         df_filtrado["id_tienda"] == tienda_seleccionada
     ].copy()
 
-    pendientes = df_tienda_vista[
+    # ========================================================
+    # ESTADO DE LOS DATOS
+    # ========================================================
+
+    # Estas situaciones NO son decisiones comerciales. Sirven para
+    # identificar productos que todavía no tienen información suficiente
+    # para que el sistema calcule o recomiende con normalidad.
+    sin_historial_datos = df_tienda_vista[
+        df_tienda_vista["Acción"] == "⚪ Sin historial de ventas"
+    ].copy()
+
+    pendientes_reorden = df_tienda_vista[
         df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
-    ]
-    if not pendientes.empty:
-        st.warning(
-            f"⚠️ {len(pendientes)} producto(s) de "
-            f"{nombre_tienda_seleccionada} sin lead time válido o "
-            "sin meses completos de ventas. El reorden se muestra "
-            "como 'Sin datos'. Se usa el proveedor de la compra más reciente."
+    ].copy()
+
+    if not sin_historial_datos.empty or not pendientes_reorden.empty:
+        st.markdown("---")
+        st.markdown(
+            '<div class="section-title">🗂️ Estado de los datos</div>',
+            unsafe_allow_html=True
         )
-        with st.expander(f"⚪ Revisar datos de reorden ({len(pendientes)})"):
-            st.dataframe(
-                pendientes[["Producto", "Tienda", "Código", "Proveedor",
-                            "Lead time", "Meses historial"]],
-                use_container_width=True, hide_index=True
+        st.caption(
+            f"Alertas de información de {nombre_tienda_seleccionada}. "
+            "No representan una decisión de compra o limpieza; indican que "
+            "todavía falta historial o información para completar algunos cálculos."
+        )
+
+        estado1, estado2 = st.columns(2)
+
+        with estado1:
+            st.info(
+                f"⚪ **Sin historial de ventas: {len(sin_historial_datos)}**\n\n"
+                "Productos que todavía no tienen ninguna venta registrada "
+                "en esta tienda."
             )
+
+        with estado2:
+            st.warning(
+                f"🟣 **Revisar datos de reorden: {len(pendientes_reorden)}**\n\n"
+                "Productos con movimiento, pero sin información suficiente "
+                "para completar el punto de reorden."
+            )
+
+        if not sin_historial_datos.empty:
+            with st.expander(
+                f"⚪ Ver productos sin historial de ventas "
+                f"({len(sin_historial_datos)})"
+            ):
+                tabla_sin_historial = sin_historial_datos[
+                    ["Producto", "Tienda", "Código", "Stock", "Lead time", "Última venta"]
+                ].copy()
+
+                tabla_sin_historial["Stock"] = sin_historial_datos.apply(
+                    lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
+                    axis=1,
+                )
+
+                tabla_sin_historial["Lead time"] = sin_historial_datos[
+                    "Lead time"
+                ].apply(
+                    lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
+                )
+
+                tabla_sin_historial = tabla_sin_historial.rename(
+                    columns={
+                        "Stock": "Stock actual",
+                        "Lead time": "Lead time (días)",
+                    }
+                )
+
+                st.dataframe(
+                    tabla_sin_historial,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+        if not pendientes_reorden.empty:
+            with st.expander(
+                f"🟣 Ver productos con datos de reorden incompletos "
+                f"({len(pendientes_reorden)})"
+            ):
+                st.dataframe(
+                    pendientes_reorden[
+                        [
+                            "Producto",
+                            "Tienda",
+                            "Código",
+                            "Proveedor",
+                            "Lead time",
+                            "Meses historial",
+                        ]
+                    ],
+                    use_container_width=True,
+                    hide_index=True,
+                )
 
     # ========================================================
     # RESUMEN EJECUTIVO
@@ -1795,13 +1874,6 @@ def modulo_pronosticos():
         ]
     )
 
-    sin_historial = len(
-        df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "⚪ Sin historial de ventas"
-        ]
-    )
-
     c1, c2, c3, c4, c5 = st.columns(5)
 
     with c1:
@@ -1839,20 +1911,13 @@ def modulo_pronosticos():
             "Limpieza"
         )
 
-    c6, c7 = st.columns(2)
+    c6, _ = st.columns([1, 4])
 
     with c6:
         tarjeta_resumen(
             "🔴",
             sin_movimiento,
             "Sin movimiento"
-        )
-
-    with c7:
-        tarjeta_resumen(
-            "⚪",
-            sin_historial,
-            "Sin historial de ventas"
         )
 
     # ========================================================
@@ -2028,7 +2093,7 @@ def modulo_pronosticos():
     # Todas las pestañas usan exclusivamente df_tienda_vista.
     # De esta forma los contadores y los productos son coherentes.
     mantener = int(df_tienda_vista["Acción"].eq("🟢 Mantener").sum())
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
             f"🔴 Comprar ahora ({comprar_ahora})",
             f"🟡 Próximos a comprar ({proximos})",
@@ -2037,7 +2102,6 @@ def modulo_pronosticos():
             f"🧹 Limpieza ({limpieza})",
             f"🟢 Mantener ({mantener})",
             f"🔴 Sin movimiento ({sin_movimiento})",
-            f"⚪ Sin historial ({sin_historial})",
         ]
     )
 
@@ -2274,59 +2338,6 @@ def modulo_pronosticos():
                 hide_index=True,
             )
 
-    # --------------------------------------------------------
-    # SIN HISTORIAL DE VENTAS
-    # --------------------------------------------------------
-
-    with tab8:
-
-        datos = df_tienda_vista[
-            df_tienda_vista["Acción"] ==
-            "⚪ Sin historial de ventas"
-        ].copy()
-
-        if datos.empty:
-            st.success(
-                "✅ Todos los productos tienen al menos una venta registrada."
-            )
-        else:
-            st.info(
-                "Estos productos nunca han tenido una venta registrada en esta "
-                "tienda. No se clasifican como limpieza ni como falta de "
-                "movimiento porque todavía no existe historial suficiente."
-            )
-
-            columnas_sin_historial = [
-                "Producto",
-                "Código",
-                "Tienda",
-                "Stock",
-                "Lead time",
-                "Última venta",
-                "Acción",
-            ]
-
-            tabla_sin_historial = datos[columnas_sin_historial].copy()
-            tabla_sin_historial["Stock"] = datos.apply(
-                lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
-                axis=1,
-            )
-            tabla_sin_historial["Lead time"] = datos["Lead time"].apply(
-                lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
-            )
-            tabla_sin_historial = tabla_sin_historial.rename(
-                columns={
-                    "Stock": "Stock actual",
-                    "Acción": "Recomendación",
-                }
-            )
-
-            st.dataframe(
-                tabla_sin_historial,
-                use_container_width=True,
-                hide_index=True,
-            )
-
     # ========================================================
     # EXPLICACIÓN DEL MODELO
     # ========================================================
@@ -2389,11 +2400,17 @@ def modulo_pronosticos():
             **{dias_limpieza} días desde su última venta** en esa tienda.
 
             Si el producto **nunca ha tenido una venta registrada**, se muestra
-            como **Sin historial de ventas** y no se envía a limpieza.
+            dentro de **Estado de los datos** como **Sin historial de ventas**.
+            Esta condición no se considera una decisión comercial.
 
             Si sí tiene historial, pero no registra demanda dentro del período
             reciente seleccionado y todavía no alcanza el límite de limpieza,
-            se muestra como **Sin movimiento**.
+            se muestra como **Sin movimiento** dentro del Centro de decisiones,
+            porque sí representa una situación comercial que debe vigilarse.
+
+            Los casos **Revisar datos de reorden** también se muestran en
+            **Estado de los datos**, ya que indican información incompleta para
+            realizar el cálculo y no una decisión de inventario.
 
             ---
 
