@@ -1509,61 +1509,62 @@ def modulo_pronosticos():
     )
 
     # --------------------------------------------------------
-    # Parámetros
+    # Configuración avanzada
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="section-title">⚙️ Configuración del pronóstico y reorden</div>',
-        unsafe_allow_html=True
-    )
+    with st.expander("⚙️ Configuración avanzada", expanded=False):
 
-    st.caption(
-        "Estos parámetros permiten adaptar la recomendación "
-        "de compra a la forma real en que trabajas."
-    )
+        st.caption(
+            "Estos parámetros permiten adaptar la recomendación "
+            "de compra a la forma real en que trabajas."
+        )
 
-    p1, p2 = st.columns(2)
+        p1, p2 = st.columns(2)
 
-    with p1:
-        dias_historial = st.selectbox(
-            "Historial de ventas",
-            [30, 60, 90, 180, 365],
-            index=2,
-            format_func=lambda x: f"{x} días",
+        with p1:
+            dias_historial = st.selectbox(
+                "Historial de ventas",
+                [30, 60, 90, 180, 365],
+                index=2,
+                format_func=lambda x: f"{x} días",
+                help=(
+                    "Período utilizado para analizar "
+                    "la demanda reciente."
+                ),
+            )
+
+        with p2:
+            cobertura_objetivo = st.number_input(
+                "Cobertura objetivo",
+                min_value=7,
+                max_value=180,
+                value=30,
+                step=1,
+                help=(
+                    "Cantidad de días que deseas cubrir "
+                    "con cada reposición."
+                ),
+            )
+
+        dias_limpieza = st.slider(
+            "Limpieza después de",
+            min_value=30,
+            max_value=365,
+            value=90,
+            step=15,
+            format="%d días",
             help=(
-                "Período utilizado para analizar "
-                "la demanda reciente."
+                "Cantidad de días sin ventas a partir de la cual "
+                "un producto puede considerarse para limpieza de inventario."
             ),
         )
 
-    with p2:
-        cobertura_objetivo = st.number_input(
-            "Cobertura objetivo",
-            min_value=7,
-            max_value=180,
-            value=30,
-            step=1,
-            help=(
-                "Cantidad de días que deseas cubrir "
-                "con cada reposición."
-            ),
+        st.caption(
+            "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
+            "2 % de la mediana de todas las ventas mensuales completas. "
+            "El historial seleccionado arriba afecta al pronóstico reciente, "
+            "no a la mediana mensual."
         )
-
-    dias_limpieza = st.slider(
-        "Considerar producto para limpieza si lleva sin vender:",
-        min_value=30,
-        max_value=365,
-        value=90,
-        step=15,
-        format="%d días",
-    )
-
-    st.caption(
-        "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-        "2 % de la mediana de todas las ventas mensuales completas. "
-        "El historial seleccionado arriba afecta al pronóstico reciente, "
-        "no a la mediana mensual."
-    )
 
     fecha_fin = datetime.now().date()
 
