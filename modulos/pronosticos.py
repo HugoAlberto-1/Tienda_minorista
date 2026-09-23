@@ -1472,6 +1472,10 @@ def modulo_pronosticos():
 
     # Versión interna del módulo: decisiones por tienda · v2
 
+    # Este contenedor se reserva aquí para que los filtros principales
+    # aparezcan visualmente inmediatamente después del encabezado.
+    filtros_principales = st.container()
+
     # --------------------------------------------------------
     # Validación
     # --------------------------------------------------------
@@ -1660,13 +1664,8 @@ def modulo_pronosticos():
         return
 
     # ========================================================
-    # FILTROS GENERALES
+    # FILTROS PRINCIPALES
     # ========================================================
-
-    st.markdown(
-        '<div class="section-title">🎛️ Filtros del análisis</div>',
-        unsafe_allow_html=True
-    )
 
     categoria_lista = (
         ["Todas"] +
@@ -1679,38 +1678,65 @@ def modulo_pronosticos():
         )
     )
 
-    categoria = st.selectbox(
-        "📁 Categoría",
-        categoria_lista,
-        key="categoria_pronostico",
-    )
-
-    df_filtrado = df.copy()
-
-    if categoria != "Todas":
-        df_filtrado = df_filtrado[
-            df_filtrado["Categoría"] ==
-            categoria
-        ]
-
     # Una sola tienda controla la tabla, el resumen y el centro de decisiones.
-    # El comparativo entre tiendas sigue usando df_filtrado (solo categoría).
+    # El comparativo entre tiendas sigue usando df_filtrado (solo categoría),
+    # por lo que conserva la lógica actual.
     tiendas_disponibles = tiendas.sort_values("Tienda").drop_duplicates("id_tienda")
     opciones_tiendas = tiendas_disponibles["id_tienda"].tolist()
+
     if not opciones_tiendas:
         st.info("No hay tiendas disponibles para el análisis.")
         return
 
     nombres_por_id = dict(zip(
-        tiendas_disponibles["id_tienda"], tiendas_disponibles["Tienda"]
+        tiendas_disponibles["id_tienda"],
+        tiendas_disponibles["Tienda"]
     ))
-    tienda_seleccionada = st.selectbox(
-        "🏪 Tienda para el análisis y centro de decisiones",
-        opciones_tiendas,
-        format_func=lambda id_: nombres_por_id.get(id_, f"Tienda {id_}"),
-        key="tienda_analisis_pronostico",
-    )
+
+    # Los controles se dibujan dentro del contenedor reservado justo
+    # debajo del encabezado, aunque los datos ya hayan sido cargados.
+    with filtros_principales:
+        filtro_tienda, filtro_categoria = st.columns(2)
+
+        with filtro_tienda:
+            tienda_seleccionada = st.selectbox(
+                "🏪 Tienda",
+                opciones_tiendas,
+                format_func=lambda id_: nombres_por_id.get(
+                    id_,
+                    f"Tienda {id_}"
+                ),
+                key="tienda_analisis_pronostico",
+            )
+
+        with filtro_categoria:
+            categoria = st.selectbox(
+                "📁 Categoría",
+                categoria_lista,
+                key="categoria_pronostico",
+            )
+
+        nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
+
+        categoria_texto = (
+            "Todas las categorías"
+            if categoria == "Todas"
+            else categoria
+        )
+
+        st.caption(
+            f"Analizando: {nombre_tienda_seleccionada} · {categoria_texto}"
+        )
+
+    df_filtrado = df.copy()
+
+    if categoria != "Todas":
+        df_filtrado = df_filtrado[
+            df_filtrado["Categoría"] == categoria
+        ]
+
     nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
+
     df_tienda_vista = df_filtrado[
         df_filtrado["id_tienda"] == tienda_seleccionada
     ].copy()
