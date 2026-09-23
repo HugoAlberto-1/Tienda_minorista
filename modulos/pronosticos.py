@@ -1,4 +1,4 @@
-import streamlit as st
+          import streamlit as st
 import pandas as pd
 import numpy as np
 
@@ -2303,18 +2303,18 @@ def modulo_pronosticos():
             de ventas**, mantiene inventario y han transcurrido al menos
             **{dias_limpieza} días desde su última venta** en esa tienda.
 
-            Si el producto **nunca ha tenido una venta registrada**, en la tabla
-            principal aparece como **Sin historial de ventas** en la columna
-            **Recomendación**. Esta condición es un estado de la información y
-            no se incluye como decisión dentro del Centro de decisiones.
+            Si el producto **nunca ha tenido una venta registrada**, se muestra
+            como **Sin historial de ventas** en la columna **Recomendación**
+            de la tabla principal. Esta condición no se considera una decisión
+            comercial.
 
             Si sí tiene historial, pero no registra demanda dentro del período
             reciente seleccionado y todavía no alcanza el límite de limpieza,
             se muestra como **Sin movimiento** dentro del Centro de decisiones,
             porque sí representa una situación comercial que debe vigilarse.
 
-            Los casos **Revisar datos de reorden** también se muestran únicamente
-            en la columna **Recomendación** de la tabla principal, ya que indican
+            Los casos **Revisar datos de reorden** también se muestran en la
+            columna **Recomendación** de la tabla principal, ya que indican
             información incompleta para realizar el cálculo y no una decisión
             de inventario.
 
