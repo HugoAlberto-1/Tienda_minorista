@@ -101,47 +101,36 @@ def configurar_estilo():
 
 def validar_dui_nit(dui_nit):
     """
-    Valida DUI o NIT.
+    Valida el campo DUI/NIT.
 
-    El campo es opcional.
-
-    Si se ingresa:
-    - Puede contener guiones y espacios.
-    - Después de limpiarlo debe contener únicamente números.
-    - NO se limita a 9 dígitos.
-    - Se guarda sin guiones ni espacios.
-
-    Ejemplos válidos:
-    01234567-8
-    012345678
-    0614-290123-102-3
-    06142901231023
-
-    Si está vacío:
-    devuelve None para almacenar NULL en la BD.
+    Características:
+    - Es opcional.
+    - Puede tener más de 9 dígitos.
+    - Puede escribirse con guiones o espacios.
+    - Se almacena únicamente con números.
+    - Si está vacío devuelve None para guardar NULL.
     """
 
     # Campo opcional
     if not dui_nit or not dui_nit.strip():
         return None, None
 
-    # Eliminar espacios y guiones
+    # Limpiar guiones y espacios
     dui_nit_limpio = (
         dui_nit.strip()
         .replace("-", "")
         .replace(" ", "")
     )
 
-    # Validar que solo queden números
+    # Validar que únicamente tenga números
     if not dui_nit_limpio.isdigit():
-
         return (
             None,
             "El DUI/NIT debe contener únicamente números, "
             "aunque puedes escribirlo con guiones o espacios."
         )
 
-    # No existe restricción de 9 dígitos
+    # No se restringe a 9 dígitos
     return dui_nit_limpio, None
 
 
@@ -153,7 +142,7 @@ def validar_telefono(telefono):
     7777-8888
     77778888
 
-    Lo devuelve:
+    Devuelve:
     7777-8888
     """
 
@@ -164,14 +153,12 @@ def validar_telefono(telefono):
     )
 
     if not telefono_limpio.isdigit():
-
         return (
             None,
             "El contacto debe contener únicamente números."
         )
 
     if len(telefono_limpio) != 8:
-
         return (
             None,
             "El número de contacto debe contener 8 dígitos."
@@ -193,10 +180,14 @@ def modulo_proveedor():
 
     configurar_estilo()
 
+    # ======================================================
+    # TÍTULO
+    # ======================================================
+
     st.markdown(
-    f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>',
-    unsafe_allow_html=True
-)
+        '<div class="module-title">🚚 Registrar Proveedor</div>',
+        unsafe_allow_html=True
+    )
 
     # ======================================================
     # VALIDAR SESIÓN
@@ -208,8 +199,7 @@ def modulo_proveedor():
     ):
 
         st.error(
-            "❌ No has iniciado sesión. "
-            "Inicia sesión primero."
+            "❌ No has iniciado sesión. Inicia sesión primero."
         )
 
         st.markdown("---")
@@ -217,9 +207,7 @@ def modulo_proveedor():
         if st.button(
             "⬅ Volver al menú principal"
         ):
-
             st.session_state.module = None
-
             st.rerun()
 
         return
@@ -229,9 +217,7 @@ def modulo_proveedor():
     # DATOS DE LA TIENDA DEL USUARIO
     # ======================================================
 
-    id_tienda = st.session_state[
-        "id_tienda"
-    ]
+    id_tienda = st.session_state["id_tienda"]
 
     nombre_tienda = st.session_state.get(
         "nombre_tienda",
@@ -242,20 +228,16 @@ def modulo_proveedor():
     # ======================================================
     # MOSTRAR TIENDA
     # ======================================================
+    #
+    # Se construye todo el HTML en una sola línea
+    # para evitar que Streamlit muestre <strong>
+    # como texto.
+    # ======================================================
 
     st.markdown(
-        f"""
-        <div class="info-box">
-
-            🏪 Tienda:
-
-            <strong>
-                {nombre_tienda}
-            </strong>
-
-        </div>
-        """,
-        unsafe_allow_html=True)
+        f'<div class="info-box">🏪 Tienda: <strong>{nombre_tienda}</strong></div>',
+        unsafe_allow_html=True
+    )
 
 
     # ======================================================
@@ -312,9 +294,7 @@ def modulo_proveedor():
     # ======================================================
 
     st.markdown(
-        '<div class="module-subtitle">'
-        '➕ Agregar nuevo proveedor'
-        '</div>',
+        '<div class="module-subtitle">➕ Agregar nuevo proveedor</div>',
         unsafe_allow_html=True
     )
 
@@ -343,7 +323,7 @@ def modulo_proveedor():
 
 
         # ==================================================
-        # DUI / NIT OPCIONAL
+        # DUI / NIT
         # ==================================================
 
         DUI_NIT = st.text_input(
@@ -354,9 +334,8 @@ def modulo_proveedor():
                 "o 0614-290123-102-3"
             ),
             help=(
-                "Campo opcional. Puedes ingresar DUI o NIT "
-                "con o sin guiones. Puede contener más de "
-                "9 dígitos."
+                "Campo opcional. Puedes ingresar un DUI "
+                "o NIT con o sin guiones."
             )
         )
 
@@ -423,9 +402,7 @@ def modulo_proveedor():
             # VALIDAR CAMPOS OBLIGATORIOS
             # ==============================================
             #
-            # IMPORTANTE:
-            # DUI/NIT NO se encuentra aquí porque
-            # ahora es opcional.
+            # DUI/NIT NO es obligatorio.
             # ==============================================
 
             if (
@@ -443,14 +420,7 @@ def modulo_proveedor():
             else:
 
                 # ==========================================
-                # VALIDAR DUI/NIT
-                # ==========================================
-                #
-                # Si está vacío:
-                # dui_nit_validado = None
-                #
-                # Si tiene contenido:
-                # se valida.
+                # VALIDAR DUI / NIT
                 # ==========================================
 
                 (
@@ -490,7 +460,7 @@ def modulo_proveedor():
                     else:
 
                         # ==================================
-                        # CONEXIÓN A BD
+                        # CONEXIÓN A BASE DE DATOS
                         # ==================================
 
                         conn = obtener_conexion()
@@ -514,11 +484,8 @@ def modulo_proveedor():
                             # VERIFICAR DUI/NIT DUPLICADO
                             # ==============================
                             #
-                            # SOLO se verifica si el usuario
-                            # escribió un DUI/NIT.
-                            #
-                            # Si está vacío se omite
-                            # completamente esta validación.
+                            # Solo se hace si el campo
+                            # contiene un valor.
                             # ==============================
 
                             existe = 0
@@ -533,7 +500,6 @@ def modulo_proveedor():
                                     FROM Proveedor
 
                                     WHERE
-
                                         REPLACE(
                                             REPLACE(
                                                 DUI,
@@ -559,7 +525,7 @@ def modulo_proveedor():
 
 
                             # ==============================
-                            # DUPLICADO ENCONTRADO
+                            # SI EXISTE
                             # ==============================
 
                             if existe:
@@ -570,19 +536,21 @@ def modulo_proveedor():
                                     "en esta tienda."
                                 )
 
+
                             else:
 
                                 # ==========================
                                 # INSERTAR PROVEEDOR
                                 # ==========================
                                 #
-                                # Aunque en pantalla diga
-                                # DUI/NIT, siempre se almacena
-                                # en la columna DUI.
+                                # Aunque en la interfaz se
+                                # llama DUI/NIT, el dato se
+                                # guarda SIEMPRE en la
+                                # columna DUI.
                                 #
-                                # Si no se escribió:
+                                # Si está vacío:
                                 # dui_nit_validado = None
-                                # y MySQL recibirá NULL.
+                                # MySQL guardará NULL.
                                 # ==========================
 
                                 cursor.execute(
@@ -610,8 +578,6 @@ def modulo_proveedor():
                                     (
                                         Nombre.strip(),
 
-                                        # DUI o NIT
-                                        # Siempre va al campo DUI
                                         dui_nit_validado,
 
                                         Direccion.strip(),
@@ -626,6 +592,10 @@ def modulo_proveedor():
                                     )
                                 )
 
+
+                                # ==========================
+                                # CONFIRMAR
+                                # ==========================
 
                                 conn.commit()
 
@@ -664,7 +634,6 @@ def modulo_proveedor():
                         finally:
 
                             cursor.close()
-
                             conn.close()
 
 
