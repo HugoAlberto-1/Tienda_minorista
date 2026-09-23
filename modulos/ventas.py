@@ -389,6 +389,51 @@ def modulo_ventas():
 
 
     # ============================================================
+    # CARGAR EDICIÓN PENDIENTE ANTES DE CREAR LOS WIDGETS
+    # ============================================================
+
+    edicion_pendiente = st.session_state.pop(
+        "_venta_edicion_pendiente",
+        None
+    )
+
+    if edicion_pendiente is not None:
+
+        st.session_state[
+            "editar_venta_indice"
+        ] = edicion_pendiente["indice"]
+
+        st.session_state[
+            "form_data_codigo_barras"
+        ] = edicion_pendiente["cod_barra"]
+
+        st.session_state[
+            "venta_tipo_cliente"
+        ] = edicion_pendiente["tipo_cliente"]
+
+        st.session_state[
+            "venta_precio_venta"
+        ] = float(
+            edicion_pendiente["precio_venta"]
+        )
+
+        st.session_state[
+            "_precio_venta_contexto"
+        ] = (
+            edicion_pendiente["cod_barra"],
+            edicion_pendiente["tipo_cliente"]
+        )
+
+        st.session_state[
+            "venta_cantidad"
+        ] = edicion_pendiente["cantidad"]
+
+        st.session_state[
+            "unidad_select"
+        ] = edicion_pendiente["unidad"]
+
+
+    # ============================================================
     # REINICIAR FORMULARIO DEL PRODUCTO
     # ============================================================
 
@@ -1737,37 +1782,15 @@ def modulo_ventas():
                 ):
 
                     st.session_state[
-                        "editar_venta_indice"
-                    ] = i
-
-                    st.session_state[
-                        "form_data_codigo_barras"
-                    ] = prod["cod_barra"]
-
-                    st.session_state[
-                        "venta_tipo_cliente"
-                    ] = prod["tipo_cliente"]
-
-                    st.session_state[
-                        "venta_precio_venta"
-                    ] = float(
-                        prod["precio_venta"]
-                    )
-
-                    st.session_state[
-                        "_precio_venta_contexto"
-                    ] = (
-                        prod["cod_barra"],
-                        prod["tipo_cliente"]
-                    )
-
-                    st.session_state[
-                        "venta_cantidad"
-                    ] = prod["cantidad"]
-
-                    st.session_state[
-                        "unidad_select"
-                    ] = prod["unidad"]
+                        "_venta_edicion_pendiente"
+                    ] = {
+                        "indice": i,
+                        "cod_barra": prod["cod_barra"],
+                        "tipo_cliente": prod["tipo_cliente"],
+                        "precio_venta": prod["precio_venta"],
+                        "cantidad": prod["cantidad"],
+                        "unidad": prod["unidad"],
+                    }
 
                     st.rerun()
 
