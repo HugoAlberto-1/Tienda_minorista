@@ -745,37 +745,33 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
 # CLASIFICACIÓN DE ROTACIÓN
 # ============================================================
 
-def clasificar_rotacion(rotacion_pct, ventas_30, stock):
+def clasificar_rotacion(cobertura_dias, demanda_diaria, stock):
     """
-    Clasifica qué tan rápido se está moviendo el producto en inventario
-    durante los últimos 30 días.
+    La clasificación se basa principalmente en cuántos días
+    duraría el inventario al ritmo pronosticado.
 
-    La rotación se interpreta como porcentaje de salida del inventario:
-    - porcentaje bajo  -> poco movimiento
-    - porcentaje alto  -> mayor movimiento
-
-    Los rangos son criterios de apoyo para la gestión y pueden ajustarse
-    posteriormente a la realidad de la empresa.
+    No necesariamente significa "bueno/malo":
+    una rotación alta indica que el producto sale rápidamente.
     """
 
-    if ventas_30 <= 0:
+    if demanda_diaria <= 0:
         if stock > 0:
             return "🔴 Sin movimiento"
         return "⚪ Sin historial"
 
-    if rotacion_pct < 25:
-        return "🔴 Muy baja"
+    if cobertura_dias <= 15:
+        return "🟢 Muy alta"
 
-    if rotacion_pct < 50:
-        return "🟠 Baja"
-
-    if rotacion_pct < 75:
-        return "🟡 Media"
-
-    if rotacion_pct < 90:
+    if cobertura_dias <= 30:
         return "🟢 Alta"
 
-    return "🟢 Muy alta"
+    if cobertura_dias <= 60:
+        return "🟡 Media"
+
+    if cobertura_dias <= 90:
+        return "🟠 Baja"
+
+    return "🔴 Muy baja"
 
 
 # ============================================================
@@ -919,36 +915,25 @@ def construir_analisis(
         # ----------------------------------------------------
         # Rotación %
         #
-        # Mide qué proporción del inventario disponible se vendió
-        # durante los últimos 30 días.
+        # ¿Qué porcentaje del stock actual se espera vender
+        # durante los próximos 30 días?
         #
-        # Inventario disponible en el período =
-        # ventas de los últimos 30 días + stock actual.
-        #
-        # Rotación % = ventas_30 / (ventas_30 + stock) * 100
-        #
-        # El resultado queda entre 0 % y 100 %:
-        # - bajo  -> el producto se mueve poco
-        # - alto  -> el producto se mueve rápidamente
-        #
-        # IMPORTANTE: este indicador es informativo y NO modifica
-        # el pronóstico, la demanda diaria, el punto de reorden,
-        # el stock de seguridad ni la compra sugerida.
+        # Puede ser >100%, lo cual significa que el stock
+        # actual no alcanzaría para cubrir 30 días.
         # ----------------------------------------------------
 
-        inventario_disponible_30 = float(ventas_30) + float(stock)
-
-        if inventario_disponible_30 > 0:
+        if stock > 0:
             rotacion_pct = (
-                float(ventas_30) / inventario_disponible_30
+                pronostico_30 / stock
             ) * 100
-            rotacion_pct = min(100.0, max(0.0, rotacion_pct))
+        elif pronostico_30 > 0:
+            rotacion_pct = 999
         else:
-            rotacion_pct = 0.0
+            rotacion_pct = 0
 
         rotacion_estado = clasificar_rotacion(
-            rotacion_pct,
-            ventas_30,
+            cobertura_dias,
+            demanda_diaria,
             stock,
         )
 
@@ -1296,7 +1281,11 @@ def construir_tabla_indicadores(
             resultado[indicador] = df_subset[
                 columna_origen
             ].apply(
-                lambda x: f"{x:.1f}%"
+                lambda x: (
+                    f"{x:.1f}%"
+                    if x < 999
+                    else ">999%"
+                )
             )
 
         else:
@@ -1868,11 +1857,10 @@ def modulo_pronosticos():
             ese inventario al ritmo de venta pronosticado (equivalente
             a "compré 10 y me duraron 5 meses").
 
-            **% Rotación:** porcentaje del inventario disponible que
-            realmente se vendió durante los últimos 30 días. Se calcula como
-            ventas de los últimos 30 días ÷ (ventas de los últimos 30 días +
-            stock actual) × 100. Un porcentaje bajo indica poco movimiento y
-            uno alto indica que el producto se está vendiendo rápidamente.
+            **% Rotación:** porcentaje del stock actual que se espera
+            vender durante los próximos 30 días. Puede superar 100 %,
+            lo cual indica que el stock actual no alcanzaría para cubrir
+            la demanda pronosticada.
 
             **Punto de reorden:** nivel de inventario en el cual
             conviene volver a comprar.
@@ -1925,51 +1913,45 @@ def modulo_pronosticos():
             df_filtrado["Producto"] == producto_comparar
         ].copy()
 
-        # Para comparar la rotación entre tiendas se utiliza el nuevo
-        # porcentaje de rotación de los últimos 30 días.
-        # Se consideran tiendas donde existe inventario actual o hubo ventas
-        # recientes del producto.
         df_valido = df_producto_comparar[
-            (df_producto_comparar["Stock"] > 0) |
-            (df_producto_comparar["Ventas 30d"] > 0)
-        ].copy()
+            np.isfinite(df_producto_comparar["Cobertura días"])
+        ]
 
         if df_valido.empty:
             st.info(
-                "Este producto no tiene inventario ni ventas recientes en "
-                "las tiendas donde está registrado."
+                "Este producto no tiene ventas recientes en ninguna "
+                "de las tiendas donde está registrado."
             )
         else:
             fila_mejor = df_valido.sort_values(
-                ["Rotación %", "Ventas 30d"],
-                ascending=[False, False]
+                "Cobertura días"
             ).iloc[0]
 
             st.success(
-                f"📈 En **{fila_mejor['Tienda']}** es donde este producto "
-                f"presenta mayor rotación en los últimos 30 días "
-                f"(**{fila_mejor['Rotación %']:.1f}%**)."
+                f"📈 En **{fila_mejor['Tienda']}** es donde este "
+                f"producto rota más rápido (dura aproximadamente "
+                f"{fila_mejor['Cobertura']} al ritmo de venta actual)."
             )
 
             if len(df_valido) > 1:
                 fila_peor = df_valido.sort_values(
-                    ["Rotación %", "Ventas 30d"],
-                    ascending=[True, True]
+                    "Cobertura días",
+                    ascending=False
                 ).iloc[0]
 
                 if fila_peor["Tienda"] != fila_mejor["Tienda"]:
                     st.caption(
-                        f"🐢 En **{fila_peor['Tienda']}** presenta la menor "
-                        f"rotación en los últimos 30 días "
-                        f"(**{fila_peor['Rotación %']:.1f}%**)."
+                        f"🐢 En **{fila_peor['Tienda']}** es donde "
+                        f"rota más lento (dura aproximadamente "
+                        f"{fila_peor['Cobertura']})."
                     )
 
         tabla_producto = construir_tabla_indicadores(
             df_producto_comparar,
             columna_fila="Tienda",
             indicadores=INDICADORES_DEFAULT,
-            orden_por="Rotación %",
-            ascendente=False,
+            orden_por="Cobertura días",
+            ascendente=True,
         )
 
         st.dataframe(
@@ -1980,8 +1962,8 @@ def modulo_pronosticos():
         )
 
         st.caption(
-            "La tabla está ordenada de mayor a menor porcentaje de rotación "
-            "de los últimos 30 días."
+            "La tabla está ordenada de la tienda donde el producto "
+            "rota más rápido a la que rota más lento."
         )
 
     # ========================================================
