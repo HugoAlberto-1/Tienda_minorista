@@ -5,6 +5,7 @@ from config.conexion import obtener_conexion
 # ==========================================================
 # CONFIGURACIÓN DE ESTILO
 # ==========================================================
+
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo de proveedor"""
 
@@ -16,8 +17,10 @@ def configurar_estilo():
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <style>
+
         .stApp {{
             background-color: {COLOR_BG};
         }}
@@ -85,40 +88,67 @@ def configurar_estilo():
         hr {{
             border-color: {COLOR_BORDER};
         }}
+
         </style>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ==========================================================
 # VALIDACIONES
 # ==========================================================
-def validar_dui(dui):
+
+def validar_dui_nit(dui_nit):
     """
-    Valida DUI salvadoreño.
-    Acepta:
+    Valida DUI o NIT.
+
+    El campo es opcional.
+
+    Si se ingresa:
+    - Puede contener guiones y espacios.
+    - Después de limpiarlo debe contener únicamente números.
+    - NO se limita a 9 dígitos.
+    - Se guarda sin guiones ni espacios.
+
+    Ejemplos válidos:
     01234567-8
     012345678
+    0614-290123-102-3
+    06142901231023
 
-    Lo devuelve con formato:
-    01234567-8
+    Si está vacío:
+    devuelve None para almacenar NULL en la BD.
     """
 
-    dui_limpio = dui.strip().replace("-", "").replace(" ", "")
+    # Campo opcional
+    if not dui_nit or not dui_nit.strip():
+        return None, None
 
-    if not dui_limpio.isdigit():
-        return None, "El DUI debe contener únicamente números."
+    # Eliminar espacios y guiones
+    dui_nit_limpio = (
+        dui_nit.strip()
+        .replace("-", "")
+        .replace(" ", "")
+    )
 
-    if len(dui_limpio) != 9:
-        return None, f"El DUI debe tener 9 dígitos. Ingresaste {len(dui_limpio)}."
+    # Validar que solo queden números
+    if not dui_nit_limpio.isdigit():
 
-    dui_formateado = f"{dui_limpio[:8]}-{dui_limpio[8]}"
+        return (
+            None,
+            "El DUI/NIT debe contener únicamente números, "
+            "aunque puedes escribirlo con guiones o espacios."
+        )
 
-    return dui_formateado, None
+    # No existe restricción de 9 dígitos
+    return dui_nit_limpio, None
 
 
 def validar_telefono(telefono):
     """
     Valida teléfono.
+
     Acepta:
     7777-8888
     77778888
@@ -134,13 +164,22 @@ def validar_telefono(telefono):
     )
 
     if not telefono_limpio.isdigit():
-        return None, "El contacto debe contener únicamente números."
+
+        return (
+            None,
+            "El contacto debe contener únicamente números."
+        )
 
     if len(telefono_limpio) != 8:
-        return None, "El número de contacto debe contener 8 dígitos."
+
+        return (
+            None,
+            "El número de contacto debe contener 8 dígitos."
+        )
 
     telefono_formateado = (
-        f"{telefono_limpio[:4]}-{telefono_limpio[4:]}"
+        f"{telefono_limpio[:4]}-"
+        f"{telefono_limpio[4:]}"
     )
 
     return telefono_formateado, None
@@ -149,12 +188,15 @@ def validar_telefono(telefono):
 # ==========================================================
 # MÓDULO PROVEEDOR
 # ==========================================================
+
 def modulo_proveedor():
 
     configurar_estilo()
 
     st.markdown(
-        '<div class="module-title">🚚 Registrar Proveedor</div>',
+        '<div class="module-title">'
+        '🚚 Registrar Proveedor'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -166,14 +208,20 @@ def modulo_proveedor():
         not st.session_state.get("logueado")
         or "id_tienda" not in st.session_state
     ):
+
         st.error(
-            "❌ No has iniciado sesión. Inicia sesión primero."
+            "❌ No has iniciado sesión. "
+            "Inicia sesión primero."
         )
 
         st.markdown("---")
 
-        if st.button("⬅ Volver al menú principal"):
+        if st.button(
+            "⬅ Volver al menú principal"
+        ):
+
             st.session_state.module = None
+
             st.rerun()
 
         return
@@ -183,7 +231,9 @@ def modulo_proveedor():
     # DATOS DE LA TIENDA DEL USUARIO
     # ======================================================
 
-    id_tienda = st.session_state["id_tienda"]
+    id_tienda = st.session_state[
+        "id_tienda"
+    ]
 
     nombre_tienda = st.session_state.get(
         "nombre_tienda",
@@ -198,8 +248,13 @@ def modulo_proveedor():
     st.markdown(
         f"""
         <div class="info-box">
+
             🏪 Tienda:
-            <strong>{nombre_tienda}</strong>
+
+            <strong>
+                {nombre_tienda}
+            </strong>
+
         </div>
         """,
         unsafe_allow_html=True
@@ -210,7 +265,9 @@ def modulo_proveedor():
     # LIMPIAR CAMPOS DESPUÉS DE GUARDAR
     # ======================================================
 
-    if st.session_state.get("reiniciar_proveedor"):
+    if st.session_state.get(
+        "reiniciar_proveedor"
+    ):
 
         campos = [
             "proveedor_nombre_input",
@@ -221,7 +278,11 @@ def modulo_proveedor():
         ]
 
         for campo in campos:
-            st.session_state.pop(campo, None)
+
+            st.session_state.pop(
+                campo,
+                None
+            )
 
         st.session_state.pop(
             "reiniciar_proveedor",
@@ -235,7 +296,9 @@ def modulo_proveedor():
     # MENSAJE DE ÉXITO
     # ======================================================
 
-    if st.session_state.get("proveedor_guardado"):
+    if st.session_state.get(
+        "proveedor_guardado"
+    ):
 
         st.success(
             "✅ Proveedor guardado correctamente."
@@ -246,6 +309,10 @@ def modulo_proveedor():
             None
         )
 
+
+    # ======================================================
+    # SUBTÍTULO
+    # ======================================================
 
     st.markdown(
         '<div class="module-subtitle">'
@@ -278,11 +345,22 @@ def modulo_proveedor():
         )
 
 
-        DUI = st.text_input(
-            "🆔 DUI",
+        # ==================================================
+        # DUI / NIT OPCIONAL
+        # ==================================================
+
+        DUI_NIT = st.text_input(
+            "🆔 DUI/NIT (opcional)",
             key="proveedor_dui_input",
-            placeholder="Ej: 01234567-8",
-            help="Puedes ingresar el DUI con o sin guión."
+            placeholder=(
+                "Ej: 01234567-8 "
+                "o 0614-290123-102-3"
+            ),
+            help=(
+                "Campo opcional. Puedes ingresar DUI o NIT "
+                "con o sin guiones. Puede contener más de "
+                "9 dígitos."
+            )
         )
 
 
@@ -303,7 +381,10 @@ def modulo_proveedor():
             "📞 Contacto",
             key="proveedor_contacto_input",
             placeholder="Ej: 7777-8888",
-            help="Puedes ingresar el teléfono con o sin guión."
+            help=(
+                "Puedes ingresar el teléfono "
+                "con o sin guión."
+            )
         )
 
 
@@ -313,7 +394,10 @@ def modulo_proveedor():
             step=1,
             value=1,
             key="proveedor_lead_time_input",
-            help="Número aproximado de días que tarda el proveedor en entregar."
+            help=(
+                "Número aproximado de días que "
+                "tarda el proveedor en entregar."
+            )
         )
 
 
@@ -321,7 +405,10 @@ def modulo_proveedor():
     # BOTÓN GUARDAR
     # ======================================================
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        "<br>",
+        unsafe_allow_html=True
+    )
 
     col1, col2, col3 = st.columns(
         [1, 2, 1]
@@ -338,30 +425,49 @@ def modulo_proveedor():
             # ==============================================
             # VALIDAR CAMPOS OBLIGATORIOS
             # ==============================================
+            #
+            # IMPORTANTE:
+            # DUI/NIT NO se encuentra aquí porque
+            # ahora es opcional.
+            # ==============================================
 
             if (
                 not Nombre.strip()
-                or not DUI.strip()
                 or not Direccion.strip()
                 or not Contacto.strip()
             ):
 
                 st.warning(
-                    "⚠️ Por favor, completa todos los campos."
+                    "⚠️ Por favor, completa los campos "
+                    "obligatorios: nombre, dirección "
+                    "y contacto."
                 )
 
             else:
 
                 # ==========================================
-                # VALIDAR DUI
+                # VALIDAR DUI/NIT
+                # ==========================================
+                #
+                # Si está vacío:
+                # dui_nit_validado = None
+                #
+                # Si tiene contenido:
+                # se valida.
                 # ==========================================
 
-                dui_validado, error_dui = validar_dui(DUI)
+                (
+                    dui_nit_validado,
+                    error_dui_nit
+                ) = validar_dui_nit(
+                    DUI_NIT
+                )
 
-                if error_dui:
+
+                if error_dui_nit:
 
                     st.error(
-                        f"❌ {error_dui}"
+                        f"❌ {error_dui_nit}"
                     )
 
                 else:
@@ -370,9 +476,13 @@ def modulo_proveedor():
                     # VALIDAR CONTACTO
                     # ======================================
 
-                    contacto_validado, error_contacto = (
-                        validar_telefono(Contacto)
+                    (
+                        contacto_validado,
+                        error_contacto
+                    ) = validar_telefono(
+                        Contacto
                     )
+
 
                     if error_contacto:
 
@@ -404,48 +514,78 @@ def modulo_proveedor():
                         try:
 
                             # ==============================
-                            # NORMALIZAR DUI PARA BÚSQUEDA
+                            # VERIFICAR DUI/NIT DUPLICADO
+                            # ==============================
+                            #
+                            # SOLO se verifica si el usuario
+                            # escribió un DUI/NIT.
+                            #
+                            # Si está vacío se omite
+                            # completamente esta validación.
                             # ==============================
 
-                            dui_sin_guion = (
-                                dui_validado.replace("-", "")
-                            )
+                            existe = 0
 
 
-                            # ==============================
-                            # VERIFICAR DUPLICADO
-                            # SOLO DENTRO DE LA MISMA TIENDA
-                            # ==============================
+                            if dui_nit_validado:
 
-                            cursor.execute(
-                                """
-                                SELECT COUNT(*)
-                                FROM Proveedor
-                                WHERE
-                                    REPLACE(DUI, '-', '') = %s
-                                    AND id_tienda = %s
-                                """,
-                                (
-                                    dui_sin_guion,
-                                    id_tienda
+                                cursor.execute(
+                                    """
+                                    SELECT COUNT(*)
+
+                                    FROM Proveedor
+
+                                    WHERE
+
+                                        REPLACE(
+                                            REPLACE(
+                                                DUI,
+                                                '-',
+                                                ''
+                                            ),
+                                            ' ',
+                                            ''
+                                        ) = %s
+
+                                        AND id_tienda = %s
+                                    """,
+                                    (
+                                        dui_nit_validado,
+                                        id_tienda
+                                    )
                                 )
-                            )
 
 
-                            existe = cursor.fetchone()[0]
+                                existe = (
+                                    cursor.fetchone()[0]
+                                )
 
+
+                            # ==============================
+                            # DUPLICADO ENCONTRADO
+                            # ==============================
 
                             if existe:
 
                                 st.error(
                                     "❌ Ya existe un proveedor "
-                                    "con este DUI en esta tienda."
+                                    "con este DUI/NIT "
+                                    "en esta tienda."
                                 )
 
                             else:
 
                                 # ==========================
                                 # INSERTAR PROVEEDOR
+                                # ==========================
+                                #
+                                # Aunque en pantalla diga
+                                # DUI/NIT, siempre se almacena
+                                # en la columna DUI.
+                                #
+                                # Si no se escribió:
+                                # dui_nit_validado = None
+                                # y MySQL recibirá NULL.
                                 # ==========================
 
                                 cursor.execute(
@@ -459,6 +599,7 @@ def modulo_proveedor():
                                         lead_time,
                                         id_tienda
                                     )
+
                                     VALUES
                                     (
                                         %s,
@@ -471,10 +612,19 @@ def modulo_proveedor():
                                     """,
                                     (
                                         Nombre.strip(),
-                                        dui_validado,
+
+                                        # DUI o NIT
+                                        # Siempre va al campo DUI
+                                        dui_nit_validado,
+
                                         Direccion.strip(),
+
                                         contacto_validado,
-                                        int(Lead_time),
+
+                                        int(
+                                            Lead_time
+                                        ),
+
                                         id_tienda
                                     )
                                 )
@@ -484,13 +634,17 @@ def modulo_proveedor():
 
 
                                 # ==========================
-                                # ACTIVAR MENSAJE DE ÉXITO
-                                # Y LIMPIAR FORMULARIO
+                                # MENSAJE DE ÉXITO
                                 # ==========================
 
                                 st.session_state[
                                     "proveedor_guardado"
                                 ] = True
+
+
+                                # ==========================
+                                # LIMPIAR FORMULARIO
+                                # ==========================
 
                                 st.session_state[
                                     "reiniciar_proveedor"
@@ -513,6 +667,7 @@ def modulo_proveedor():
                         finally:
 
                             cursor.close()
+
                             conn.close()
 
 
