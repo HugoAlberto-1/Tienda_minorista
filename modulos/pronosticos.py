@@ -745,19 +745,21 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
 # CLASIFICACIÓN DE ROTACIÓN
 # ============================================================
 
-def clasificar_rotacion(cobertura_dias, demanda_diaria, stock):
+def clasificar_rotacion(
+    cobertura_dias,
+    demanda_diaria,
+    stock,
+    tiene_historial_ventas=True,
+):
     """
-    La clasificación se basa principalmente en cuántos días
-    duraría el inventario al ritmo pronosticado.
+    Distingue entre falta de historial y falta de movimiento reciente.
+    """
 
-    No necesariamente significa "bueno/malo":
-    una rotación alta indica que el producto sale rápidamente.
-    """
+    if not tiene_historial_ventas:
+        return "⚪ Sin historial"
 
     if demanda_diaria <= 0:
-        if stock > 0:
-            return "🔴 Sin movimiento"
-        return "⚪ Sin historial"
+        return "🔴 Sin movimiento"
 
     if cobertura_dias <= 15:
         return "🟢 Muy alta"
@@ -817,6 +819,11 @@ def construir_analisis(
             (ventas["Código"] == codigo) &
             (ventas["id_tienda"] == id_tienda)
         ].copy() if not ventas.empty else pd.DataFrame()
+
+        # True si existe al menos una venta histórica de este producto
+        # en esta tienda. Esto permite separar "nunca vendido" de
+        # "sí tuvo ventas, pero actualmente no se mueve".
+        tiene_historial_ventas = not ventas_prod.empty
 
         # ----------------------------------------------------
         # Tipo de medida
@@ -935,6 +942,7 @@ def construir_analisis(
             cobertura_dias,
             demanda_diaria,
             stock,
+            tiene_historial_ventas=tiene_historial_ventas,
         )
 
         # ----------------------------------------------------
@@ -985,27 +993,13 @@ def construir_analisis(
         accion = ""
         prioridad = 99
 
-        # No asignar una recomendación cuantitativa si faltan datos.
-        if not datos_reorden_ok:
-            accion = "⚪ Revisar datos de reorden"
-            prioridad = 7
+        # 1) Nunca ha tenido ventas: no debe mandarse a limpieza.
+        if not tiene_historial_ventas:
+            accion = "⚪ Sin historial de ventas"
+            prioridad = 8
+            compra_sugerida = np.nan
 
-        # Producto con stock pero sin ventas
-        elif stock > 0 and demanda_diaria <= 0:
-
-            if (
-                dias_sin_venta is None
-                or dias_sin_venta >= dias_limpieza
-            ):
-                accion = "🧹 Limpieza de inventario"
-                prioridad = 5
-            else:
-                accion = "🚫 No comprar"
-                prioridad = 4
-
-            compra_sugerida = 0
-
-        # Lleva demasiado tiempo sin vender
+        # 2) Sí tiene historial y ya superó el límite de días sin vender.
         elif (
             stock > 0 and
             dias_sin_venta is not None and
@@ -1014,6 +1008,17 @@ def construir_analisis(
             accion = "🧹 Limpieza de inventario"
             prioridad = 5
             compra_sugerida = 0
+
+        # 3) Sí tiene historial, pero no tiene demanda reciente.
+        elif demanda_diaria <= 0:
+            accion = "🔴 Sin movimiento"
+            prioridad = 6
+            compra_sugerida = 0
+
+        # 4) Tiene movimiento, pero faltan datos para calcular reorden.
+        elif not datos_reorden_ok:
+            accion = "⚪ Revisar datos de reorden"
+            prioridad = 7
 
         # Reorden inmediato
         elif demanda_diaria > 0 and stock <= punto_reorden:
@@ -1057,11 +1062,14 @@ def construir_analisis(
         # Texto próximo reorden
         # ----------------------------------------------------
 
-        if not datos_reorden_ok:
-            proximo_reorden_texto = "Sin datos"
+        if not tiene_historial_ventas:
+            proximo_reorden_texto = "Sin historial"
 
         elif demanda_diaria <= 0:
-            proximo_reorden_texto = "No comprar"
+            proximo_reorden_texto = "Sin movimiento"
+
+        elif not datos_reorden_ok:
+            proximo_reorden_texto = "Sin datos"
 
         elif dias_para_reorden <= 0:
             proximo_reorden_texto = "Ahora"
@@ -1119,6 +1127,7 @@ def construir_analisis(
             "Mediana mensual": round(mediana_mensual, 2),
             "Stock seguridad": round(stock_seguridad, 2),
             "Meses historial": meses_historial,
+            "Tiene historial ventas": tiene_historial_ventas,
 
             "Stock": round(stock, 2),
 
@@ -1136,9 +1145,13 @@ def construir_analisis(
             ),
 
             "Cobertura": (
-                formatear_dias(cobertura_dias)
-                if np.isfinite(cobertura_dias)
-                else "Sin movimiento"
+                "Sin historial"
+                if not tiene_historial_ventas
+                else (
+                    formatear_dias(cobertura_dias)
+                    if np.isfinite(cobertura_dias)
+                    else "Sin movimiento"
+                )
             ),
 
             "Rotación %": round(rotacion_pct, 1),
@@ -1775,6 +1788,20 @@ def modulo_pronosticos():
         ]
     )
 
+    sin_movimiento = len(
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
+            "🔴 Sin movimiento"
+        ]
+    )
+
+    sin_historial = len(
+        df_tienda_vista[
+            df_tienda_vista["Acción"] ==
+            "⚪ Sin historial de ventas"
+        ]
+    )
+
     c1, c2, c3, c4, c5 = st.columns(5)
 
     with c1:
@@ -1810,6 +1837,22 @@ def modulo_pronosticos():
             "🧹",
             limpieza,
             "Limpieza"
+        )
+
+    c6, c7 = st.columns(2)
+
+    with c6:
+        tarjeta_resumen(
+            "🔴",
+            sin_movimiento,
+            "Sin movimiento"
+        )
+
+    with c7:
+        tarjeta_resumen(
+            "⚪",
+            sin_historial,
+            "Sin historial de ventas"
         )
 
     # ========================================================
@@ -1985,7 +2028,7 @@ def modulo_pronosticos():
     # Todas las pestañas usan exclusivamente df_tienda_vista.
     # De esta forma los contadores y los productos son coherentes.
     mantener = int(df_tienda_vista["Acción"].eq("🟢 Mantener").sum())
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
         [
             f"🔴 Comprar ahora ({comprar_ahora})",
             f"🟡 Próximos a comprar ({proximos})",
@@ -1993,6 +2036,8 @@ def modulo_pronosticos():
             f"🚫 No comprar ({no_comprar})",
             f"🧹 Limpieza ({limpieza})",
             f"🟢 Mantener ({mantener})",
+            f"🔴 Sin movimiento ({sin_movimiento})",
+            f"⚪ Sin historial ({sin_historial})",
         ]
     )
 
@@ -2201,6 +2246,87 @@ def modulo_pronosticos():
                 hide_index=True,
             )
 
+    # --------------------------------------------------------
+    # SIN MOVIMIENTO
+    # --------------------------------------------------------
+
+    with tab7:
+
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
+            "🔴 Sin movimiento"
+        ].copy()
+
+        if datos.empty:
+            st.success(
+                "✅ No hay productos con historial pero sin movimiento reciente."
+            )
+        else:
+            st.warning(
+                "Estos productos sí tienen ventas históricas, pero no presentan "
+                "demanda dentro del período reciente seleccionado. Todavía no "
+                "cumplen el tiempo definido para limpieza."
+            )
+
+            st.dataframe(
+                preparar_tabla_decision(datos),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+    # --------------------------------------------------------
+    # SIN HISTORIAL DE VENTAS
+    # --------------------------------------------------------
+
+    with tab8:
+
+        datos = df_tienda_vista[
+            df_tienda_vista["Acción"] ==
+            "⚪ Sin historial de ventas"
+        ].copy()
+
+        if datos.empty:
+            st.success(
+                "✅ Todos los productos tienen al menos una venta registrada."
+            )
+        else:
+            st.info(
+                "Estos productos nunca han tenido una venta registrada en esta "
+                "tienda. No se clasifican como limpieza ni como falta de "
+                "movimiento porque todavía no existe historial suficiente."
+            )
+
+            columnas_sin_historial = [
+                "Producto",
+                "Código",
+                "Tienda",
+                "Stock",
+                "Lead time",
+                "Última venta",
+                "Acción",
+            ]
+
+            tabla_sin_historial = datos[columnas_sin_historial].copy()
+            tabla_sin_historial["Stock"] = datos.apply(
+                lambda r: formatear_cantidad(r["Stock"], r["Medida"]),
+                axis=1,
+            )
+            tabla_sin_historial["Lead time"] = datos["Lead time"].apply(
+                lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
+            )
+            tabla_sin_historial = tabla_sin_historial.rename(
+                columns={
+                    "Stock": "Stock actual",
+                    "Acción": "Recomendación",
+                }
+            )
+
+            st.dataframe(
+                tabla_sin_historial,
+                use_container_width=True,
+                hide_index=True,
+            )
+
     # ========================================================
     # EXPLICACIÓN DEL MODELO
     # ========================================================
@@ -2258,9 +2384,16 @@ def modulo_pronosticos():
 
             ### Limpieza de inventario
 
-            Un producto puede aparecer para limpieza cuando tiene
-            inventario y lleva aproximadamente **{dias_limpieza} días**
-            sin ventas suficientes en esa tienda.
+            Un producto puede aparecer para limpieza cuando **sí tiene historial
+            de ventas**, mantiene inventario y han transcurrido al menos
+            **{dias_limpieza} días desde su última venta** en esa tienda.
+
+            Si el producto **nunca ha tenido una venta registrada**, se muestra
+            como **Sin historial de ventas** y no se envía a limpieza.
+
+            Si sí tiene historial, pero no registra demanda dentro del período
+            reciente seleccionado y todavía no alcanza el límite de limpieza,
+            se muestra como **Sin movimiento**.
 
             ---
 
