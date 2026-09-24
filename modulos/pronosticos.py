@@ -39,8 +39,10 @@ UNIDADES_PESO = [
 ]
 
 
-# Porcentaje acordado para el stock de seguridad: 2 % de la mediana
-# de las ventas MENSUALES del historial completo por producto y tienda.
+# Porcentaje acordado para el stock de seguridad: 2 % de la mediana.
+# Si hay meses completos se usa la mediana de ventas mensuales;
+# si aún no hay meses completos, se usa provisionalmente la mediana
+# de las cantidades vendidas registradas en el mes actual.
 PORCENTAJE_SEGURIDAD = 0.02
 
 
@@ -774,36 +776,136 @@ def calcular_pronostico_30_dias(
 
 
 # ============================================================
-# STOCK DE SEGURIDAD: HISTORIAL MENSUAL COMPLETO
+# STOCK DE SEGURIDAD
 # ============================================================
 
 def calcular_seguridad_mensual(ventas_producto, fecha_fin):
-    """(mediana mensual, stock de seguridad, meses completos).
-
-    Agrupa todas las ventas del producto/tienda por mes calendario,
-    incluyendo meses intermedios sin ventas. Descarta el mes actual
-    porque todavía no está completo. No confunde falta de historia
-    con demanda cero: devuelve NaN cuando no hay meses completos.
     """
+    Calcula la base del stock de seguridad con dos niveles de prioridad:
+
+    1. Si existen meses completos de historial:
+       - Suma las unidades vendidas por mes.
+       - Calcula la mediana de esos totales mensuales.
+       - Stock de seguridad = 2 % de esa mediana.
+
+    2. Si NO existen meses completos, pero sí hay ventas
+       registradas durante el mes actual:
+       - Calcula provisionalmente la mediana de las cantidades
+         vendidas en cada registro de venta.
+       - Stock de seguridad = 2 % de esa mediana.
+
+    3. Si no existe ninguna venta:
+       - Devuelve NaN para mostrar "Sin datos".
+
+    Devuelve:
+        mediana_base,
+        stock_seguridad,
+        meses_completos
+    """
+
     if ventas_producto.empty:
         return np.nan, np.nan, 0
+
     fecha = pd.Timestamp(fecha_fin).normalize()
+
     datos = ventas_producto.copy()
-    datos["Fecha"] = pd.to_datetime(datos["Fecha"], errors="coerce")
+
+    datos["Fecha"] = pd.to_datetime(
+        datos["Fecha"],
+        errors="coerce"
+    )
+
+    datos["Cantidad_Base"] = pd.to_numeric(
+        datos["Cantidad_Base"],
+        errors="coerce"
+    )
+
+    # Eliminar registros inválidos.
     datos = datos[
         datos["Fecha"].notna() &
-        (datos["Fecha"] < fecha.replace(day=1))
+        datos["Cantidad_Base"].notna()
     ].copy()
+
     if datos.empty:
         return np.nan, np.nan, 0
-    datos["Mes"] = datos["Fecha"].dt.to_period("M")
-    totales = datos.groupby("Mes")["Cantidad_Base"].sum()
-    # Meses sin ventas entre la primera venta y el mes anterior al actual.
-    ultimo_mes = fecha.to_period("M") - 1
-    meses = pd.period_range(totales.index.min(), ultimo_mes, freq="M")
-    totales = totales.reindex(meses, fill_value=0.0)
-    mediana = float(totales.median())
-    return mediana, mediana * PORCENTAJE_SEGURIDAD, len(totales)
+
+    inicio_mes_actual = fecha.replace(day=1)
+
+    # --------------------------------------------------------
+    # CASO 1: existen meses completos de historial
+    # --------------------------------------------------------
+    datos_meses_completos = datos[
+        datos["Fecha"] < inicio_mes_actual
+    ].copy()
+
+    if not datos_meses_completos.empty:
+
+        datos_meses_completos["Mes"] = (
+            datos_meses_completos["Fecha"].dt.to_period("M")
+        )
+
+        # Total de unidades vendidas por cada mes completo.
+        totales_mensuales = (
+            datos_meses_completos
+            .groupby("Mes")["Cantidad_Base"]
+            .sum()
+        )
+
+        # Mantener la lógica actual:
+        # meses intermedios sin ventas cuentan como cero.
+        ultimo_mes_completo = fecha.to_period("M") - 1
+
+        meses = pd.period_range(
+            totales_mensuales.index.min(),
+            ultimo_mes_completo,
+            freq="M"
+        )
+
+        totales_mensuales = totales_mensuales.reindex(
+            meses,
+            fill_value=0.0
+        )
+
+        mediana = float(totales_mensuales.median())
+
+        stock_seguridad = (
+            mediana * PORCENTAJE_SEGURIDAD
+        )
+
+        return (
+            mediana,
+            stock_seguridad,
+            len(totales_mensuales)
+        )
+
+    # --------------------------------------------------------
+    # CASO 2: no hay meses completos, pero sí ventas este mes
+    # --------------------------------------------------------
+    ventas_mes_actual = datos[
+        (datos["Fecha"] >= inicio_mes_actual) &
+        (datos["Fecha"] <= fecha)
+    ].copy()
+
+    if not ventas_mes_actual.empty:
+
+        mediana_provisional = float(
+            ventas_mes_actual["Cantidad_Base"].median()
+        )
+
+        stock_seguridad = (
+            mediana_provisional * PORCENTAJE_SEGURIDAD
+        )
+
+        return (
+            mediana_provisional,
+            stock_seguridad,
+            0
+        )
+
+    # --------------------------------------------------------
+    # CASO 3: no hay ventas utilizables
+    # --------------------------------------------------------
+    return np.nan, np.nan, 0
 
 
 # ============================================================
@@ -1014,8 +1116,9 @@ def construir_analisis(
         )
 
         # ----------------------------------------------------
-        # Reorden = demanda diaria * LT del proveedor + SS mensual.
-        # Mediana: TODOS los meses completos del historial de ventas.
+        # Reorden = demanda diaria * LT del proveedor + stock de seguridad.
+        # Se usa la mediana mensual si hay meses completos; si no,
+        # una mediana provisional de las ventas del mes actual.
         # ----------------------------------------------------
         mediana_mensual, stock_seguridad, meses_historial = (
             calcular_seguridad_mensual(ventas_prod, fecha_fin)
@@ -1636,10 +1739,11 @@ def modulo_pronosticos():
             )
 
             st.caption(
-                "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-                "2 % de la mediana de todas las ventas mensuales completas. "
-                "El historial seleccionado arriba afecta al pronóstico reciente, "
-                "no a la mediana mensual."
+                "ℹ️ Reorden = demanda diaria × lead time del proveedor + stock de seguridad. "
+                "El stock de seguridad corresponde al 2 % de la mediana de las ventas "
+                "mensuales completas. Si todavía no existe ningún mes completo, se usa "
+                "provisionalmente la mediana de las cantidades vendidas registradas "
+                "en el mes actual."
             )
 
 
@@ -1831,7 +1935,7 @@ def modulo_pronosticos():
             st.warning(
                 f"⚠️ {len(pendientes)} producto(s) de "
                 f"{nombre_tienda_seleccionada} sin lead time válido o "
-                "sin meses completos de ventas. El reorden se muestra "
+                "sin historial de ventas disponible. El reorden se muestra "
                 "como 'Sin datos'. Se usa el proveedor de la compra más reciente."
             )
 
