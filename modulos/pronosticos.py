@@ -1892,13 +1892,13 @@ def modulo_pronosticos():
         )
     )
 
-    # Una sola tienda controla la tabla, el resumen y el centro de decisiones.
-    # El comparativo entre tiendas sigue usando df_filtrado (solo categoría),
-    # por lo que conserva la lógica actual.
+    # El administrador puede ver una tienda específica o una vista global.
+    # La opción "Todas" es la predeterminada para mostrar conjuntamente
+    # los datos de todas las tiendas accesibles.
     tiendas_disponibles = tiendas.sort_values("Tienda").drop_duplicates("id_tienda")
-    opciones_tiendas = tiendas_disponibles["id_tienda"].tolist()
+    ids_tiendas = tiendas_disponibles["id_tienda"].tolist()
 
-    if not opciones_tiendas:
+    if not ids_tiendas:
         st.info("No hay tiendas disponibles para el análisis.")
         return
 
@@ -1906,6 +1906,13 @@ def modulo_pronosticos():
         tiendas_disponibles["id_tienda"],
         tiendas_disponibles["Tienda"]
     ))
+
+    # Para administradores se agrega la opción global.
+    # Para otros usuarios se conserva la restricción a su tienda.
+    if rol == "Administrador":
+        opciones_tiendas = ["Todas"] + ids_tiendas
+    else:
+        opciones_tiendas = ids_tiendas
 
     # Los controles se dibujan dentro del contenedor reservado justo
     # debajo del encabezado, aunque los datos ya hayan sido cargados.
@@ -1916,9 +1923,11 @@ def modulo_pronosticos():
             tienda_seleccionada = st.selectbox(
                 "🏪 Tienda",
                 opciones_tiendas,
-                format_func=lambda id_: nombres_por_id.get(
-                    id_,
-                    f"Tienda {id_}"
+                index=0,
+                format_func=lambda opcion: (
+                    "Todas"
+                    if opcion == "Todas"
+                    else nombres_por_id.get(opcion, f"Tienda {opcion}")
                 ),
                 key="tienda_analisis_pronostico",
             )
@@ -1930,7 +1939,10 @@ def modulo_pronosticos():
                 key="categoria_pronostico",
             )
 
-        nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
+        if tienda_seleccionada == "Todas":
+            nombre_tienda_seleccionada = "Todas las tiendas"
+        else:
+            nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
 
         categoria_texto = (
             "Todas las categorías"
@@ -1949,11 +1961,15 @@ def modulo_pronosticos():
             df_filtrado["Categoría"] == categoria
         ]
 
-    nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
-
-    df_tienda_vista = df_filtrado[
-        df_filtrado["id_tienda"] == tienda_seleccionada
-    ].copy()
+    # Vista principal:
+    # - "Todas" -> reúne las filas de todas las tiendas.
+    # - tienda específica -> conserva exactamente el filtro anterior.
+    if tienda_seleccionada == "Todas":
+        df_tienda_vista = df_filtrado.copy()
+    else:
+        df_tienda_vista = df_filtrado[
+            df_filtrado["id_tienda"] == tienda_seleccionada
+        ].copy()
 
     # ========================================================
     # CONTEXTO DE LA TIENDA Y DATOS DE REORDEN
@@ -1970,9 +1986,13 @@ def modulo_pronosticos():
         )
 
         if not pendientes.empty:
+            if tienda_seleccionada == "Todas":
+                alcance_pendientes = "en la vista global"
+            else:
+                alcance_pendientes = f"de {nombre_tienda_seleccionada}"
+
             st.warning(
-                f"⚠️ {len(pendientes)} producto(s) de "
-                f"{nombre_tienda_seleccionada} sin lead time válido o "
+                f"⚠️ {len(pendientes)} producto(s) {alcance_pendientes} sin lead time válido o "
                 "sin historial de ventas suficiente para calcular el stock de seguridad. "
                 "El reorden se muestra como 'Sin datos'. Se usa el proveedor de la "
                 "compra más reciente."
@@ -2126,21 +2146,39 @@ def modulo_pronosticos():
             unsafe_allow_html=True,
         )
 
-        st.caption(
-            f"Productos de {nombre_tienda_seleccionada}. "
-            "La categoría seleccionada también se aplica a esta tabla."
-        )
-
-        if df_tienda_vista.empty:
-            st.info(
-                "No hay productos de esta categoría en la tienda seleccionada."
+        if tienda_seleccionada == "Todas":
+            st.caption(
+                "Vista global de productos de todas las tiendas. "
+                "La columna Tienda permite identificar a qué ubicación pertenece cada registro. "
+                "La categoría seleccionada también se aplica a esta tabla."
             )
         else:
+            st.caption(
+                f"Productos de {nombre_tienda_seleccionada}. "
+                "La categoría seleccionada también se aplica a esta tabla."
+            )
+
+        if df_tienda_vista.empty:
+            if tienda_seleccionada == "Todas":
+                st.info(
+                    "No hay productos de esta categoría en las tiendas disponibles."
+                )
+            else:
+                st.info(
+                    "No hay productos de esta categoría en la tienda seleccionada."
+                )
+        else:
+            columnas_extra_tabla = (
+                ["Tienda", "Código"]
+                if tienda_seleccionada == "Todas"
+                else ["Código"]
+            )
+
             tabla_tienda = construir_tabla_indicadores(
                 df_tienda_vista,
                 columna_fila="Producto",
                 indicadores=INDICADORES_DEFAULT,
-                columnas_extra=["Código"],
+                columnas_extra=columnas_extra_tabla,
                 orden_por="Producto",
                 rotacion_numerica=True,
             )
@@ -2347,10 +2385,17 @@ def modulo_pronosticos():
             unsafe_allow_html=True,
         )
 
-        st.caption(
-            f"Productos de {nombre_tienda_seleccionada}, agrupados por acción. "
-            "La categoría seleccionada también se aplica a estas recomendaciones."
-        )
+        if tienda_seleccionada == "Todas":
+            st.caption(
+                "Productos de todas las tiendas, agrupados por acción. "
+                "Las tablas conservan la columna Tienda para identificar cada registro. "
+                "La categoría seleccionada también se aplica a estas recomendaciones."
+            )
+        else:
+            st.caption(
+                f"Productos de {nombre_tienda_seleccionada}, agrupados por acción. "
+                "La categoría seleccionada también se aplica a estas recomendaciones."
+            )
 
         rec_tab1, rec_tab2, rec_tab3, rec_tab4, rec_tab5, rec_tab6 = st.tabs(
             [
