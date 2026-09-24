@@ -1893,12 +1893,11 @@ def modulo_pronosticos():
     )
 
     # El administrador puede ver una tienda específica o una vista global.
-    # La opción "Todas" es la predeterminada para mostrar conjuntamente
-    # los datos de todas las tiendas accesibles.
+    # Usamos claves de texto para TODAS las opciones del selectbox.
+    # Esto evita mezclar "Todas" (str) con id_tienda (int) dentro del widget.
     tiendas_disponibles = tiendas.sort_values("Tienda").drop_duplicates("id_tienda")
-    ids_tiendas = tiendas_disponibles["id_tienda"].tolist()
 
-    if not ids_tiendas:
+    if tiendas_disponibles.empty:
         st.info("No hay tiendas disponibles para el análisis.")
         return
 
@@ -1907,12 +1906,26 @@ def modulo_pronosticos():
         tiendas_disponibles["Tienda"]
     ))
 
-    # Para administradores se agrega la opción global.
-    # Para otros usuarios se conserva la restricción a su tienda.
+    # Clave interna -> id real de tienda.
+    id_por_clave = {
+        f"tienda_{id_tienda}": id_tienda
+        for id_tienda in tiendas_disponibles["id_tienda"].tolist()
+    }
+
+    # Clave interna -> texto que verá el usuario.
+    etiqueta_por_clave = {
+        f"tienda_{id_tienda}": nombre
+        for id_tienda, nombre in zip(
+            tiendas_disponibles["id_tienda"],
+            tiendas_disponibles["Tienda"]
+        )
+    }
+
     if rol == "Administrador":
-        opciones_tiendas = ["Todas"] + ids_tiendas
+        opciones_tiendas = ["__TODAS__"] + list(id_por_clave.keys())
+        etiqueta_por_clave["__TODAS__"] = "Todas"
     else:
-        opciones_tiendas = ids_tiendas
+        opciones_tiendas = list(id_por_clave.keys())
 
     # Los controles se dibujan dentro del contenedor reservado justo
     # debajo del encabezado, aunque los datos ya hayan sido cargados.
@@ -1920,16 +1933,17 @@ def modulo_pronosticos():
         filtro_tienda, filtro_categoria = st.columns(2)
 
         with filtro_tienda:
-            tienda_seleccionada = st.selectbox(
+            opcion_tienda = st.selectbox(
                 "🏪 Tienda",
                 opciones_tiendas,
                 index=0,
-                format_func=lambda opcion: (
-                    "Todas"
-                    if opcion == "Todas"
-                    else nombres_por_id.get(opcion, f"Tienda {opcion}")
+                format_func=lambda clave: etiqueta_por_clave.get(
+                    clave,
+                    clave
                 ),
-                key="tienda_analisis_pronostico",
+                # Nueva key para que Streamlit no reutilice el estado
+                # anterior del selectbox.
+                key="tienda_analisis_pronostico_v2",
             )
 
         with filtro_categoria:
@@ -1939,9 +1953,11 @@ def modulo_pronosticos():
                 key="categoria_pronostico",
             )
 
-        if tienda_seleccionada == "Todas":
+        if opcion_tienda == "__TODAS__":
+            tienda_seleccionada = "Todas"
             nombre_tienda_seleccionada = "Todas las tiendas"
         else:
+            tienda_seleccionada = id_por_clave[opcion_tienda]
             nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
 
         categoria_texto = (
