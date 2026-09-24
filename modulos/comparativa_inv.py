@@ -775,7 +775,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
     IMPORTANTE:
     - No ejecuta INSERT, UPDATE ni DELETE.
     - No guarda precios, costos ni resultados en la base de datos.
-    - Precio unitario y Costo extra usan number_input, por lo tanto
+    - Precio unitario y Costo extra unitario usan number_input, por lo tanto
       SOLO aceptan números.
     - Al cambiar de producto se eliminan los valores del producto anterior.
     """
@@ -943,23 +943,23 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         return
 
     # --------------------------------------------------------
-    # PRECIO MENOR: MOSTRAR COSTO EXTRA Y COSTO TOTAL
+    # PRECIO MENOR: MOSTRAR COSTO EXTRA UNITARIO Y COSTO TOTAL
     # --------------------------------------------------------
     col_extra, col_total = st.columns(2)
 
     with col_extra:
         st.markdown(
-            '<div class="evaluador-label">Costo extra</div>',
+            '<div class="evaluador-label">Costo extra unitario</div>',
             unsafe_allow_html=True
         )
 
         costo_extra = st.number_input(
-            "Costo extra",
+            "Costo extra unitario",
             min_value=0.0,
             value=None,
             step=0.01,
             format="%.2f",
-            placeholder="Digite el costo extra",
+            placeholder="Digite el costo extra unitario",
             label_visibility="collapsed",
             key=f"evaluador_extra_{version}"
         )
@@ -1000,7 +1000,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
             )
         )
 
-    # Hasta que no exista Costo extra, NO se muestra recomendación.
+    # Hasta que no exista Costo extra unitario, NO se muestra recomendación.
     if costo_extra is None or costo_total is None:
         return
 
@@ -1029,7 +1029,7 @@ def mostrar_evaluador_nuevo_proveedor(tiendas, catalogo_productos):
         st.markdown(
             f'<div class="aviso-caro">'
             f'⚠️ <strong>El precio unitario es menor, pero el costo total ya no conviene.</strong> '
-            f'Al sumar el costo extra, el nuevo proveedor queda en '
+            f'Al sumar el costo extra unitario, el nuevo proveedor queda en '
             f'<strong>${costo_total:,.2f}</strong>, frente al mejor precio actual '
             f'de <strong>${precio_verde:,.2f}</strong> en '
             f'<strong>{tienda_verde}</strong>.'
