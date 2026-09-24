@@ -345,6 +345,37 @@ def formatear_cantidad(valor, medida):
     return f"{valor:,.2f} uds"
 
 
+def ajustar_compra_operativa(valor, medida):
+    """
+    Convierte la compra sugerida matemática en una cantidad comprable.
+
+    - Para productos manejados en unidades:
+      redondea HACIA ARRIBA al entero siguiente.
+      Ej.: 0.09 -> 1 ud, 4.82 -> 5 uds.
+
+    - Para productos manejados por peso:
+      conserva los decimales.
+
+    Esta función NO modifica el punto de reorden, el stock de seguridad,
+    la demanda ni ningún otro cálculo del modelo.
+    """
+    try:
+        valor = float(valor)
+    except Exception:
+        return np.nan
+
+    if not np.isfinite(valor):
+        return np.nan
+
+    if valor <= 0:
+        return 0.0
+
+    if medida == "uds":
+        return float(np.ceil(valor))
+
+    return valor
+
+
 # ============================================================
 # FORMATEO DE TIEMPOS / COBERTURA
 # ============================================================
@@ -1278,6 +1309,21 @@ def construir_analisis(
         else:
             tendencia = "➡️ Estable"
 
+        # ----------------------------------------------------
+        # Compra sugerida operativa
+        # ----------------------------------------------------
+        # Se conserva la cantidad matemática exacta para no alterar
+        # las fórmulas ni la lógica del modelo.
+        compra_sugerida_exacta = compra_sugerida
+
+        # Únicamente la cantidad que se mostrará/recomendará para comprar
+        # se redondea hacia arriba cuando el producto se maneja por unidades.
+        # Los productos por peso conservan sus decimales.
+        compra_sugerida_operativa = ajustar_compra_operativa(
+            compra_sugerida_exacta,
+            medida
+        )
+
         resultados.append({
             "ID Producto": prod["ID Producto"],
             "Código": codigo,
@@ -1319,7 +1365,12 @@ def construir_analisis(
 
             "Punto reorden": round(punto_reorden, 2),
             "Stock objetivo": round(stock_objetivo, 2),
-            "Compra sugerida": round(compra_sugerida, 2),
+
+            # Valor matemático sin redondear para auditoría/cálculos internos.
+            "Compra sugerida exacta": round(compra_sugerida_exacta, 2),
+
+            # Valor operativo: unidades enteras hacia arriba; peso con decimales.
+            "Compra sugerida": round(compra_sugerida_operativa, 2),
 
             "Días para reorden": (
                 round(dias_para_reorden, 1)
@@ -2147,7 +2198,9 @@ def modulo_pronosticos():
                 **Lead time:** días que tarda el proveedor en entregar.
 
                 **Compra sugerida:** cantidad estimada que debería comprarse
-                para alcanzar la cobertura objetivo.
+                para alcanzar la cobertura objetivo. Cuando el producto se maneja
+                por unidades, la cantidad de compra se redondea hacia arriba al
+                entero siguiente; los cálculos internos conservan sus decimales.
 
                 **Recomendación:** acción sugerida por el sistema.
                 """
