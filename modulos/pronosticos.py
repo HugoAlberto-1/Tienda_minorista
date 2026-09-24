@@ -1783,17 +1783,6 @@ def modulo_pronosticos():
                 ),
             )
 
-            st.caption(
-                "ℹ️ Reorden = demanda diaria × lead time del proveedor + "
-                "stock de seguridad. El stock de seguridad corresponde al "
-                "2 % de la mediana de las ventas mensuales completas. "
-                "Si todavía no existe ningún mes completo pero ya hay ventas "
-                "en el mes actual, se utiliza provisionalmente el 2 % de la "
-                "mediana de las cantidades vendidas en las ventas registradas "
-                "durante el mes en curso. El historial seleccionado arriba "
-                "afecta al pronóstico reciente, no al historial utilizado para "
-                "el stock de seguridad."
-            )
 
 
     fecha_fin = datetime.now().date()
