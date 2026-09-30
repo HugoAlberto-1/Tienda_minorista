@@ -345,6 +345,53 @@ def formatear_cantidad(valor, medida):
     return f"{valor:,.2f} uds"
 
 
+def redondear_entero_superior(valor):
+    """
+    Redondea cualquier valor decimal al entero superior.
+
+    Ejemplos:
+    4.01 -> 5
+    4.50 -> 5
+    4.99 -> 5
+    5.00 -> 5
+    """
+
+    try:
+        valor = float(valor)
+    except Exception:
+        return np.nan
+
+    if not np.isfinite(valor):
+        return np.nan
+
+    return float(np.ceil(valor))
+
+
+def formatear_punto_reorden(valor, medida):
+    """
+    Muestra el punto de reorden como entero superior.
+
+    Ejemplos:
+    4.01 uds -> 5 uds
+    8.99 lb  -> 9 lb
+    """
+
+    try:
+        valor = float(valor)
+    except Exception:
+        return "Sin datos"
+
+    if not np.isfinite(valor):
+        return "Sin datos"
+
+    valor = int(np.ceil(valor))
+
+    if medida == "lb":
+        return f"{valor:,} lb"
+
+    return f"{valor:,} uds"
+
+
 def ajustar_compra_operativa(valor, medida):
     """
     Convierte la compra sugerida matemática en una cantidad comprable.
@@ -1239,10 +1286,29 @@ def construir_analisis(
 
         if datos_reorden_ok:
 
-            punto_reorden = (
+            # ====================================================
+            # PUNTO DE REORDEN
+            # ====================================================
+            # Se calcula normalmente y luego se redondea SIEMPRE
+            # hacia el entero superior.
+            #
+            # Ejemplos:
+            # 8.01 -> 9
+            # 8.50 -> 9
+            # 8.99 -> 9
+            # 9.00 -> 9
+            # ====================================================
+
+            punto_reorden_calculado = (
                 demanda_diaria *
                 float(lead_time) +
                 stock_seguridad
+            )
+
+            punto_reorden = (
+                redondear_entero_superior(
+                    punto_reorden_calculado
+                )
             )
 
             stock_objetivo = (
@@ -1596,10 +1662,7 @@ def construir_analisis(
                 rotacion_estado,
 
             "Punto reorden":
-                round(
-                    punto_reorden,
-                    2
-                ),
+                punto_reorden,
 
             "Stock objetivo":
                 round(
@@ -1805,7 +1868,22 @@ def construir_tabla_indicadores(
             ]
         )
 
-        if indicador in (
+        if indicador == "Punto de reorden":
+
+            resultado[
+                indicador
+            ] = df_subset.apply(
+
+                lambda r:
+                    formatear_punto_reorden(
+                        r[columna_origen],
+                        r["Medida"]
+                    ),
+
+                axis=1,
+            )
+
+        elif indicador in (
             INDICADORES_CANTIDAD
         ):
 
@@ -1957,7 +2035,7 @@ def preparar_tabla_decision(df):
     ] = tabla.apply(
 
         lambda r:
-            formatear_cantidad(
+            formatear_punto_reorden(
                 r["Punto reorden"],
                 r["Medida"]
             ),
@@ -3034,7 +3112,8 @@ def modulo_pronosticos():
                 inventario actual al ritmo pronosticado de ventas.
 
                 **Punto de reorden:** nivel de inventario en el cual debe
-                comenzar una nueva compra.
+                comenzar una nueva compra. Cuando el cálculo produce decimales,
+                se redondea siempre hacia el entero superior.
 
                 **Inventario de seguridad:** reserva adicional utilizada para
                 protegerse ante variaciones de demanda.
