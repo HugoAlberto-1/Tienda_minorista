@@ -51,6 +51,10 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
 
+        /* ============================================================
+           BOTONES
+           ============================================================ */
+
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -74,12 +78,20 @@ def configurar_estilo():
             background-color: #5a6268 !important;
         }}
 
+        /* ============================================================
+           LABELS
+           ============================================================ */
+
         .stTextInput > label,
         .stSelectbox > label,
         .stDateInput label {{
             color: {COLOR_TEXT} !important;
             font-weight: 500 !important;
         }}
+
+        /* ============================================================
+           FECHAS
+           ============================================================ */
 
         .stDateInput input {{
             color: #333333 !important;
@@ -90,57 +102,38 @@ def configurar_estilo():
            SELECTBOX - FONDO AZUL Y TEXTO BLANCO
            ============================================================ */
 
-        /* Caja principal */
+        /* Fondo principal del selector */
         div[data-testid="stSelectbox"]
         div[data-baseweb="select"] > div {{
             background-color: {COLOR_BUTTON} !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
+            color: white !important;
         }}
 
-        /* Combobox principal */
+        /* Forzar todo el contenido interno a blanco */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] * {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
+        }}
+
+        /* Texto del valor seleccionado */
         div[data-testid="stSelectbox"]
         div[role="combobox"] {{
             color: white !important;
             -webkit-text-fill-color: white !important;
         }}
 
-        /* Todo el contenido interno del combobox */
         div[data-testid="stSelectbox"]
         div[role="combobox"] * {{
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-            opacity: 1 !important;
-        }}
-
-        /* Div interno que contiene el texto seleccionado */
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"]
-        div[role="combobox"] div {{
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-        }}
-
-        /* Span interno */
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"]
-        span {{
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-            opacity: 1 !important;
-        }}
-
-        /* Algunas versiones de Streamlit usan etiquetas p */
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"]
-        p {{
             color: white !important;
             -webkit-text-fill-color: white !important;
         }}
 
         /* Input interno */
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"]
         input {{
             color: white !important;
             -webkit-text-fill-color: white !important;
@@ -148,19 +141,53 @@ def configurar_estilo():
 
         /* Flecha */
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"]
         svg {{
             fill: white !important;
             color: white !important;
         }}
 
-        /* Mantener estilo cuando está seleccionado */
+        /* Mantener el mismo estilo al seleccionar */
         div[data-testid="stSelectbox"]
         div[data-baseweb="select"] > div:focus-within {{
             background-color: {COLOR_BUTTON} !important;
             border-color: {COLOR_BORDER} !important;
             box-shadow: none !important;
         }}
+
+        /* ============================================================
+           TARJETA TOTAL GENERAL
+           ============================================================ */
+
+        .total-card {{
+            background: linear-gradient(
+                135deg,
+                {COLOR_PRIMARY} 0%,
+                {COLOR_SECONDARY} 100%
+            );
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }}
+
+        .total-value {{
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }}
+
+        .total-label {{
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+            margin-top: 8px;
+        }}
+
+        /* ============================================================
+           TÍTULOS
+           ============================================================ */
 
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
@@ -176,6 +203,10 @@ def reporte_ventas():
 
     configurar_estilo()
 
+    # ============================================================
+    # TÍTULO
+    # ============================================================
+
     st.markdown(
         '<div class="report-title">📊 Reporte de Ventas</div>',
         unsafe_allow_html=True
@@ -185,6 +216,10 @@ def reporte_ventas():
         '<div class="report-subtitle">Análisis de ventas mensuales</div>',
         unsafe_allow_html=True
     )
+
+    # ============================================================
+    # DATOS DE SESIÓN
+    # ============================================================
 
     rol_usuario = st.session_state.get(
         "nivel_usuario",
@@ -201,7 +236,6 @@ def reporte_ventas():
         None
     )
 
-
     # ============================================================
     # ADMINISTRADOR: PUEDE SELECCIONAR TIENDA
     # ============================================================
@@ -209,10 +243,7 @@ def reporte_ventas():
     if rol_usuario == "Administrador":
 
         st.markdown(
-            '<div class="info-box">'
-            '👑 <strong>Administrador</strong> - '
-            'Puedes filtrar por tienda'
-            '</div>',
+            '<div class="info-box">👑 <strong>Administrador</strong> - Puedes filtrar por tienda</div>',
             unsafe_allow_html=True
         )
 
@@ -253,25 +284,18 @@ def reporte_ventas():
                     + list(opciones_tienda.keys())
                 )
 
-                if (
-                    tienda_seleccionada
-                    == "Todas las tiendas"
-                ):
+                if tienda_seleccionada == "Todas las tiendas":
 
                     id_tienda_usar = None
                     filtro_tienda = "Todas las tiendas"
 
                 else:
 
-                    id_tienda_usar = (
-                        opciones_tienda[
-                            tienda_seleccionada
-                        ]
-                    )
-
-                    filtro_tienda = (
+                    id_tienda_usar = opciones_tienda[
                         tienda_seleccionada
-                    )
+                    ]
+
+                    filtro_tienda = tienda_seleccionada
 
             else:
 
@@ -289,24 +313,20 @@ def reporte_ventas():
 
             return
 
+    # ============================================================
+    # USUARIO DE TIENDA
+    # ============================================================
+
     else:
 
-        id_tienda_usar = (
-            id_tienda_sesion
-        )
+        id_tienda_usar = id_tienda_sesion
 
-        filtro_tienda = (
-            nombre_tienda
-        )
+        filtro_tienda = nombre_tienda
 
         st.markdown(
-            f'<div class="info-box">'
-            f'🏪 <strong>Tienda:</strong> '
-            f'{nombre_tienda}'
-            f'</div>',
+            f'<div class="info-box">🏪 <strong>Tienda:</strong> {nombre_tienda}</div>',
             unsafe_allow_html=True
         )
-
 
     # ============================================================
     # FILTROS DE FECHA
@@ -318,9 +338,8 @@ def reporte_ventas():
 
         fecha_inicio = st.date_input(
             "📅 Fecha inicio",
-            value=(
-                datetime.today()
-                .replace(day=1)
+            value=datetime.today().replace(
+                day=1
             )
         )
 
@@ -331,17 +350,21 @@ def reporte_ventas():
             value=datetime.today()
         )
 
+    # ============================================================
+    # VALIDAR FECHAS
+    # ============================================================
 
     if fecha_inicio > fecha_fin:
 
         st.error(
-            "❌ La fecha de inicio "
-            "no puede ser mayor que "
-            "la fecha de fin."
+            "❌ La fecha de inicio no puede ser mayor que la fecha de fin."
         )
 
         return
 
+    # ============================================================
+    # CONSULTAS
+    # ============================================================
 
     try:
 
@@ -349,10 +372,9 @@ def reporte_ventas():
 
         cursor = con.cursor()
 
-
-        # ============================================================
-        # OBTENER EL TOTAL GENERAL
-        # ============================================================
+        # ========================================================
+        # TOTAL GENERAL
+        # ========================================================
 
         if id_tienda_usar is None:
 
@@ -370,11 +392,10 @@ def reporte_ventas():
                 FROM Venta v
 
                 JOIN ProductoxVenta pv
-                    ON v.ID_Venta =
-                       pv.ID_Venta
+                    ON v.ID_Venta = pv.ID_Venta
 
                 WHERE DATE(v.Fecha)
-                      BETWEEN %s AND %s
+                    BETWEEN %s AND %s
             """
 
             cursor.execute(
@@ -401,11 +422,10 @@ def reporte_ventas():
                 FROM Venta v
 
                 JOIN ProductoxVenta pv
-                    ON v.ID_Venta =
-                       pv.ID_Venta
+                    ON v.ID_Venta = pv.ID_Venta
 
                 WHERE DATE(v.Fecha)
-                      BETWEEN %s AND %s
+                    BETWEEN %s AND %s
 
                 AND v.id_tienda = %s
             """
@@ -419,10 +439,7 @@ def reporte_ventas():
                 )
             )
 
-
-        total_row = (
-            cursor.fetchone()
-        )
+        total_row = cursor.fetchone()
 
         gran_total = (
             float(total_row[0])
@@ -435,16 +452,11 @@ def reporte_ventas():
             2
         )
 
-
-        # ============================================================
-        # CONSULTA PRINCIPAL
-        # ============================================================
+        # ========================================================
+        # TODAS LAS TIENDAS
+        # ========================================================
 
         if id_tienda_usar is None:
-
-            # ========================================================
-            # TODAS LAS TIENDAS - VENTAS POR TIENDA
-            # ========================================================
 
             query = """
                 SELECT
@@ -466,15 +478,13 @@ def reporte_ventas():
                 FROM Venta v
 
                 JOIN ProductoxVenta pv
-                    ON v.ID_Venta =
-                       pv.ID_Venta
+                    ON v.ID_Venta = pv.ID_Venta
 
                 LEFT JOIN tienda t
-                    ON v.id_tienda =
-                       t.id_tienda
+                    ON v.id_tienda = t.id_tienda
 
                 WHERE DATE(v.Fecha)
-                      BETWEEN %s AND %s
+                    BETWEEN %s AND %s
 
                 GROUP BY t.nombre
 
@@ -490,7 +500,6 @@ def reporte_ventas():
             )
 
             rows = cursor.fetchall()
-
 
             if rows:
 
@@ -508,36 +517,28 @@ def reporte_ventas():
                     "Total_Ventas"
                 ].astype(float)
 
-
                 st.markdown(
                     "### 📊 Ventas por Tienda"
                 )
-
 
                 fig = px.bar(
                     df,
                     x="Tienda",
                     y="Total_Ventas",
-                    title=(
-                        "Total de Ventas por Tienda"
-                    ),
+                    title="Total de Ventas por Tienda",
                     color="Total_Ventas",
                     color_continuous_scale="Blues",
-                    text=(
-                        df[
-                            "Total_Ventas"
-                        ].apply(
-                            lambda x:
-                                f"${x:,.2f}"
-                        )
+                    text=df[
+                        "Total_Ventas"
+                    ].apply(
+                        lambda x:
+                            f"${x:,.2f}"
                     )
                 )
-
 
                 fig.update_traces(
                     textposition="outside"
                 )
-
 
                 fig.update_layout(
                     xaxis_title="Tienda",
@@ -545,7 +546,6 @@ def reporte_ventas():
                     height=500,
                     showlegend=False
                 )
-
 
                 st.plotly_chart(
                     fig,
@@ -555,24 +555,20 @@ def reporte_ventas():
             else:
 
                 st.warning(
-                    "No hay datos en el "
-                    "período seleccionado."
+                    "No hay datos en el período seleccionado."
                 )
 
                 return
 
+        # ========================================================
+        # TIENDA ESPECÍFICA
+        # ========================================================
 
         else:
 
-            # ========================================================
-            # TIENDA ESPECÍFICA - VENTAS POR MES
-            # ========================================================
-
             st.markdown(
-                f"### 📊 Análisis de Ventas Mensuales - "
-                f"{filtro_tienda}"
+                f"### 📊 Análisis de Ventas Mensuales - {filtro_tienda}"
             )
-
 
             query = """
                 SELECT
@@ -614,11 +610,10 @@ def reporte_ventas():
                 FROM Venta v
 
                 JOIN ProductoxVenta pv
-                    ON v.ID_Venta =
-                       pv.ID_Venta
+                    ON v.ID_Venta = pv.ID_Venta
 
                 WHERE DATE(v.Fecha)
-                      BETWEEN %s AND %s
+                    BETWEEN %s AND %s
 
                 AND v.id_tienda = %s
 
@@ -631,7 +626,6 @@ def reporte_ventas():
                     MONTH(v.Fecha) ASC
             """
 
-
             cursor.execute(
                 query,
                 (
@@ -641,9 +635,7 @@ def reporte_ventas():
                 )
             )
 
-
             rows = cursor.fetchall()
-
 
             if rows:
 
@@ -655,17 +647,11 @@ def reporte_ventas():
                     ]
                 )
 
-
                 df[
                     "Total_Ventas"
                 ] = df[
                     "Total_Ventas"
                 ].astype(float)
-
-
-                # ====================================================
-                # GRÁFICO DE BARRAS
-                # ====================================================
 
                 fig = px.bar(
                     df,
@@ -674,21 +660,17 @@ def reporte_ventas():
                     title="Total de Ventas por Mes",
                     color="Total_Ventas",
                     color_continuous_scale="Blues",
-                    text=(
-                        df[
-                            "Total_Ventas"
-                        ].apply(
-                            lambda x:
-                                f"${x:,.2f}"
-                        )
+                    text=df[
+                        "Total_Ventas"
+                    ].apply(
+                        lambda x:
+                            f"${x:,.2f}"
                     )
                 )
-
 
                 fig.update_traces(
                     textposition="outside"
                 )
-
 
                 fig.update_layout(
                     xaxis_title="Mes",
@@ -696,7 +678,6 @@ def reporte_ventas():
                     height=500,
                     showlegend=False
                 )
-
 
                 st.plotly_chart(
                     fig,
@@ -706,104 +687,46 @@ def reporte_ventas():
             else:
 
                 st.warning(
-                    "No hay datos de ventas "
-                    "en el período seleccionado "
-                    "para esta tienda."
+                    "No hay datos de ventas en el período seleccionado para esta tienda."
                 )
 
                 return
 
-
-        # ============================================================
-        # TOTAL GENERAL
-        # ============================================================
+        # ========================================================
+        # TOTAL GENERAL DE VENTAS
+        # ========================================================
 
         st.markdown("---")
-
 
         st.markdown(
             "## 💰 TOTAL GENERAL DE VENTAS"
         )
 
+        # IMPORTANTE:
+        # Todo el HTML se construye sin indentación interna para evitar
+        # que Streamlit interprete el CSS como código Markdown.
+
+        html_total = (
+            f'<div class="total-card">'
+            f'<div class="total-value">${gran_total:,.2f}</div>'
+            f'<div class="total-label">Ingresos totales del período</div>'
+            f'</div>'
+        )
 
         st.markdown(
-            f"""
-            <div style='
-                background:
-                    linear-gradient(
-                        135deg,
-                        #1e3a5f 0%,
-                        #2c5f8a 100%
-                    );
-
-                padding: 25px;
-
-                border-radius: 15px;
-
-                text-align: center;
-
-                margin: 20px 0;
-
-                box-shadow:
-                    0 5px 15px
-                    rgba(0,0,0,0.2);
-            '>
-
-                <div style='
-                    font-size: 2.5em;
-
-                    font-weight: bold;
-
-                    color: #ffd700;
-
-                    text-shadow:
-                        2px 2px 4px
-                        rgba(0,0,0,0.3);
-
-                    letter-spacing: 2px;
-                '>
-
-                    ${gran_total:,.2f}
-
-                </div>
-
-                <div style='
-                    font-size: 0.9em;
-
-                    color:
-                        rgba(
-                            255,
-                            255,
-                            255,
-                            0.8
-                        );
-
-                    margin-top: 8px;
-                '>
-
-                    Ingresos totales del período
-
-                </div>
-
-            </div>
-            """,
+            html_total,
             unsafe_allow_html=True
         )
 
-
-        # ============================================================
+        # ========================================================
         # BOTÓN VOLVER
-        # ============================================================
+        # ========================================================
 
         st.markdown("---")
 
-
-        col1, col2, col3 = (
-            st.columns(
-                [1, 2, 1]
-            )
+        col1, col2, col3 = st.columns(
+            [1, 2, 1]
         )
-
 
         with col2:
 
@@ -811,7 +734,6 @@ def reporte_ventas():
                 '<div class="volver-btn">',
                 unsafe_allow_html=True
             )
-
 
             if st.button(
                 "🔙 Volver al Menú Principal",
@@ -824,12 +746,10 @@ def reporte_ventas():
 
                 st.rerun()
 
-
             st.markdown(
                 '</div>',
                 unsafe_allow_html=True
             )
-
 
     except Exception as e:
 
@@ -837,19 +757,14 @@ def reporte_ventas():
             f"❌ Error al generar el reporte: {e}"
         )
 
-
     finally:
 
         if "cursor" in locals():
-
             cursor.close()
 
-
         if "con" in locals():
-
             con.close()
 
 
 def modulo_reporte_ventas():
-
     reporte_ventas()
