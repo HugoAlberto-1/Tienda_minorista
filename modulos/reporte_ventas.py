@@ -96,39 +96,65 @@ def configurar_estilo():
             background-color: {COLOR_BUTTON} !important;
             border-radius: 8px !important;
             border: 1px solid {COLOR_BORDER} !important;
-            color: white !important;
         }}
 
-        /* Texto seleccionado */
+        /* Combobox principal */
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] > div span {{
+        div[role="combobox"] {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }}
+
+        /* Todo el contenido interno del combobox */
+        div[data-testid="stSelectbox"]
+        div[role="combobox"] * {{
             color: white !important;
             -webkit-text-fill-color: white !important;
             opacity: 1 !important;
         }}
 
-        /* Contenedor interno del texto */
+        /* Div interno que contiene el texto seleccionado */
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] > div > div {{
+        div[data-baseweb="select"]
+        div[role="combobox"] div {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }}
+
+        /* Span interno */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"]
+        span {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
+        }}
+
+        /* Algunas versiones de Streamlit usan etiquetas p */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"]
+        p {{
             color: white !important;
             -webkit-text-fill-color: white !important;
         }}
 
         /* Input interno */
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] input {{
+        div[data-baseweb="select"]
+        input {{
             color: white !important;
             -webkit-text-fill-color: white !important;
         }}
 
         /* Flecha */
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] svg {{
+        div[data-baseweb="select"]
+        svg {{
             fill: white !important;
             color: white !important;
         }}
 
-        /* Mantener el fondo azul cuando tenga foco */
+        /* Mantener estilo cuando está seleccionado */
         div[data-testid="stSelectbox"]
         div[data-baseweb="select"] > div:focus-within {{
             background-color: {COLOR_BUTTON} !important;
@@ -217,33 +243,23 @@ def reporte_ventas():
             if tiendas:
 
                 opciones_tienda = {
-                    t["nombre"]:
-                    t["id_tienda"]
+                    t["nombre"]: t["id_tienda"]
                     for t in tiendas
                 }
 
                 tienda_seleccionada = st.selectbox(
                     "🏪 Filtrar por tienda:",
-                    [
-                        "Todas las tiendas"
-                    ]
-                    +
-                    list(
-                        opciones_tienda.keys()
-                    )
+                    ["Todas las tiendas"]
+                    + list(opciones_tienda.keys())
                 )
 
                 if (
                     tienda_seleccionada
-                    ==
-                    "Todas las tiendas"
+                    == "Todas las tiendas"
                 ):
 
                     id_tienda_usar = None
-
-                    filtro_tienda = (
-                        "Todas las tiendas"
-                    )
+                    filtro_tienda = "Todas las tiendas"
 
                 else:
 
@@ -335,7 +351,7 @@ def reporte_ventas():
 
 
         # ============================================================
-        # OBTENER TOTAL GENERAL
+        # OBTENER EL TOTAL GENERAL
         # ============================================================
 
         if id_tienda_usar is None:
@@ -432,6 +448,7 @@ def reporte_ventas():
 
             query = """
                 SELECT
+
                     COALESCE(
                         t.nombre,
                         'Sin tienda'
@@ -502,13 +519,10 @@ def reporte_ventas():
                     x="Tienda",
                     y="Total_Ventas",
                     title=(
-                        "Total de Ventas "
-                        "por Tienda"
+                        "Total de Ventas por Tienda"
                     ),
                     color="Total_Ventas",
-                    color_continuous_scale=(
-                        "Blues"
-                    ),
+                    color_continuous_scale="Blues",
                     text=(
                         df[
                             "Total_Ventas"
@@ -527,9 +541,7 @@ def reporte_ventas():
 
                 fig.update_layout(
                     xaxis_title="Tienda",
-                    yaxis_title=(
-                        "Total de Ventas ($)"
-                    ),
+                    yaxis_title="Total de Ventas ($)",
                     height=500,
                     showlegend=False
                 )
@@ -557,8 +569,7 @@ def reporte_ventas():
             # ========================================================
 
             st.markdown(
-                f"### 📊 Análisis de "
-                f"Ventas Mensuales - "
+                f"### 📊 Análisis de Ventas Mensuales - "
                 f"{filtro_tienda}"
             )
 
@@ -660,14 +671,9 @@ def reporte_ventas():
                     df,
                     x="Nombre_Mes",
                     y="Total_Ventas",
-                    title=(
-                        "Total de Ventas "
-                        "por Mes"
-                    ),
+                    title="Total de Ventas por Mes",
                     color="Total_Ventas",
-                    color_continuous_scale=(
-                        "Blues"
-                    ),
+                    color_continuous_scale="Blues",
                     text=(
                         df[
                             "Total_Ventas"
@@ -686,9 +692,7 @@ def reporte_ventas():
 
                 fig.update_layout(
                     xaxis_title="Mes",
-                    yaxis_title=(
-                        "Total de Ventas ($)"
-                    ),
+                    yaxis_title="Total de Ventas ($)",
                     height=500,
                     showlegend=False
                 )
@@ -830,8 +834,7 @@ def reporte_ventas():
     except Exception as e:
 
         st.error(
-            f"❌ Error al generar "
-            f"el reporte: {e}"
+            f"❌ Error al generar el reporte: {e}"
         )
 
 
