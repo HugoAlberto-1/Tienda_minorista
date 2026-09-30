@@ -345,6 +345,33 @@ def formatear_cantidad(valor, medida):
     return f"{valor:,.2f} uds"
 
 
+def formatear_compra_sugerida(valor, medida):
+    """
+    Formatea la compra sugerida según el tipo de medida.
+
+    - Unidades: se muestra como entero superior.
+      Ej.: 0.20 -> 1 uds
+           4.10 -> 5 uds
+           5.00 -> 5 uds
+
+    - Peso: conserva dos decimales.
+      Ej.: 4.256 -> 4.26 lb
+    """
+
+    try:
+        valor = float(valor)
+    except Exception:
+        return "Sin datos"
+
+    if not np.isfinite(valor):
+        return "Sin datos"
+
+    if medida == "uds":
+        return f"{int(np.ceil(valor)):,} uds"
+
+    return f"{valor:,.2f} {medida}"
+
+
 def redondear_entero_superior(valor):
     """
     Redondea cualquier valor decimal al entero superior.
@@ -1802,6 +1829,19 @@ INDICADORES_DEFAULT = [
 ]
 
 
+# Indicadores visibles en la tabla principal "Inventario y reorden".
+# Se omite "Inventario de seguridad" únicamente de esta vista.
+INDICADORES_TABLA_INVENTARIO = [
+    "Inventario actual",
+    "Rotación 30 días",
+    "Duración del inventario",
+    "Punto de reorden",
+    "Tiempo de entrega (días)",
+    "Compra sugerida",
+    "Recomendación",
+]
+
+
 def construir_tabla_indicadores(
     df_subset,
     columna_fila,
@@ -1876,6 +1916,21 @@ def construir_tabla_indicadores(
 
                 lambda r:
                     formatear_punto_reorden(
+                        r[columna_origen],
+                        r["Medida"]
+                    ),
+
+                axis=1,
+            )
+
+        elif indicador == "Compra sugerida":
+
+            resultado[
+                indicador
+            ] = df_subset.apply(
+
+                lambda r:
+                    formatear_compra_sugerida(
                         r[columna_origen],
                         r["Medida"]
                     ),
@@ -2073,7 +2128,7 @@ def preparar_tabla_decision(df):
     ] = tabla.apply(
 
         lambda r:
-            formatear_cantidad(
+            formatear_compra_sugerida(
                 r["Compra sugerida"],
                 r["Medida"]
             ),
@@ -3053,7 +3108,7 @@ def modulo_pronosticos():
                     df_tienda_vista,
                     columna_fila="Producto",
                     indicadores=(
-                        INDICADORES_DEFAULT
+                        INDICADORES_TABLA_INVENTARIO
                     ),
                     columnas_extra=(
                         columnas_extra_tabla
