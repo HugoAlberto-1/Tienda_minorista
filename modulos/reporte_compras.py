@@ -5,8 +5,10 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo - Mismo estilo que inventario"""
+
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_BG = "#f5f7fa"
@@ -16,13 +18,15 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
-    
-    st.markdown(f"""
+
+    st.markdown(
+        f"""
         <style>
+
         .stApp {{
             background-color: {COLOR_BG};
         }}
-        
+
         .report-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -30,14 +34,14 @@ def configurar_estilo():
             font-weight: bold;
             margin-bottom: 20px;
         }}
-        
+
         .report-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 20px;
         }}
-        
+
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
@@ -46,7 +50,11 @@ def configurar_estilo():
             margin: 15px 0;
             color: {COLOR_TEXT_DARK};
         }}
-        
+
+        /* ============================================================
+           BOTONES
+           ============================================================ */
+
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -55,63 +63,139 @@ def configurar_estilo():
             color: white;
             border: none;
         }}
-        
+
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
         }}
-        
+
         .volver-btn button {{
             background-color: #6c757d !important;
             color: white !important;
         }}
-        
+
         .volver-btn button:hover {{
             background-color: #5a6268 !important;
         }}
-        
-        .stTextInput > label, .stSelectbox > label, .stDateInput label {{
+
+        /* ============================================================
+           LABELS
+           ============================================================ */
+
+        .stTextInput > label,
+        .stSelectbox > label,
+        .stDateInput label {{
             color: {COLOR_TEXT} !important;
             font-weight: 500 !important;
         }}
-        
+
+        /* ============================================================
+           FECHA
+           ============================================================ */
+
         .stDateInput input {{
             color: #333333 !important;
             background-color: white !important;
         }}
-        
+
+        /* ============================================================
+           SELECTBOX
+           FONDO BLANCO + TEXTO NEGRO + FLECHA NEGRA
+           ============================================================ */
+
         .stSelectbox > div > div {{
-            background-color: {COLOR_BUTTON};
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
+            background-color: white !important;
+            border-radius: 8px !important;
+            border: 1px solid #d0d7de !important;
         }}
-        
-        .stSelectbox > div > div > div {{
-            color: white !important;
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div {{
+            background-color: white !important;
+            border-radius: 8px !important;
+            border: 1px solid #d0d7de !important;
+            color: #333333 !important;
         }}
-        
-        .stSelectbox svg {{
-            fill: white !important;
+
+        div[data-testid="stSelectbox"]
+        div[role="combobox"] {{
+            background-color: white !important;
+            color: #333333 !important;
+            -webkit-text-fill-color: #333333 !important;
         }}
-        
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div > div {{
+            color: #333333 !important;
+            -webkit-text-fill-color: #333333 !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div > div > div {{
+            color: #333333 !important;
+            -webkit-text-fill-color: #333333 !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] span {{
+            color: #333333 !important;
+            -webkit-text-fill-color: #333333 !important;
+            opacity: 1 !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] input {{
+            color: #333333 !important;
+            -webkit-text-fill-color: #333333 !important;
+            background-color: white !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] input::placeholder {{
+            color: #666666 !important;
+            -webkit-text-fill-color: #666666 !important;
+            opacity: 1 !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] svg {{
+            fill: #333333 !important;
+            color: #333333 !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div:focus-within {{
+            background-color: white !important;
+            border-color: #bfc7d1 !important;
+            box-shadow: none !important;
+        }}
+
+        /* ============================================================
+           TÍTULOS
+           ============================================================ */
+
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
-        
+
+        /* ============================================================
+           DATAFRAME
+           ============================================================ */
+
         .stDataFrame {{
             background-color: {COLOR_CARD} !important;
         }}
-        
+
         [data-testid="stDataFrame"] {{
             background-color: {COLOR_CARD} !important;
             border-radius: 12px !important;
             border: 1px solid {COLOR_BORDER} !important;
         }}
-        
+
         [data-testid="stDataFrame"] table {{
             background-color: {COLOR_CARD} !important;
         }}
-        
+
         [data-testid="stDataFrame"] th {{
             background-color: {COLOR_PRIMARY} !important;
             color: white !important;
@@ -119,7 +203,7 @@ def configurar_estilo():
             text-align: center !important;
             padding: 12px 8px !important;
         }}
-        
+
         [data-testid="stDataFrame"] td {{
             color: {COLOR_TEXT} !important;
             text-align: center !important;
@@ -127,326 +211,922 @@ def configurar_estilo():
             background-color: {COLOR_CARD} !important;
             border-bottom: 1px solid {COLOR_BORDER} !important;
         }}
-        
+
         [data-testid="stDataFrame"] tr:nth-child(even) td {{
             background-color: #f8f9fa !important;
         }}
-        
+
         [data-testid="stDataFrame"] tr:hover td {{
             background-color: {COLOR_HOVER} !important;
         }}
-        
+
         [data-testid="stDataFrame"] td div {{
             color: {COLOR_TEXT} !important;
         }}
+
         </style>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def reporte_compras():
+
     configurar_estilo()
-    
-    st.markdown('<div class="report-title">📊 Reporte de Compras</div>', unsafe_allow_html=True)
-    st.markdown('<div class="report-subtitle">Análisis de compras mensuales</div>', unsafe_allow_html=True)
 
-    rol_usuario = st.session_state.get("nivel_usuario", "")
-    nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
-    id_tienda_sesion = st.session_state.get("id_tienda", None)
+    st.markdown(
+        '<div class="report-title">📊 Reporte de Compras</div>',
+        unsafe_allow_html=True
+    )
 
-    # ADMINISTRADOR: puede seleccionar tienda
+    st.markdown(
+        '<div class="report-subtitle">Análisis de compras mensuales</div>',
+        unsafe_allow_html=True
+    )
+
+    rol_usuario = st.session_state.get(
+        "nivel_usuario",
+        ""
+    )
+
+    nombre_tienda = st.session_state.get(
+        "nombre_tienda",
+        "Tienda Minorista"
+    )
+
+    id_tienda_sesion = st.session_state.get(
+        "id_tienda",
+        None
+    )
+
+    # ============================================================
+    # ADMINISTRADOR: PUEDE SELECCIONAR TIENDA
+    # ============================================================
+
     if rol_usuario == "Administrador":
-        st.markdown('<div class="info-box">👑 <strong>Administrador</strong> - Puedes filtrar por tienda</div>', unsafe_allow_html=True)
-        
+
+        st.markdown(
+            '<div class="info-box">'
+            '👑 <strong>Administrador</strong> - Puedes filtrar por tienda'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
         conn = obtener_conexion()
+
         if conn:
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
+
+            cursor = conn.cursor(
+                dictionary=True
+            )
+
+            cursor.execute(
+                """
+                SELECT
+                    id_tienda,
+                    nombre
+                FROM tienda
+                WHERE activo = 1
+                ORDER BY nombre
+                """
+            )
+
             tiendas = cursor.fetchall()
+
             cursor.close()
             conn.close()
-            
+
             if tiendas:
-                opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas}
+
+                opciones_tienda = {
+                    t["nombre"]: t["id_tienda"]
+                    for t in tiendas
+                }
+
                 tienda_seleccionada = st.selectbox(
                     "🏪 Filtrar por tienda:",
-                    ["Todas las tiendas"] + list(opciones_tienda.keys())
+                    ["Todas las tiendas"]
+                    + list(opciones_tienda.keys())
                 )
-                
-                if tienda_seleccionada == "Todas las tiendas":
+
+                if (
+                    tienda_seleccionada
+                    ==
+                    "Todas las tiendas"
+                ):
+
                     id_tienda_usar = None
                     filtro_tienda = "Todas las tiendas"
-                else:
-                    id_tienda_usar = opciones_tienda[tienda_seleccionada]
-                    filtro_tienda = tienda_seleccionada
-            else:
-                st.warning("No hay tiendas activas.")
-                return
-        else:
-            st.error("Error de conexión.")
-            return
-    else:
-        id_tienda_usar = id_tienda_sesion
-        filtro_tienda = nombre_tienda
-        st.markdown(f'<div class="info-box">🏪 <strong>Tienda:</strong> {nombre_tienda}</div>', unsafe_allow_html=True)
 
-    # Filtros de fecha
+                else:
+
+                    id_tienda_usar = (
+                        opciones_tienda[
+                            tienda_seleccionada
+                        ]
+                    )
+
+                    filtro_tienda = (
+                        tienda_seleccionada
+                    )
+
+            else:
+
+                st.warning(
+                    "No hay tiendas activas."
+                )
+
+                return
+
+        else:
+
+            st.error(
+                "Error de conexión."
+            )
+
+            return
+
+    else:
+
+        id_tienda_usar = (
+            id_tienda_sesion
+        )
+
+        filtro_tienda = (
+            nombre_tienda
+        )
+
+        st.markdown(
+            f'<div class="info-box">'
+            f'🏪 <strong>Tienda:</strong> {nombre_tienda}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    # ============================================================
+    # FILTROS DE FECHA
+    # ============================================================
+
     col1, col2 = st.columns(2)
+
     with col1:
-        fecha_inicio = st.date_input("📅 Fecha inicio", value=datetime.today().replace(day=1))
+
+        fecha_inicio = st.date_input(
+            "📅 Fecha inicio",
+            value=datetime.today().replace(
+                day=1
+            )
+        )
+
     with col2:
-        fecha_fin = st.date_input("📅 Fecha fin", value=datetime.today())
+
+        fecha_fin = st.date_input(
+            "📅 Fecha fin",
+            value=datetime.today()
+        )
 
     if fecha_inicio > fecha_fin:
-        st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
+
+        st.error(
+            "❌ La fecha de inicio no puede ser mayor que la fecha de fin."
+        )
+
         return
 
     # ============================================================
     # FILTRO POR TIPO DE COMPRA
     # ============================================================
+
     try:
+
         conn_test = obtener_conexion()
+
         cursor_test = conn_test.cursor()
-        cursor_test.execute("SHOW COLUMNS FROM Compra LIKE 'Tipo_Compra'")
-        columna_existe = cursor_test.fetchone() is not None
+
+        cursor_test.execute(
+            """
+            SHOW COLUMNS
+            FROM Compra
+            LIKE 'Tipo_Compra'
+            """
+        )
+
+        columna_existe = (
+            cursor_test.fetchone()
+            is not None
+        )
+
         cursor_test.close()
         conn_test.close()
-        
+
         if columna_existe:
+
             tipo_compra_filtro = st.selectbox(
                 "📋 Filtrar por tipo de compra:",
-                ["Todos", "Propia", "Global"]
+                [
+                    "Todos",
+                    "Propia",
+                    "Global"
+                ]
             )
+
         else:
+
             tipo_compra_filtro = "Todos"
-            st.info("ℹ️ La columna 'Tipo_Compra' no existe en la tabla Compra. Mostrando todas las compras.")
-    except:
+
+            st.info(
+                "ℹ️ La columna 'Tipo_Compra' "
+                "no existe en la tabla Compra. "
+                "Mostrando todas las compras."
+            )
+
+    except Exception:
+
         tipo_compra_filtro = "Todos"
 
     try:
+
         con = obtener_conexion()
+
         cursor = con.cursor()
 
         # ============================================================
-        # Obtener el TOTAL GENERAL desde la base de datos
+        # TOTAL GENERAL
         # ============================================================
+
         if id_tienda_usar is None:
-            if tipo_compra_filtro == "Todos" or not columna_existe:
+
+            if (
+                tipo_compra_filtro == "Todos"
+                or not columna_existe
+            ):
+
                 query_total = """
-                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS TotalGeneral
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
                 """
-                cursor.execute(query_total, (fecha_inicio, fecha_fin))
+
+                cursor.execute(
+                    query_total,
+                    (
+                        fecha_inicio,
+                        fecha_fin
+                    )
+                )
+
             else:
+
                 query_total = """
-                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS TotalGeneral
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND c.Tipo_Compra = %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND c.Tipo_Compra = %s
                 """
-                cursor.execute(query_total, (fecha_inicio, fecha_fin, tipo_compra_filtro))
+
+                cursor.execute(
+                    query_total,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        tipo_compra_filtro
+                    )
+                )
+
         else:
-            if tipo_compra_filtro == "Todos" or not columna_existe:
+
+            if (
+                tipo_compra_filtro == "Todos"
+                or not columna_existe
+            ):
+
                 query_total = """
-                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS TotalGeneral
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND pc.id_tienda = %s
                 """
-                cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar))
+
+                cursor.execute(
+                    query_total,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        id_tienda_usar
+                    )
+                )
+
             else:
+
                 query_total = """
-                    SELECT COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as TotalGeneral
+                    SELECT
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS TotalGeneral
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
-                      AND c.Tipo_Compra = %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND pc.id_tienda = %s
+                    AND c.Tipo_Compra = %s
                 """
-                cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
-        
-        total_row = cursor.fetchone()
-        gran_total = float(total_row[0]) if total_row else 0
-        gran_total = round(gran_total, 2)
+
+                cursor.execute(
+                    query_total,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        id_tienda_usar,
+                        tipo_compra_filtro
+                    )
+                )
+
+        total_row = (
+            cursor.fetchone()
+        )
+
+        gran_total = (
+            float(total_row[0])
+            if total_row
+            else 0
+        )
+
+        gran_total = round(
+            gran_total,
+            2
+        )
 
         # ============================================================
-        # CONSULTA PARA DETALLE DE COMPRAS (TABLA)
+        # CONSULTA PARA DETALLE DE COMPRAS
         # ============================================================
+
         if id_tienda_usar is None:
-            if tipo_compra_filtro == "Todos" or not columna_existe:
+
+            if (
+                tipo_compra_filtro == "Todos"
+                or not columna_existe
+            ):
+
                 query_detalle = """
-                    SELECT 
+                    SELECT
+
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
-                        p.Nombre as Producto,
+                        p.Nombre AS Producto,
                         pc.cantidad_comprada,
                         pc.unidad,
                         pc.Precio_Compra,
-                        (pc.cantidad_comprada * pc.Precio_Compra) as Total,
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda
+
+                        (
+                            pc.cantidad_comprada
+                            *
+                            pc.Precio_Compra
+                        ) AS Total,
+
+                        COALESCE(
+                            t.nombre,
+                            'Sin tienda'
+                        ) AS Tienda
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
-                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    JOIN Producto p
+                        ON pc.cod_barra =
+                           p.Cod_barra
+                        AND p.id_tienda =
+                            pc.id_tienda
+
+                    LEFT JOIN tienda t
+                        ON pc.id_tienda =
+                           t.id_tienda
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
                     ORDER BY c.Fecha DESC
                 """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin))
+
+                cursor.execute(
+                    query_detalle,
+                    (
+                        fecha_inicio,
+                        fecha_fin
+                    )
+                )
+
             else:
+
                 query_detalle = """
-                    SELECT 
+                    SELECT
+
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
-                        p.Nombre as Producto,
+                        p.Nombre AS Producto,
                         pc.cantidad_comprada,
                         pc.unidad,
                         pc.Precio_Compra,
-                        (pc.cantidad_comprada * pc.Precio_Compra) as Total,
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
+
+                        (
+                            pc.cantidad_comprada
+                            *
+                            pc.Precio_Compra
+                        ) AS Total,
+
+                        COALESCE(
+                            t.nombre,
+                            'Sin tienda'
+                        ) AS Tienda,
+
                         c.Tipo_Compra
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
-                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND c.Tipo_Compra = %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    JOIN Producto p
+                        ON pc.cod_barra =
+                           p.Cod_barra
+                        AND p.id_tienda =
+                            pc.id_tienda
+
+                    LEFT JOIN tienda t
+                        ON pc.id_tienda =
+                           t.id_tienda
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND c.Tipo_Compra = %s
+
                     ORDER BY c.Fecha DESC
                 """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, tipo_compra_filtro))
+
+                cursor.execute(
+                    query_detalle,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        tipo_compra_filtro
+                    )
+                )
+
         else:
-            if tipo_compra_filtro == "Todos" or not columna_existe:
+
+            if (
+                tipo_compra_filtro == "Todos"
+                or not columna_existe
+            ):
+
                 query_detalle = """
-                    SELECT 
+                    SELECT
+
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
-                        p.Nombre as Producto,
+                        p.Nombre AS Producto,
                         pc.cantidad_comprada,
                         pc.unidad,
                         pc.Precio_Compra,
-                        (pc.cantidad_comprada * pc.Precio_Compra) as Total
+
+                        (
+                            pc.cantidad_comprada
+                            *
+                            pc.Precio_Compra
+                        ) AS Total
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    JOIN Producto p
+                        ON pc.cod_barra =
+                           p.Cod_barra
+                        AND p.id_tienda =
+                            pc.id_tienda
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND pc.id_tienda = %s
+
                     ORDER BY c.Fecha DESC
                 """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar))
+
+                cursor.execute(
+                    query_detalle,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        id_tienda_usar
+                    )
+                )
+
             else:
+
                 query_detalle = """
-                    SELECT 
+                    SELECT
+
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
-                        p.Nombre as Producto,
+                        p.Nombre AS Producto,
                         pc.cantidad_comprada,
                         pc.unidad,
                         pc.Precio_Compra,
-                        (pc.cantidad_comprada * pc.Precio_Compra) as Total,
+
+                        (
+                            pc.cantidad_comprada
+                            *
+                            pc.Precio_Compra
+                        ) AS Total,
+
                         c.Tipo_Compra
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    JOIN Producto p ON pc.cod_barra = p.Cod_barra AND p.id_tienda = pc.id_tienda
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
-                      AND c.Tipo_Compra = %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    JOIN Producto p
+                        ON pc.cod_barra =
+                           p.Cod_barra
+                        AND p.id_tienda =
+                            pc.id_tienda
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND pc.id_tienda = %s
+
+                    AND c.Tipo_Compra = %s
+
                     ORDER BY c.Fecha DESC
                 """
-                cursor.execute(query_detalle, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
-        
-        rows_detalle = cursor.fetchall()
-        
+
+                cursor.execute(
+                    query_detalle,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        id_tienda_usar,
+                        tipo_compra_filtro
+                    )
+                )
+
+        rows_detalle = (
+            cursor.fetchall()
+        )
+
         if rows_detalle:
-            # Detectar el número de columnas
-            num_cols = len(rows_detalle[0])
-            
+
+            num_cols = len(
+                rows_detalle[0]
+            )
+
             if num_cols == 9:
-                # Sin Tipo_Compra, con Tienda
-                df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total", "Tienda"])
+
+                df_detalle = pd.DataFrame(
+                    rows_detalle,
+                    columns=[
+                        "ID Compra",
+                        "Fecha",
+                        "Código",
+                        "Producto",
+                        "Cantidad",
+                        "Unidad",
+                        "Precio Unitario",
+                        "Total",
+                        "Tienda"
+                    ]
+                )
+
             elif num_cols == 10:
-                # Con Tipo_Compra y Tienda
-                df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total", "Tienda", "Tipo Compra"])
+
+                df_detalle = pd.DataFrame(
+                    rows_detalle,
+                    columns=[
+                        "ID Compra",
+                        "Fecha",
+                        "Código",
+                        "Producto",
+                        "Cantidad",
+                        "Unidad",
+                        "Precio Unitario",
+                        "Total",
+                        "Tienda",
+                        "Tipo Compra"
+                    ]
+                )
+
             elif num_cols == 8:
-                # Sin Tipo_Compra y sin Tienda (vendedor)
-                df_detalle = pd.DataFrame(rows_detalle, columns=["ID Compra", "Fecha", "Código", "Producto", "Cantidad", "Unidad", "Precio Unitario", "Total"])
+
+                df_detalle = pd.DataFrame(
+                    rows_detalle,
+                    columns=[
+                        "ID Compra",
+                        "Fecha",
+                        "Código",
+                        "Producto",
+                        "Cantidad",
+                        "Unidad",
+                        "Precio Unitario",
+                        "Total"
+                    ]
+                )
+
             else:
-                # Por si acaso
-                df_detalle = pd.DataFrame(rows_detalle)
-                st.warning(f"⚠️ Número inesperado de columnas: {num_cols}")
-            
-            # Formatear fechas
-            df_detalle["Fecha"] = pd.to_datetime(df_detalle["Fecha"]).dt.strftime("%Y-%m-%d")
-            
-            # Formatear valores monetarios
-            df_detalle["Precio Unitario"] = df_detalle["Precio Unitario"].apply(lambda x: f"${x:.2f}")
-            df_detalle["Total"] = df_detalle["Total"].apply(lambda x: f"${x:.2f}")
+
+                df_detalle = pd.DataFrame(
+                    rows_detalle
+                )
+
+                st.warning(
+                    f"⚠️ Número inesperado de columnas: "
+                    f"{num_cols}"
+                )
+
+            # ========================================================
+            # FORMATEAR FECHA
+            # ========================================================
+
+            df_detalle[
+                "Fecha"
+            ] = pd.to_datetime(
+                df_detalle["Fecha"]
+            ).dt.strftime(
+                "%Y-%m-%d"
+            )
+
+            # ========================================================
+            # FORMATEAR VALORES MONETARIOS
+            # ========================================================
+
+            df_detalle[
+                "Precio Unitario"
+            ] = df_detalle[
+                "Precio Unitario"
+            ].apply(
+                lambda x:
+                    f"${x:.2f}"
+            )
+
+            df_detalle[
+                "Total"
+            ] = df_detalle[
+                "Total"
+            ].apply(
+                lambda x:
+                    f"${x:.2f}"
+            )
+
         else:
+
             df_detalle = pd.DataFrame()
 
         # ============================================================
-        # CONSULTA PRINCIPAL - Compras agrupadas (GRÁFICO)
+        # CONSULTA PRINCIPAL - COMPRAS AGRUPADAS
         # ============================================================
-        
+
         if id_tienda_usar is None:
-            if tipo_compra_filtro == "Todos" or not columna_existe:
+
+            if (
+                tipo_compra_filtro == "Todos"
+                or not columna_existe
+            ):
+
                 query = """
-                    SELECT 
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
-                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras
+                    SELECT
+
+                        COALESCE(
+                            t.nombre,
+                            'Sin tienda'
+                        ) AS Tienda,
+
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS Total_Compras
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    LEFT JOIN tienda t
+                        ON pc.id_tienda =
+                           t.id_tienda
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
                     GROUP BY t.nombre
+
                     ORDER BY Total_Compras DESC
                 """
-                cursor.execute(query, (fecha_inicio, fecha_fin))
+
+                cursor.execute(
+                    query,
+                    (
+                        fecha_inicio,
+                        fecha_fin
+                    )
+                )
+
                 rows = cursor.fetchall()
+
                 tiene_tipo = False
+
             else:
+
                 query = """
-                    SELECT 
-                        COALESCE(t.nombre, 'Sin tienda') as Tienda,
-                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
+                    SELECT
+
+                        COALESCE(
+                            t.nombre,
+                            'Sin tienda'
+                        ) AS Tienda,
+
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS Total_Compras,
+
                         c.Tipo_Compra
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    LEFT JOIN tienda t ON pc.id_tienda = t.id_tienda
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND c.Tipo_Compra = %s
-                    GROUP BY t.nombre, c.Tipo_Compra
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    LEFT JOIN tienda t
+                        ON pc.id_tienda =
+                           t.id_tienda
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND c.Tipo_Compra = %s
+
+                    GROUP BY
+                        t.nombre,
+                        c.Tipo_Compra
+
                     ORDER BY Total_Compras DESC
                 """
-                cursor.execute(query, (fecha_inicio, fecha_fin, tipo_compra_filtro))
+
+                cursor.execute(
+                    query,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        tipo_compra_filtro
+                    )
+                )
+
                 rows = cursor.fetchall()
+
                 tiene_tipo = True
-            
+
             if rows:
+
                 if tiene_tipo:
-                    df = pd.DataFrame(rows, columns=["Tienda", "Total_Compras", "Tipo_Compra"])
-                    df["Total_Compras"] = df["Total_Compras"].astype(float)
-                    
-                    st.markdown("### 📊 Compras por Tienda")
+
+                    df = pd.DataFrame(
+                        rows,
+                        columns=[
+                            "Tienda",
+                            "Total_Compras",
+                            "Tipo_Compra"
+                        ]
+                    )
+
+                    df[
+                        "Total_Compras"
+                    ] = df[
+                        "Total_Compras"
+                    ].astype(float)
+
+                    st.markdown(
+                        "### 📊 Compras por Tienda"
+                    )
+
                     fig = px.bar(
                         df,
                         x="Tienda",
                         y="Total_Compras",
                         title="Total de Compras por Tienda",
                         color="Tipo_Compra",
-                        color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
-                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
+                        color_discrete_map={
+                            "Propia": "#2ecc71",
+                            "Global": "#3498db"
+                        },
+                        text=df[
+                            "Total_Compras"
+                        ].apply(
+                            lambda x:
+                                f"${x:,.2f}"
+                        )
                     )
+
                 else:
-                    df = pd.DataFrame(rows, columns=["Tienda", "Total_Compras"])
-                    df["Total_Compras"] = df["Total_Compras"].astype(float)
-                    
-                    st.markdown("### 📊 Compras por Tienda")
+
+                    df = pd.DataFrame(
+                        rows,
+                        columns=[
+                            "Tienda",
+                            "Total_Compras"
+                        ]
+                    )
+
+                    df[
+                        "Total_Compras"
+                    ] = df[
+                        "Total_Compras"
+                    ].astype(float)
+
+                    st.markdown(
+                        "### 📊 Compras por Tienda"
+                    )
+
                     fig = px.bar(
                         df,
                         x="Tienda",
@@ -454,88 +1134,248 @@ def reporte_compras():
                         title="Total de Compras por Tienda",
                         color="Total_Compras",
                         color_continuous_scale="Blues",
-                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
+                        text=df[
+                            "Total_Compras"
+                        ].apply(
+                            lambda x:
+                                f"${x:,.2f}"
+                        )
                     )
-                
-                fig.update_traces(textposition='outside')
+
+                fig.update_traces(
+                    textposition="outside"
+                )
+
                 fig.update_layout(
                     xaxis_title="Tienda",
                     yaxis_title="Total de Compras ($)",
                     height=500,
                 )
-                st.plotly_chart(fig, use_container_width=True)
-                
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
         else:
-            if tipo_compra_filtro == "Todos" or not columna_existe:
+
+            if (
+                tipo_compra_filtro == "Todos"
+                or not columna_existe
+            ):
+
                 query = """
-                    SELECT 
+                    SELECT
+
                         CONCAT(
+
                             CASE MONTH(c.Fecha)
-                                WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
-                                WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
-                                WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
-                                WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
+
+                                WHEN 1 THEN 'Ene'
+                                WHEN 2 THEN 'Feb'
+                                WHEN 3 THEN 'Mar'
+                                WHEN 4 THEN 'Abr'
+                                WHEN 5 THEN 'May'
+                                WHEN 6 THEN 'Jun'
+                                WHEN 7 THEN 'Jul'
+                                WHEN 8 THEN 'Ago'
+                                WHEN 9 THEN 'Sep'
+                                WHEN 10 THEN 'Oct'
+                                WHEN 11 THEN 'Nov'
+                                WHEN 12 THEN 'Dic'
+
                             END,
-                            ' ', YEAR(c.Fecha)
-                        ) as Nombre_Mes,
-                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras
+
+                            ' ',
+
+                            YEAR(c.Fecha)
+
+                        ) AS Nombre_Mes,
+
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS Total_Compras
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
-                    GROUP BY YEAR(c.Fecha), MONTH(c.Fecha)
-                    ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND pc.id_tienda = %s
+
+                    GROUP BY
+                        YEAR(c.Fecha),
+                        MONTH(c.Fecha)
+
+                    ORDER BY
+                        YEAR(c.Fecha) ASC,
+                        MONTH(c.Fecha) ASC
                 """
-                cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
+
+                cursor.execute(
+                    query,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        id_tienda_usar
+                    )
+                )
+
                 rows = cursor.fetchall()
+
                 tiene_tipo = False
+
             else:
+
                 query = """
-                    SELECT 
+                    SELECT
+
                         CONCAT(
+
                             CASE MONTH(c.Fecha)
-                                WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
-                                WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
-                                WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
-                                WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
+
+                                WHEN 1 THEN 'Ene'
+                                WHEN 2 THEN 'Feb'
+                                WHEN 3 THEN 'Mar'
+                                WHEN 4 THEN 'Abr'
+                                WHEN 5 THEN 'May'
+                                WHEN 6 THEN 'Jun'
+                                WHEN 7 THEN 'Jul'
+                                WHEN 8 THEN 'Ago'
+                                WHEN 9 THEN 'Sep'
+                                WHEN 10 THEN 'Oct'
+                                WHEN 11 THEN 'Nov'
+                                WHEN 12 THEN 'Dic'
+
                             END,
-                            ' ', YEAR(c.Fecha)
-                        ) as Nombre_Mes,
-                        COALESCE(SUM(pc.cantidad_comprada * pc.Precio_Compra), 0) as Total_Compras,
+
+                            ' ',
+
+                            YEAR(c.Fecha)
+
+                        ) AS Nombre_Mes,
+
+                        COALESCE(
+                            SUM(
+                                pc.cantidad_comprada
+                                *
+                                pc.Precio_Compra
+                            ),
+                            0
+                        ) AS Total_Compras,
+
                         c.Tipo_Compra
+
                     FROM ProductoxCompra pc
-                    JOIN Compra c ON pc.Id_compra = c.Id_compra
-                    WHERE DATE(c.Fecha) BETWEEN %s AND %s
-                      AND pc.id_tienda = %s
-                      AND c.Tipo_Compra = %s
-                    GROUP BY YEAR(c.Fecha), MONTH(c.Fecha), c.Tipo_Compra
-                    ORDER BY YEAR(c.Fecha) ASC, MONTH(c.Fecha) ASC
+
+                    JOIN Compra c
+                        ON pc.Id_compra =
+                           c.Id_compra
+
+                    WHERE DATE(c.Fecha)
+                          BETWEEN %s AND %s
+
+                    AND pc.id_tienda = %s
+
+                    AND c.Tipo_Compra = %s
+
+                    GROUP BY
+                        YEAR(c.Fecha),
+                        MONTH(c.Fecha),
+                        c.Tipo_Compra
+
+                    ORDER BY
+                        YEAR(c.Fecha) ASC,
+                        MONTH(c.Fecha) ASC
                 """
-                cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar, tipo_compra_filtro))
+
+                cursor.execute(
+                    query,
+                    (
+                        fecha_inicio,
+                        fecha_fin,
+                        id_tienda_usar,
+                        tipo_compra_filtro
+                    )
+                )
+
                 rows = cursor.fetchall()
+
                 tiene_tipo = True
-            
+
             if rows:
+
                 if tiene_tipo:
-                    df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras", "Tipo_Compra"])
-                    df["Total_Compras"] = df["Total_Compras"].astype(float)
-                    
-                    st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
+
+                    df = pd.DataFrame(
+                        rows,
+                        columns=[
+                            "Nombre_Mes",
+                            "Total_Compras",
+                            "Tipo_Compra"
+                        ]
+                    )
+
+                    df[
+                        "Total_Compras"
+                    ] = df[
+                        "Total_Compras"
+                    ].astype(float)
+
+                    st.markdown(
+                        f"### 📊 Análisis de Compras Mensuales - "
+                        f"{filtro_tienda}"
+                    )
+
                     fig = px.bar(
                         df,
                         x="Nombre_Mes",
                         y="Total_Compras",
                         title="Total de Compras por Mes",
                         color="Tipo_Compra",
-                        color_discrete_map={"Propia": "#2ecc71", "Global": "#3498db"},
-                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}"),
+                        color_discrete_map={
+                            "Propia": "#2ecc71",
+                            "Global": "#3498db"
+                        },
+                        text=df[
+                            "Total_Compras"
+                        ].apply(
+                            lambda x:
+                                f"${x:,.2f}"
+                        ),
                         barmode="group"
                     )
+
                 else:
-                    df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Compras"])
-                    df["Total_Compras"] = df["Total_Compras"].astype(float)
-                    
-                    st.markdown(f"### 📊 Análisis de Compras Mensuales - {filtro_tienda}")
+
+                    df = pd.DataFrame(
+                        rows,
+                        columns=[
+                            "Nombre_Mes",
+                            "Total_Compras"
+                        ]
+                    )
+
+                    df[
+                        "Total_Compras"
+                    ] = df[
+                        "Total_Compras"
+                    ].astype(float)
+
+                    st.markdown(
+                        f"### 📊 Análisis de Compras Mensuales - "
+                        f"{filtro_tienda}"
+                    )
+
                     fig = px.bar(
                         df,
                         x="Nombre_Mes",
@@ -543,75 +1383,136 @@ def reporte_compras():
                         title="Total de Compras por Mes",
                         color="Total_Compras",
                         color_continuous_scale="Blues",
-                        text=df["Total_Compras"].apply(lambda x: f"${x:,.2f}")
+                        text=df[
+                            "Total_Compras"
+                        ].apply(
+                            lambda x:
+                                f"${x:,.2f}"
+                        )
                     )
-                
-                fig.update_traces(textposition='outside')
+
+                fig.update_traces(
+                    textposition="outside"
+                )
+
                 fig.update_layout(
                     xaxis_title="Mes",
                     yaxis_title="Total de Compras ($)",
                     height=500,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
 
         # ============================================================
         # TABLA DE DETALLE DE COMPRAS
         # ============================================================
+
         if not df_detalle.empty:
+
             st.markdown("---")
-            st.markdown("### 📋 Detalle de Compras")
-            st.dataframe(df_detalle, use_container_width=True)
+
+            st.markdown(
+                "### 📋 Detalle de Compras"
+            )
+
+            st.dataframe(
+                df_detalle,
+                use_container_width=True
+            )
 
         # ============================================================
         # TOTAL GENERAL
         # ============================================================
-        
-        st.markdown("---")
-        st.markdown("## 💰 TOTAL GENERAL DE COMPRAS")
-        st.markdown(f"""
-        <div style='
-            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        '>
-            <div style='
-                font-size: 2.5em;
-                font-weight: bold;
-                color: #ffd700;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                letter-spacing: 2px;
-            '>
-                ${gran_total:,.2f}
-            </div>
-            <div style='
-                font-size: 0.9em;
-                color: rgba(255,255,255,0.8);
-                margin-top: 8px;
-            '>
-                Total de compras del período
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
-        # Botón para volver
         st.markdown("---")
-        col1, col2, col3 = st.columns([1, 2, 1])
+
+        st.markdown(
+            "## 💰 TOTAL GENERAL DE COMPRAS"
+        )
+
+        # Se construye en una sola cadena HTML para evitar
+        # que Streamlit interprete el CSS como texto.
+
+        html_total = (
+            f"<div style='"
+            f"background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);"
+            f"padding: 25px;"
+            f"border-radius: 15px;"
+            f"text-align: center;"
+            f"margin: 20px 0;"
+            f"box-shadow: 0 5px 15px rgba(0,0,0,0.2);"
+            f"'>"
+            f"<div style='"
+            f"font-size: 2.5em;"
+            f"font-weight: bold;"
+            f"color: #ffd700;"
+            f"text-shadow: 2px 2px 4px rgba(0,0,0,0.3);"
+            f"letter-spacing: 2px;"
+            f"'>"
+            f"${gran_total:,.2f}"
+            f"</div>"
+            f"<div style='"
+            f"font-size: 0.9em;"
+            f"color: rgba(255,255,255,0.8);"
+            f"margin-top: 8px;"
+            f"'>"
+            f"Total de compras del período"
+            f"</div>"
+            f"</div>"
+        )
+
+        st.markdown(
+            html_total,
+            unsafe_allow_html=True
+        )
+
+        # ============================================================
+        # BOTÓN VOLVER
+        # ============================================================
+
+        st.markdown("---")
+
+        col1, col2, col3 = st.columns(
+            [1, 2, 1]
+        )
+
         with col2:
-            st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
-            if st.button("🔙 Volver al Menú Principal", use_container_width=True):
-                st.session_state["module"] = None
+
+            st.markdown(
+                '<div class="volver-btn">',
+                unsafe_allow_html=True
+            )
+
+            if st.button(
+                "🔙 Volver al Menú Principal",
+                use_container_width=True
+            ):
+
+                st.session_state[
+                    "module"
+                ] = None
+
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown(
+                '</div>',
+                unsafe_allow_html=True
+            )
 
     except Exception as e:
-        st.error(f"❌ Error al generar el reporte: {e}")
+
+        st.error(
+            f"❌ Error al generar el reporte: {e}"
+        )
 
     finally:
+
         if "cursor" in locals():
             cursor.close()
+
         if "con" in locals():
             con.close()
 
