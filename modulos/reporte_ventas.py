@@ -5,8 +5,10 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 def configurar_estilo():
     """Configuración de estilos CSS para el módulo - Mismo estilo que inventario"""
+
     COLOR_PRIMARY = "#1e3a5f"
     COLOR_SECONDARY = "#2c5f8a"
     COLOR_BG = "#f5f7fa"
@@ -16,13 +18,15 @@ def configurar_estilo():
     COLOR_HOVER = "#e8f0fe"
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
-    
-    st.markdown(f"""
+
+    st.markdown(
+        f"""
         <style>
+
         .stApp {{
             background-color: {COLOR_BG};
         }}
-        
+
         .report-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -30,14 +34,14 @@ def configurar_estilo():
             font-weight: bold;
             margin-bottom: 20px;
         }}
-        
+
         .report-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
             font-size: 1.1em;
             margin-bottom: 20px;
         }}
-        
+
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
@@ -46,7 +50,7 @@ def configurar_estilo():
             margin: 15px 0;
             color: {COLOR_TEXT_DARK};
         }}
-        
+
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
@@ -55,290 +59,794 @@ def configurar_estilo():
             color: white;
             border: none;
         }}
-        
+
         .stButton > button:hover {{
             background-color: {COLOR_SECONDARY};
             transform: translateY(-1px);
         }}
-        
+
         .volver-btn button {{
             background-color: #6c757d !important;
             color: white !important;
         }}
-        
+
         .volver-btn button:hover {{
             background-color: #5a6268 !important;
         }}
-        
-        .stTextInput > label, .stSelectbox > label, .stDateInput label {{
+
+        .stTextInput > label,
+        .stSelectbox > label,
+        .stDateInput label {{
             color: {COLOR_TEXT} !important;
             font-weight: 500 !important;
         }}
-        
+
         .stDateInput input {{
             color: #333333 !important;
             background-color: white !important;
         }}
-        
-        .stSelectbox > div > div {{
-            background-color: {COLOR_BUTTON};
-            border-radius: 8px;
-            border: 1px solid {COLOR_BORDER};
-        }}
-        
-        .stSelectbox > div > div > div {{
+
+        /* ============================================================
+           SELECTBOX - FONDO AZUL Y TEXTO BLANCO
+           ============================================================ */
+
+        /* Caja principal */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div {{
+            background-color: {COLOR_BUTTON} !important;
+            border-radius: 8px !important;
+            border: 1px solid {COLOR_BORDER} !important;
             color: white !important;
         }}
-        
-        .stSelectbox svg {{
-            fill: white !important;
+
+        /* Texto seleccionado */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div span {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+            opacity: 1 !important;
         }}
-        
+
+        /* Contenedor interno del texto */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div > div {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }}
+
+        /* Input interno */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] input {{
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }}
+
+        /* Flecha */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] svg {{
+            fill: white !important;
+            color: white !important;
+        }}
+
+        /* Mantener el fondo azul cuando tenga foco */
+        div[data-testid="stSelectbox"]
+        div[data-baseweb="select"] > div:focus-within {{
+            background-color: {COLOR_BUTTON} !important;
+            border-color: {COLOR_BORDER} !important;
+            box-shadow: none !important;
+        }}
+
         h1, h2, h3, h4, h5, h6 {{
             color: {COLOR_PRIMARY} !important;
         }}
+
         </style>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def reporte_ventas():
+
     configurar_estilo()
-    
-    st.markdown('<div class="report-title">📊 Reporte de Ventas</div>', unsafe_allow_html=True)
-    st.markdown('<div class="report-subtitle">Análisis de ventas mensuales</div>', unsafe_allow_html=True)
 
-    rol_usuario = st.session_state.get("nivel_usuario", "")
-    nombre_tienda = st.session_state.get("nombre_tienda", "Tienda Minorista")
-    id_tienda_sesion = st.session_state.get("id_tienda", None)
+    st.markdown(
+        '<div class="report-title">📊 Reporte de Ventas</div>',
+        unsafe_allow_html=True
+    )
 
-    # ADMINISTRADOR: puede seleccionar tienda
+    st.markdown(
+        '<div class="report-subtitle">Análisis de ventas mensuales</div>',
+        unsafe_allow_html=True
+    )
+
+    rol_usuario = st.session_state.get(
+        "nivel_usuario",
+        ""
+    )
+
+    nombre_tienda = st.session_state.get(
+        "nombre_tienda",
+        "Tienda Minorista"
+    )
+
+    id_tienda_sesion = st.session_state.get(
+        "id_tienda",
+        None
+    )
+
+
+    # ============================================================
+    # ADMINISTRADOR: PUEDE SELECCIONAR TIENDA
+    # ============================================================
+
     if rol_usuario == "Administrador":
-        st.markdown('<div class="info-box">👑 <strong>Administrador</strong> - Puedes filtrar por tienda</div>', unsafe_allow_html=True)
-        
+
+        st.markdown(
+            '<div class="info-box">'
+            '👑 <strong>Administrador</strong> - '
+            'Puedes filtrar por tienda'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
         conn = obtener_conexion()
+
         if conn:
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id_tienda, nombre FROM tienda WHERE activo = 1 ORDER BY nombre")
+
+            cursor = conn.cursor(
+                dictionary=True
+            )
+
+            cursor.execute(
+                """
+                SELECT
+                    id_tienda,
+                    nombre
+                FROM tienda
+                WHERE activo = 1
+                ORDER BY nombre
+                """
+            )
+
             tiendas = cursor.fetchall()
+
             cursor.close()
             conn.close()
-            
+
             if tiendas:
-                opciones_tienda = {t["nombre"]: t["id_tienda"] for t in tiendas}
+
+                opciones_tienda = {
+                    t["nombre"]:
+                    t["id_tienda"]
+                    for t in tiendas
+                }
+
                 tienda_seleccionada = st.selectbox(
                     "🏪 Filtrar por tienda:",
-                    ["Todas las tiendas"] + list(opciones_tienda.keys())
+                    [
+                        "Todas las tiendas"
+                    ]
+                    +
+                    list(
+                        opciones_tienda.keys()
+                    )
                 )
-                
-                if tienda_seleccionada == "Todas las tiendas":
-                    id_tienda_usar = None
-                    filtro_tienda = "Todas las tiendas"
-                else:
-                    id_tienda_usar = opciones_tienda[tienda_seleccionada]
-                    filtro_tienda = tienda_seleccionada
-            else:
-                st.warning("No hay tiendas activas.")
-                return
-        else:
-            st.error("Error de conexión.")
-            return
-    else:
-        id_tienda_usar = id_tienda_sesion
-        filtro_tienda = nombre_tienda
-        st.markdown(f'<div class="info-box">🏪 <strong>Tienda:</strong> {nombre_tienda}</div>', unsafe_allow_html=True)
 
-    # Filtros de fecha
+                if (
+                    tienda_seleccionada
+                    ==
+                    "Todas las tiendas"
+                ):
+
+                    id_tienda_usar = None
+
+                    filtro_tienda = (
+                        "Todas las tiendas"
+                    )
+
+                else:
+
+                    id_tienda_usar = (
+                        opciones_tienda[
+                            tienda_seleccionada
+                        ]
+                    )
+
+                    filtro_tienda = (
+                        tienda_seleccionada
+                    )
+
+            else:
+
+                st.warning(
+                    "No hay tiendas activas."
+                )
+
+                return
+
+        else:
+
+            st.error(
+                "Error de conexión."
+            )
+
+            return
+
+    else:
+
+        id_tienda_usar = (
+            id_tienda_sesion
+        )
+
+        filtro_tienda = (
+            nombre_tienda
+        )
+
+        st.markdown(
+            f'<div class="info-box">'
+            f'🏪 <strong>Tienda:</strong> '
+            f'{nombre_tienda}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+
+    # ============================================================
+    # FILTROS DE FECHA
+    # ============================================================
+
     col1, col2 = st.columns(2)
+
     with col1:
-        fecha_inicio = st.date_input("📅 Fecha inicio", value=datetime.today().replace(day=1))
+
+        fecha_inicio = st.date_input(
+            "📅 Fecha inicio",
+            value=(
+                datetime.today()
+                .replace(day=1)
+            )
+        )
+
     with col2:
-        fecha_fin = st.date_input("📅 Fecha fin", value=datetime.today())
+
+        fecha_fin = st.date_input(
+            "📅 Fecha fin",
+            value=datetime.today()
+        )
+
 
     if fecha_inicio > fecha_fin:
-        st.error("❌ La fecha de inicio no puede ser mayor que la fecha de fin.")
+
+        st.error(
+            "❌ La fecha de inicio "
+            "no puede ser mayor que "
+            "la fecha de fin."
+        )
+
         return
 
+
     try:
+
         con = obtener_conexion()
+
         cursor = con.cursor()
 
-        # ============================================================
-        # Obtener el TOTAL GENERAL desde la base de datos
-        # ============================================================
-        if id_tienda_usar is None:
-            query_total = """
-                SELECT COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as TotalGeneral
-                FROM Venta v
-                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                WHERE DATE(v.Fecha) BETWEEN %s AND %s
-            """
-            cursor.execute(query_total, (fecha_inicio, fecha_fin))
-        else:
-            query_total = """
-                SELECT COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as TotalGeneral
-                FROM Venta v
-                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                  AND v.id_tienda = %s
-            """
-            cursor.execute(query_total, (fecha_inicio, fecha_fin, id_tienda_usar))
-        
-        total_row = cursor.fetchone()
-        gran_total = float(total_row[0]) if total_row else 0
-        gran_total = round(gran_total, 2)
 
         # ============================================================
-        # CONSULTA PRINCIPAL - Ventas agrupadas
+        # OBTENER TOTAL GENERAL
         # ============================================================
-        
+
         if id_tienda_usar is None:
-            # TODAS LAS TIENDAS - Ventas por tienda
-            query = """
-                SELECT 
-                    COALESCE(t.nombre, 'Sin tienda') as Tienda,
-                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
+
+            query_total = """
+                SELECT
+                    COALESCE(
+                        SUM(
+                            pv.Cantidad_vendida
+                            *
+                            pv.Precio_Venta
+                        ),
+                        0
+                    ) AS TotalGeneral
+
                 FROM Venta v
-                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                LEFT JOIN tienda t ON v.id_tienda = t.id_tienda
-                WHERE DATE(v.Fecha) BETWEEN %s AND %s
+
+                JOIN ProductoxVenta pv
+                    ON v.ID_Venta =
+                       pv.ID_Venta
+
+                WHERE DATE(v.Fecha)
+                      BETWEEN %s AND %s
+            """
+
+            cursor.execute(
+                query_total,
+                (
+                    fecha_inicio,
+                    fecha_fin
+                )
+            )
+
+        else:
+
+            query_total = """
+                SELECT
+                    COALESCE(
+                        SUM(
+                            pv.Cantidad_vendida
+                            *
+                            pv.Precio_Venta
+                        ),
+                        0
+                    ) AS TotalGeneral
+
+                FROM Venta v
+
+                JOIN ProductoxVenta pv
+                    ON v.ID_Venta =
+                       pv.ID_Venta
+
+                WHERE DATE(v.Fecha)
+                      BETWEEN %s AND %s
+
+                AND v.id_tienda = %s
+            """
+
+            cursor.execute(
+                query_total,
+                (
+                    fecha_inicio,
+                    fecha_fin,
+                    id_tienda_usar
+                )
+            )
+
+
+        total_row = (
+            cursor.fetchone()
+        )
+
+        gran_total = (
+            float(total_row[0])
+            if total_row
+            else 0
+        )
+
+        gran_total = round(
+            gran_total,
+            2
+        )
+
+
+        # ============================================================
+        # CONSULTA PRINCIPAL
+        # ============================================================
+
+        if id_tienda_usar is None:
+
+            # ========================================================
+            # TODAS LAS TIENDAS - VENTAS POR TIENDA
+            # ========================================================
+
+            query = """
+                SELECT
+                    COALESCE(
+                        t.nombre,
+                        'Sin tienda'
+                    ) AS Tienda,
+
+                    COALESCE(
+                        SUM(
+                            pv.Cantidad_vendida
+                            *
+                            pv.Precio_Venta
+                        ),
+                        0
+                    ) AS Total_Ventas
+
+                FROM Venta v
+
+                JOIN ProductoxVenta pv
+                    ON v.ID_Venta =
+                       pv.ID_Venta
+
+                LEFT JOIN tienda t
+                    ON v.id_tienda =
+                       t.id_tienda
+
+                WHERE DATE(v.Fecha)
+                      BETWEEN %s AND %s
+
                 GROUP BY t.nombre
+
                 ORDER BY Total_Ventas DESC
             """
-            cursor.execute(query, (fecha_inicio, fecha_fin))
+
+            cursor.execute(
+                query,
+                (
+                    fecha_inicio,
+                    fecha_fin
+                )
+            )
+
             rows = cursor.fetchall()
-            
+
+
             if rows:
-                df = pd.DataFrame(rows, columns=["Tienda", "Total_Ventas"])
-                df["Total_Ventas"] = df["Total_Ventas"].astype(float)
-                
-                st.markdown("### 📊 Ventas por Tienda")
+
+                df = pd.DataFrame(
+                    rows,
+                    columns=[
+                        "Tienda",
+                        "Total_Ventas"
+                    ]
+                )
+
+                df[
+                    "Total_Ventas"
+                ] = df[
+                    "Total_Ventas"
+                ].astype(float)
+
+
+                st.markdown(
+                    "### 📊 Ventas por Tienda"
+                )
+
+
                 fig = px.bar(
                     df,
                     x="Tienda",
                     y="Total_Ventas",
-                    title="Total de Ventas por Tienda",
+                    title=(
+                        "Total de Ventas "
+                        "por Tienda"
+                    ),
                     color="Total_Ventas",
-                    color_continuous_scale="Blues",
-                    text=df["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+                    color_continuous_scale=(
+                        "Blues"
+                    ),
+                    text=(
+                        df[
+                            "Total_Ventas"
+                        ].apply(
+                            lambda x:
+                                f"${x:,.2f}"
+                        )
+                    )
                 )
-                fig.update_traces(textposition='outside')
+
+
+                fig.update_traces(
+                    textposition="outside"
+                )
+
+
                 fig.update_layout(
                     xaxis_title="Tienda",
-                    yaxis_title="Total de Ventas ($)",
+                    yaxis_title=(
+                        "Total de Ventas ($)"
+                    ),
                     height=500,
                     showlegend=False
                 )
-                st.plotly_chart(fig, use_container_width=True)
+
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
             else:
-                st.warning("No hay datos en el período seleccionado.")
+
+                st.warning(
+                    "No hay datos en el "
+                    "período seleccionado."
+                )
+
                 return
-                
+
+
         else:
-            # TIENDA ESPECÍFICA - Ventas por mes
-            st.markdown(f"### 📊 Análisis de Ventas Mensuales - {filtro_tienda}")
-            
-            # Consulta para ventas mensuales
+
+            # ========================================================
+            # TIENDA ESPECÍFICA - VENTAS POR MES
+            # ========================================================
+
+            st.markdown(
+                f"### 📊 Análisis de "
+                f"Ventas Mensuales - "
+                f"{filtro_tienda}"
+            )
+
+
             query = """
-                SELECT 
+                SELECT
+
                     CONCAT(
+
                         CASE MONTH(v.Fecha)
-                            WHEN 1 THEN 'Ene' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
-                            WHEN 4 THEN 'Abr' WHEN 5 THEN 'May' WHEN 6 THEN 'Jun'
-                            WHEN 7 THEN 'Jul' WHEN 8 THEN 'Ago' WHEN 9 THEN 'Sep'
-                            WHEN 10 THEN 'Oct' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dic'
+
+                            WHEN 1 THEN 'Ene'
+                            WHEN 2 THEN 'Feb'
+                            WHEN 3 THEN 'Mar'
+                            WHEN 4 THEN 'Abr'
+                            WHEN 5 THEN 'May'
+                            WHEN 6 THEN 'Jun'
+                            WHEN 7 THEN 'Jul'
+                            WHEN 8 THEN 'Ago'
+                            WHEN 9 THEN 'Sep'
+                            WHEN 10 THEN 'Oct'
+                            WHEN 11 THEN 'Nov'
+                            WHEN 12 THEN 'Dic'
+
                         END,
-                        ' ', YEAR(v.Fecha)
-                    ) as Nombre_Mes,
-                    COALESCE(SUM(pv.Cantidad_vendida * pv.Precio_Venta), 0) as Total_Ventas
+
+                        ' ',
+
+                        YEAR(v.Fecha)
+
+                    ) AS Nombre_Mes,
+
+                    COALESCE(
+                        SUM(
+                            pv.Cantidad_vendida
+                            *
+                            pv.Precio_Venta
+                        ),
+                        0
+                    ) AS Total_Ventas
+
                 FROM Venta v
-                JOIN ProductoxVenta pv ON v.ID_Venta = pv.ID_Venta
-                WHERE DATE(v.Fecha) BETWEEN %s AND %s
-                  AND v.id_tienda = %s
-                GROUP BY YEAR(v.Fecha), MONTH(v.Fecha)
-                ORDER BY YEAR(v.Fecha) ASC, MONTH(v.Fecha) ASC
+
+                JOIN ProductoxVenta pv
+                    ON v.ID_Venta =
+                       pv.ID_Venta
+
+                WHERE DATE(v.Fecha)
+                      BETWEEN %s AND %s
+
+                AND v.id_tienda = %s
+
+                GROUP BY
+                    YEAR(v.Fecha),
+                    MONTH(v.Fecha)
+
+                ORDER BY
+                    YEAR(v.Fecha) ASC,
+                    MONTH(v.Fecha) ASC
             """
-            cursor.execute(query, (fecha_inicio, fecha_fin, id_tienda_usar))
+
+
+            cursor.execute(
+                query,
+                (
+                    fecha_inicio,
+                    fecha_fin,
+                    id_tienda_usar
+                )
+            )
+
+
             rows = cursor.fetchall()
-            
+
+
             if rows:
-                df = pd.DataFrame(rows, columns=["Nombre_Mes", "Total_Ventas"])
-                df["Total_Ventas"] = df["Total_Ventas"].astype(float)
-                
-                # Gráfico de barras
+
+                df = pd.DataFrame(
+                    rows,
+                    columns=[
+                        "Nombre_Mes",
+                        "Total_Ventas"
+                    ]
+                )
+
+
+                df[
+                    "Total_Ventas"
+                ] = df[
+                    "Total_Ventas"
+                ].astype(float)
+
+
+                # ====================================================
+                # GRÁFICO DE BARRAS
+                # ====================================================
+
                 fig = px.bar(
                     df,
                     x="Nombre_Mes",
                     y="Total_Ventas",
-                    title="Total de Ventas por Mes",
+                    title=(
+                        "Total de Ventas "
+                        "por Mes"
+                    ),
                     color="Total_Ventas",
-                    color_continuous_scale="Blues",
-                    text=df["Total_Ventas"].apply(lambda x: f"${x:,.2f}")
+                    color_continuous_scale=(
+                        "Blues"
+                    ),
+                    text=(
+                        df[
+                            "Total_Ventas"
+                        ].apply(
+                            lambda x:
+                                f"${x:,.2f}"
+                        )
+                    )
                 )
-                fig.update_traces(textposition='outside')
+
+
+                fig.update_traces(
+                    textposition="outside"
+                )
+
+
                 fig.update_layout(
                     xaxis_title="Mes",
-                    yaxis_title="Total de Ventas ($)",
+                    yaxis_title=(
+                        "Total de Ventas ($)"
+                    ),
                     height=500,
                     showlegend=False
                 )
-                st.plotly_chart(fig, use_container_width=True)
+
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
             else:
-                st.warning("No hay datos de ventas en el período seleccionado para esta tienda.")
+
+                st.warning(
+                    "No hay datos de ventas "
+                    "en el período seleccionado "
+                    "para esta tienda."
+                )
+
                 return
+
 
         # ============================================================
         # TOTAL GENERAL
         # ============================================================
-        
-        st.markdown("---")
-        st.markdown("## 💰 TOTAL GENERAL DE VENTAS")
-        st.markdown(f"""
-        <div style='
-            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        '>
-            <div style='
-                font-size: 2.5em;
-                font-weight: bold;
-                color: #ffd700;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-                letter-spacing: 2px;
-            '>
-                ${gran_total:,.2f}
-            </div>
-            <div style='
-                font-size: 0.9em;
-                color: rgba(255,255,255,0.8);
-                margin-top: 8px;
-            '>
-                Ingresos totales del período
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
-        # Botón para volver
         st.markdown("---")
-        col1, col2, col3 = st.columns([1, 2, 1])
+
+
+        st.markdown(
+            "## 💰 TOTAL GENERAL DE VENTAS"
+        )
+
+
+        st.markdown(
+            f"""
+            <div style='
+                background:
+                    linear-gradient(
+                        135deg,
+                        #1e3a5f 0%,
+                        #2c5f8a 100%
+                    );
+
+                padding: 25px;
+
+                border-radius: 15px;
+
+                text-align: center;
+
+                margin: 20px 0;
+
+                box-shadow:
+                    0 5px 15px
+                    rgba(0,0,0,0.2);
+            '>
+
+                <div style='
+                    font-size: 2.5em;
+
+                    font-weight: bold;
+
+                    color: #ffd700;
+
+                    text-shadow:
+                        2px 2px 4px
+                        rgba(0,0,0,0.3);
+
+                    letter-spacing: 2px;
+                '>
+
+                    ${gran_total:,.2f}
+
+                </div>
+
+                <div style='
+                    font-size: 0.9em;
+
+                    color:
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.8
+                        );
+
+                    margin-top: 8px;
+                '>
+
+                    Ingresos totales del período
+
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        # ============================================================
+        # BOTÓN VOLVER
+        # ============================================================
+
+        st.markdown("---")
+
+
+        col1, col2, col3 = (
+            st.columns(
+                [1, 2, 1]
+            )
+        )
+
+
         with col2:
-            st.markdown('<div class="volver-btn">', unsafe_allow_html=True)
-            if st.button("🔙 Volver al Menú Principal", use_container_width=True):
-                st.session_state["module"] = None
+
+            st.markdown(
+                '<div class="volver-btn">',
+                unsafe_allow_html=True
+            )
+
+
+            if st.button(
+                "🔙 Volver al Menú Principal",
+                use_container_width=True
+            ):
+
+                st.session_state[
+                    "module"
+                ] = None
+
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+
+
+            st.markdown(
+                '</div>',
+                unsafe_allow_html=True
+            )
+
 
     except Exception as e:
-        st.error(f"❌ Error al generar el reporte: {e}")
+
+        st.error(
+            f"❌ Error al generar "
+            f"el reporte: {e}"
+        )
+
 
     finally:
+
         if "cursor" in locals():
+
             cursor.close()
+
+
         if "con" in locals():
+
             con.close()
 
 
 def modulo_reporte_ventas():
+
     reporte_ventas()
