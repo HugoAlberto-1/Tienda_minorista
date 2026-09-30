@@ -17,15 +17,22 @@ def configurar_estilo():
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <style>
 
-        /* Fondo general */
+        /* ============================================================
+           FONDO GENERAL
+           ============================================================ */
+
         .stApp {{
             background-color: {COLOR_BG};
         }}
 
-        /* Títulos */
+        /* ============================================================
+           TÍTULOS
+           ============================================================ */
+
         .top-title {{
             text-align: center;
             color: {COLOR_PRIMARY};
@@ -34,7 +41,6 @@ def configurar_estilo():
             margin-bottom: 20px;
         }}
 
-        /* Subtítulos */
         .top-subtitle {{
             text-align: center;
             color: {COLOR_SECONDARY};
@@ -42,7 +48,10 @@ def configurar_estilo():
             margin-bottom: 20px;
         }}
 
-        /* Info box */
+        /* ============================================================
+           INFO BOX
+           ============================================================ */
+
         .info-box {{
             background: {COLOR_HOVER};
             padding: 12px;
@@ -52,7 +61,10 @@ def configurar_estilo():
             color: {COLOR_TEXT_DARK};
         }}
 
-        /* Metric cards */
+        /* ============================================================
+           TARJETAS RESUMEN
+           ============================================================ */
+
         .metric-card {{
             background: {COLOR_CARD};
             padding: 15px;
@@ -67,18 +79,28 @@ def configurar_estilo():
             color: {COLOR_PRIMARY} !important;
         }}
 
-        /* Tarjetas para Top 3 - Más ingresos */
+        /* ============================================================
+           TOP 3 - MÁS INGRESOS
+           ============================================================ */
+
         .top-card {{
             background: linear-gradient(
                 135deg,
                 {COLOR_PRIMARY} 0%,
                 {COLOR_SECONDARY} 100%
             );
+
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+
+            box-shadow:
+                0 5px 15px
+                rgba(0,0,0,0.1);
+
+            transition:
+                transform 0.3s ease;
+
             height: 100%;
         }}
 
@@ -109,7 +131,12 @@ def configurar_estilo():
 
         .top-card .unit {{
             font-size: 0.9em;
-            color: rgba(255,255,255,0.8);
+            color: rgba(
+                255,
+                255,
+                255,
+                0.8
+            );
         }}
 
         .top-card .total {{
@@ -119,18 +146,29 @@ def configurar_estilo():
             margin-top: 10px;
         }}
 
-        /* Tarjetas para Top 3 - Menos ingresos */
+        /* ============================================================
+           TOP 3 - MENOS INGRESOS
+           ============================================================ */
+
         .bottom-card {{
-            background: linear-gradient(
-                135deg,
-                #c0392b 0%,
-                #e74c3c 100%
-            );
+            background:
+                linear-gradient(
+                    135deg,
+                    #c0392b 0%,
+                    #e74c3c 100%
+                );
+
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+
+            box-shadow:
+                0 5px 15px
+                rgba(0,0,0,0.1);
+
+            transition:
+                transform 0.3s ease;
+
             height: 100%;
         }}
 
@@ -161,7 +199,12 @@ def configurar_estilo():
 
         .bottom-card .unit {{
             font-size: 0.9em;
-            color: rgba(255,255,255,0.8);
+            color: rgba(
+                255,
+                255,
+                255,
+                0.8
+            );
         }}
 
         .bottom-card .total {{
@@ -171,40 +214,73 @@ def configurar_estilo():
             margin-top: 10px;
         }}
 
-        /* Botones */
+        /* ============================================================
+           BOTONES
+           ============================================================ */
+
         .stButton > button {{
             border-radius: 8px;
             font-weight: 500;
-            transition: all 0.3s ease;
-            background-color: {COLOR_PRIMARY};
+
+            transition:
+                all 0.3s ease;
+
+            background-color:
+                {COLOR_PRIMARY};
+
             color: white;
             border: none;
         }}
 
         .stButton > button:hover {{
-            background-color: {COLOR_SECONDARY};
-            transform: translateY(-1px);
+            background-color:
+                {COLOR_SECONDARY};
+
+            transform:
+                translateY(-1px);
         }}
 
-        /* Botón volver */
+        /* ============================================================
+           BOTÓN VOLVER
+           ============================================================ */
+
         .volver-btn button {{
-            background-color: #6c757d !important;
-            background: #6c757d !important;
-            color: white !important;
+            background-color:
+                #6c757d !important;
+
+            background:
+                #6c757d !important;
+
+            color:
+                white !important;
         }}
 
         .volver-btn button:hover {{
-            background-color: #5a6268 !important;
-            background: #5a6268 !important;
-            color: white !important;
-            transform: translateY(-2px);
+            background-color:
+                #5a6268 !important;
+
+            background:
+                #5a6268 !important;
+
+            color:
+                white !important;
+
+            transform:
+                translateY(-2px);
         }}
 
-        /* Labels */
+        /* ============================================================
+           LABELS
+           ============================================================ */
+
         .stTextInput > label,
         .stSelectbox > label {{
-            color: {COLOR_TEXT_DARK} !important;
-            font-weight: 500 !important;
+            color:
+                {COLOR_TEXT_DARK}
+                !important;
+
+            font-weight:
+                500 !important;
         }}
 
         /* ============================================================
@@ -212,115 +288,253 @@ def configurar_estilo():
            FONDO BLANCO + TEXTO NEGRO + FLECHA NEGRA
            ============================================================ */
 
-        div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
-        div[data-testid="stSelectbox"] [role="combobox"],
-        div[data-testid="stSelectbox"] [aria-haspopup="listbox"] {{
-            background: #ffffff !important;
-            background-color: #ffffff !important;
-            color: #1a1a1a !important;
-            -webkit-text-fill-color: #1a1a1a !important;
-            border-color: #d0d7de !important;
-            border-radius: 8px !important;
-            opacity: 1 !important;
-        }}
+        div[data-testid="stSelectbox"]
+        [data-baseweb="select"] > div,
 
-        div[data-testid="stSelectbox"] [data-baseweb="select"] > div *,
-        div[data-testid="stSelectbox"] [role="combobox"] *,
-        div[data-testid="stSelectbox"] [aria-haspopup="listbox"] * {{
-            color: #1a1a1a !important;
-            -webkit-text-fill-color: #1a1a1a !important;
-            opacity: 1 !important;
-        }}
+        div[data-testid="stSelectbox"]
+        [role="combobox"],
 
-        div[data-testid="stSelectbox"] input {{
-            background-color: #ffffff !important;
-            color: #1a1a1a !important;
-            -webkit-text-fill-color: #1a1a1a !important;
-            opacity: 1 !important;
-        }}
+        div[data-testid="stSelectbox"]
+        [aria-haspopup="listbox"] {{
 
-        div[data-testid="stSelectbox"] svg {{
-            color: #1a1a1a !important;
-            fill: #1a1a1a !important;
+            background:
+                #ffffff !important;
+
+            background-color:
+                #ffffff !important;
+
+            color:
+                #1a1a1a !important;
+
+            -webkit-text-fill-color:
+                #1a1a1a !important;
+
+            border-color:
+                #d0d7de !important;
+
+            border-radius:
+                8px !important;
+
+            opacity:
+                1 !important;
         }}
 
         div[data-testid="stSelectbox"]
-        [data-baseweb="select"] > div:focus-within {{
-            background: #ffffff !important;
-            background-color: #ffffff !important;
-            border-color: #b8c0c8 !important;
-            box-shadow: none !important;
+        [data-baseweb="select"] > div *,
+
+        div[data-testid="stSelectbox"]
+        [role="combobox"] *,
+
+        div[data-testid="stSelectbox"]
+        [aria-haspopup="listbox"] * {{
+
+            color:
+                #1a1a1a !important;
+
+            -webkit-text-fill-color:
+                #1a1a1a !important;
+
+            opacity:
+                1 !important;
         }}
 
-        /* Fecha inputs - labels */
+        div[data-testid="stSelectbox"]
+        input {{
+
+            background-color:
+                #ffffff !important;
+
+            color:
+                #1a1a1a !important;
+
+            -webkit-text-fill-color:
+                #1a1a1a !important;
+
+            opacity:
+                1 !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        svg {{
+
+            color:
+                #1a1a1a !important;
+
+            fill:
+                #1a1a1a !important;
+        }}
+
+        div[data-testid="stSelectbox"]
+        [data-baseweb="select"]
+        > div:focus-within {{
+
+            background:
+                #ffffff !important;
+
+            background-color:
+                #ffffff !important;
+
+            border-color:
+                #b8c0c8 !important;
+
+            box-shadow:
+                none !important;
+        }}
+
+        /* ============================================================
+           FECHA
+           ============================================================ */
+
         .stDateInput label {{
-            color: #333333 !important;
-            font-weight: 500 !important;
+            color:
+                #333333 !important;
+
+            font-weight:
+                500 !important;
         }}
 
-        /* Fecha inputs - texto */
         .stDateInput input {{
-            color: #333333 !important;
-            background-color: white !important;
+            color:
+                #333333 !important;
+
+            background-color:
+                white !important;
         }}
 
-        /* Headers */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {COLOR_PRIMARY} !important;
+        /* ============================================================
+           HEADERS
+           ============================================================ */
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {{
+            color:
+                {COLOR_PRIMARY}
+                !important;
         }}
 
-        /* Dataframe */
+        /* ============================================================
+           DATAFRAME
+           ============================================================ */
+
         .stDataFrame {{
-            background-color: {COLOR_CARD} !important;
+            background-color:
+                {COLOR_CARD}
+                !important;
         }}
 
         [data-testid="stDataFrame"] {{
-            background-color: {COLOR_CARD} !important;
-            border-radius: 12px !important;
-            border: 1px solid {COLOR_BORDER} !important;
+            background-color:
+                {COLOR_CARD}
+                !important;
+
+            border-radius:
+                12px !important;
+
+            border:
+                1px solid
+                {COLOR_BORDER}
+                !important;
         }}
 
-        [data-testid="stDataFrame"] table {{
-            background-color: {COLOR_CARD} !important;
+        [data-testid="stDataFrame"]
+        table {{
+            background-color:
+                {COLOR_CARD}
+                !important;
         }}
 
-        [data-testid="stDataFrame"] th {{
-            background-color: {COLOR_PRIMARY} !important;
-            color: white !important;
-            font-weight: 600 !important;
-            text-align: center !important;
-            padding: 12px 8px !important;
+        [data-testid="stDataFrame"]
+        th {{
+            background-color:
+                {COLOR_PRIMARY}
+                !important;
+
+            color:
+                white !important;
+
+            font-weight:
+                600 !important;
+
+            text-align:
+                center !important;
+
+            padding:
+                12px 8px
+                !important;
         }}
 
-        [data-testid="stDataFrame"] td {{
-            color: {COLOR_TEXT} !important;
-            text-align: center !important;
-            padding: 10px 8px !important;
-            background-color: {COLOR_CARD} !important;
-            border-bottom: 1px solid {COLOR_BORDER} !important;
+        [data-testid="stDataFrame"]
+        td {{
+            color:
+                {COLOR_TEXT}
+                !important;
+
+            text-align:
+                center !important;
+
+            padding:
+                10px 8px
+                !important;
+
+            background-color:
+                {COLOR_CARD}
+                !important;
+
+            border-bottom:
+                1px solid
+                {COLOR_BORDER}
+                !important;
         }}
 
-        [data-testid="stDataFrame"] tr:nth-child(even) td {{
-            background-color: #f8f9fa !important;
+        [data-testid="stDataFrame"]
+        tr:nth-child(even)
+        td {{
+            background-color:
+                #f8f9fa !important;
         }}
 
-        [data-testid="stDataFrame"] tr:hover td {{
-            background-color: {COLOR_HOVER} !important;
+        [data-testid="stDataFrame"]
+        tr:hover td {{
+            background-color:
+                {COLOR_HOVER}
+                !important;
         }}
 
-        [data-testid="stDataFrame"] td div {{
-            color: {COLOR_TEXT} !important;
+        [data-testid="stDataFrame"]
+        td div {{
+            color:
+                {COLOR_TEXT}
+                !important;
         }}
 
-        /* Alertas */
+        /* ============================================================
+           ALERTAS
+           ============================================================ */
+
         .stAlert {{
-            background-color: {COLOR_CARD} !important;
-            border: 1px solid {COLOR_BORDER} !important;
+            background-color:
+                {COLOR_CARD}
+                !important;
+
+            border:
+                1px solid
+                {COLOR_BORDER}
+                !important;
         }}
 
         </style>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
+
+# ============================================================
+# OBTENER DATOS DE VENTAS
+# ============================================================
 
 def obtener_datos_ventas(
     id_tienda,
@@ -328,6 +542,7 @@ def obtener_datos_ventas(
     fecha_fin,
     es_admin=False
 ):
+
     """Obtiene todos los productos con sus ingresos totales"""
 
     conn = obtener_conexion()
@@ -346,30 +561,40 @@ def obtener_datos_ventas(
                     p.id_producto,
                     p.Nombre AS Producto,
                     p.categoria AS Categoria,
-                    SUM(pv.Cantidad_vendida) AS Cantidad_Total,
+
                     SUM(
-                        pv.Cantidad_vendida *
+                        pv.Cantidad_vendida
+                    ) AS Cantidad_Total,
+
+                    SUM(
+                        pv.Cantidad_vendida
+                        *
                         pv.Precio_Venta
                     ) AS Total_Ingresos
 
                 FROM Producto p
 
                 JOIN ProductoxVenta pv
-                    ON p.Cod_barra = pv.Cod_barra
-                    AND p.id_tienda = pv.id_tienda
+                    ON p.Cod_barra =
+                       pv.Cod_barra
+
+                    AND p.id_tienda =
+                        pv.id_tienda
 
                 JOIN Venta v
-                    ON pv.Id_venta = v.Id_venta
+                    ON pv.Id_venta =
+                       v.Id_venta
 
                 WHERE DATE(v.Fecha)
-                    BETWEEN %s AND %s
+                      BETWEEN %s AND %s
 
                 GROUP BY
                     p.id_producto,
                     p.Nombre,
                     p.categoria
 
-                ORDER BY Total_Ingresos DESC
+                ORDER BY
+                    Total_Ingresos DESC
             """
 
             cursor.execute(
@@ -387,32 +612,42 @@ def obtener_datos_ventas(
                     p.id_producto,
                     p.Nombre AS Producto,
                     p.categoria AS Categoria,
-                    SUM(pv.Cantidad_vendida) AS Cantidad_Total,
+
                     SUM(
-                        pv.Cantidad_vendida *
+                        pv.Cantidad_vendida
+                    ) AS Cantidad_Total,
+
+                    SUM(
+                        pv.Cantidad_vendida
+                        *
                         pv.Precio_Venta
                     ) AS Total_Ingresos
 
                 FROM Producto p
 
                 JOIN ProductoxVenta pv
-                    ON p.Cod_barra = pv.Cod_barra
-                    AND p.id_tienda = pv.id_tienda
+                    ON p.Cod_barra =
+                       pv.Cod_barra
+
+                    AND p.id_tienda =
+                        pv.id_tienda
 
                 JOIN Venta v
-                    ON pv.Id_venta = v.Id_venta
+                    ON pv.Id_venta =
+                       v.Id_venta
 
                 WHERE DATE(v.Fecha)
-                    BETWEEN %s AND %s
+                      BETWEEN %s AND %s
 
-                AND v.id_tienda = %s
+                  AND v.id_tienda = %s
 
                 GROUP BY
                     p.id_producto,
                     p.Nombre,
                     p.categoria
 
-                ORDER BY Total_Ingresos DESC
+                ORDER BY
+                    Total_Ingresos DESC
             """
 
             cursor.execute(
@@ -424,12 +659,15 @@ def obtener_datos_ventas(
                 )
             )
 
-        resultados = cursor.fetchall()
+        resultados = (
+            cursor.fetchall()
+        )
 
         cursor.close()
         conn.close()
 
         if not resultados:
+
             return pd.DataFrame()
 
         df = pd.DataFrame(
@@ -474,17 +712,23 @@ def obtener_datos_ventas(
         return pd.DataFrame()
 
 
+# ============================================================
+# RESUMEN DE VENTAS
+# ============================================================
+
 def obtener_resumen_ventas(
     id_tienda,
     fecha_inicio,
     fecha_fin,
     es_admin=False
 ):
+
     """Obtiene resumen general de ventas"""
 
     conn = obtener_conexion()
 
     if not conn:
+
         return None, None, None
 
     cursor = conn.cursor()
@@ -496,6 +740,7 @@ def obtener_resumen_ventas(
             cursor.execute(
                 """
                 SELECT
+
                     COUNT(
                         DISTINCT v.ID_Venta
                     ) AS total_ventas,
@@ -509,7 +754,8 @@ def obtener_resumen_ventas(
 
                     COALESCE(
                         SUM(
-                            pv.Cantidad_vendida *
+                            pv.Cantidad_vendida
+                            *
                             pv.Precio_Venta
                         ),
                         0
@@ -522,7 +768,7 @@ def obtener_resumen_ventas(
                        pv.ID_Venta
 
                 WHERE DATE(v.Fecha)
-                    BETWEEN %s AND %s
+                      BETWEEN %s AND %s
                 """,
                 (
                     fecha_inicio,
@@ -535,6 +781,7 @@ def obtener_resumen_ventas(
             cursor.execute(
                 """
                 SELECT
+
                     COUNT(
                         DISTINCT v.ID_Venta
                     ) AS total_ventas,
@@ -548,7 +795,8 @@ def obtener_resumen_ventas(
 
                     COALESCE(
                         SUM(
-                            pv.Cantidad_vendida *
+                            pv.Cantidad_vendida
+                            *
                             pv.Precio_Venta
                         ),
                         0
@@ -561,9 +809,9 @@ def obtener_resumen_ventas(
                        pv.ID_Venta
 
                 WHERE DATE(v.Fecha)
-                    BETWEEN %s AND %s
+                      BETWEEN %s AND %s
 
-                AND v.id_tienda = %s
+                  AND v.id_tienda = %s
                 """,
                 (
                     fecha_inicio,
@@ -572,7 +820,9 @@ def obtener_resumen_ventas(
                 )
             )
 
-        resultado = cursor.fetchone()
+        resultado = (
+            cursor.fetchone()
+        )
 
         cursor.close()
         conn.close()
@@ -591,54 +841,68 @@ def obtener_resumen_ventas(
         return None, None, None
 
 
+# ============================================================
+# TARJETAS TOP 3
+# ============================================================
+
 def mostrar_top_card_ingresos(
     producto,
     ingresos,
     posicion,
     color="blue"
 ):
-    """Muestra una tarjeta con la información del producto basada en ingresos"""
+
+    """
+    Muestra una tarjeta con la información
+    del producto basada en ingresos.
+    """
 
     if color == "blue":
+
         card_class = "top-card"
+
     else:
+
         card_class = "bottom-card"
 
     if posicion == 1:
+
         medalla = "🥇"
 
     elif posicion == 2:
+
         medalla = "🥈"
 
     elif posicion == 3:
+
         medalla = "🥉"
 
     else:
+
         medalla = f"#{posicion}"
 
+    # IMPORTANTE:
+    # Se construye en una sola cadena para evitar que
+    # Streamlit interprete los <div> como código Markdown.
+
+    html_card = (
+        f'<div class="{card_class}">'
+        f'<div class="position">{medalla}</div>'
+        f'<div class="product-name">{producto}</div>'
+        f'<div class="quantity">${ingresos:,.2f}</div>'
+        f'<div class="unit">en ingresos</div>'
+        f'</div>'
+    )
+
     st.markdown(
-        f"""
-        <div class="{card_class}">
-            <div class="position">
-                {medalla}
-            </div>
-
-            <div class="product-name">
-                {producto}
-            </div>
-
-            <div class="quantity">
-                ${ingresos:,.2f}
-            </div>
-
-            <div class="unit">
-                en ingresos
-            </div>
-        </div>
-        """,
+        html_card,
         unsafe_allow_html=True
     )
 
+
+# ============================================================
+# MÓDULO PRINCIPAL
+# ============================================================
 
 def modulo_productos_mas_menos_vendidos():
 
@@ -658,19 +922,25 @@ def modulo_productos_mas_menos_vendidos():
         unsafe_allow_html=True
     )
 
-    rol_usuario = st.session_state.get(
-        "nivel_usuario",
-        ""
+    rol_usuario = (
+        st.session_state.get(
+            "nivel_usuario",
+            ""
+        )
     )
 
-    nombre_tienda = st.session_state.get(
-        "nombre_tienda",
-        "Tienda Minorista"
+    nombre_tienda = (
+        st.session_state.get(
+            "nombre_tienda",
+            "Tienda Minorista"
+        )
     )
 
-    id_tienda = st.session_state.get(
-        "id_tienda",
-        None
+    id_tienda = (
+        st.session_state.get(
+            "id_tienda",
+            None
+        )
     )
 
     # ============================================================
@@ -706,7 +976,9 @@ def modulo_productos_mas_menos_vendidos():
                 """
             )
 
-            tiendas = cursor.fetchall()
+            tiendas = (
+                cursor.fetchall()
+            )
 
             cursor.close()
             conn.close()
@@ -739,6 +1011,7 @@ def modulo_productos_mas_menos_vendidos():
                 ):
 
                     id_tienda_usar = None
+
                     es_admin = True
 
                 else:
@@ -773,7 +1046,10 @@ def modulo_productos_mas_menos_vendidos():
 
     else:
 
-        id_tienda_usar = id_tienda
+        id_tienda_usar = (
+            id_tienda
+        )
+
         es_admin = False
 
         st.markdown(
@@ -816,8 +1092,9 @@ def modulo_productos_mas_menos_vendidos():
     if fecha_inicio > fecha_fin:
 
         st.error(
-            "❌ La fecha de inicio no puede "
-            "ser mayor que la fecha de fin."
+            "❌ La fecha de inicio "
+            "no puede ser mayor que "
+            "la fecha de fin."
         )
 
         return
@@ -851,7 +1128,7 @@ def modulo_productos_mas_menos_vendidos():
         )
 
     # ============================================================
-    # MOSTRAR RESUMEN
+    # RESUMEN DEL PERÍODO
     # ============================================================
 
     st.markdown(
@@ -862,87 +1139,102 @@ def modulo_productos_mas_menos_vendidos():
         st.columns(3)
     )
 
+    # ========================================================
+    # TOTAL INGRESOS
+    # ========================================================
+
     with col1:
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div style="
-                    color: #333333;
-                    font-size: 0.9em;
-                    font-weight: 500;
-                    margin-bottom: 8px;
-                ">
-                    💰 Total Ingresos
-                </div>
+        html_ingresos = (
+            '<div class="metric-card">'
+            '<div style="'
+            'color:#333333;'
+            'font-size:0.9em;'
+            'font-weight:500;'
+            'margin-bottom:8px;'
+            '">'
+            '💰 Total Ingresos'
+            '</div>'
+            f'<div class="metric-value">'
+            f'${total_ingresos:,.2f}'
+            f'</div>'
+            '</div>'
+        )
 
-                <div class="metric-value">
-                    ${total_ingresos:,.2f}
-                </div>
-            </div>
-            """,
+        st.markdown(
+            html_ingresos,
             unsafe_allow_html=True
         )
+
+    # ========================================================
+    # PRODUCTOS VENDIDOS
+    # ========================================================
 
     with col2:
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div style="
-                    color: #333333;
-                    font-size: 0.9em;
-                    font-weight: 500;
-                    margin-bottom: 8px;
-                ">
-                    📦 Productos Vendidos
-                </div>
+        html_productos = (
+            '<div class="metric-card">'
+            '<div style="'
+            'color:#333333;'
+            'font-size:0.9em;'
+            'font-weight:500;'
+            'margin-bottom:8px;'
+            '">'
+            '📦 Productos Vendidos'
+            '</div>'
+            f'<div class="metric-value">'
+            f'{total_productos:,.0f}'
+            f'</div>'
+            '</div>'
+        )
 
-                <div class="metric-value">
-                    {total_productos:,.0f}
-                </div>
-            </div>
-            """,
+        st.markdown(
+            html_productos,
             unsafe_allow_html=True
         )
 
+    # ========================================================
+    # TRANSACCIONES
+    # ========================================================
+
     with col3:
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div style="
-                    color: #333333;
-                    font-size: 0.9em;
-                    font-weight: 500;
-                    margin-bottom: 8px;
-                ">
-                    🛒 Transacciones
-                </div>
+        html_transacciones = (
+            '<div class="metric-card">'
+            '<div style="'
+            'color:#333333;'
+            'font-size:0.9em;'
+            'font-weight:500;'
+            'margin-bottom:8px;'
+            '">'
+            '🛒 Transacciones'
+            '</div>'
+            f'<div class="metric-value">'
+            f'{total_ventas:,.0f}'
+            f'</div>'
+            '</div>'
+        )
 
-                <div class="metric-value">
-                    {total_ventas:,.0f}
-                </div>
-            </div>
-            """,
+        st.markdown(
+            html_transacciones,
             unsafe_allow_html=True
         )
 
     st.markdown("---")
 
     # ============================================================
-    # SI NO HAY DATOS
+    # SIN DATOS
     # ============================================================
 
     if df_completo.empty:
 
         st.markdown(
             '<div style="'
-            'background-color: #fff3cd; '
-            'color: #856404; '
-            'padding: 12px; '
-            'border-radius: 8px; '
-            'border-left: 4px solid #ffc107;'
+            'background-color:#fff3cd;'
+            'color:#856404;'
+            'padding:12px;'
+            'border-radius:8px;'
+            'border-left:4px solid #ffc107;'
             '">'
             '⚠️ No hay datos de ventas '
             'en el período seleccionado.'
@@ -953,12 +1245,11 @@ def modulo_productos_mas_menos_vendidos():
     else:
 
         # ========================================================
-        # ORDENAR DATOS
+        # ORDENAR POR INGRESOS
         # ========================================================
 
         df_mayores_ingresos = (
-            df_completo
-            .sort_values(
+            df_completo.sort_values(
                 "Total_Ingresos",
                 ascending=False
             )
@@ -999,7 +1290,9 @@ def modulo_productos_mas_menos_vendidos():
 
             with col1:
 
-                row = top3_mas.iloc[0]
+                row = (
+                    top3_mas.iloc[0]
+                )
 
                 mostrar_top_card_ingresos(
                     producto=row[
@@ -1014,7 +1307,9 @@ def modulo_productos_mas_menos_vendidos():
 
             with col2:
 
-                row = top3_mas.iloc[1]
+                row = (
+                    top3_mas.iloc[1]
+                )
 
                 mostrar_top_card_ingresos(
                     producto=row[
@@ -1029,7 +1324,9 @@ def modulo_productos_mas_menos_vendidos():
 
             with col3:
 
-                row = top3_mas.iloc[2]
+                row = (
+                    top3_mas.iloc[2]
+                )
 
                 mostrar_top_card_ingresos(
                     producto=row[
@@ -1048,11 +1345,11 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
                 'ℹ️ Solo hay 2 productos '
                 'con ingresos en el período.'
@@ -1106,11 +1403,11 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
                 'ℹ️ Solo hay 1 producto '
                 'con ingresos en el período.'
@@ -1146,14 +1443,15 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
-                'ℹ️ No hay productos con ingresos '
-                'en el período seleccionado.'
+                'ℹ️ No hay productos '
+                'con ingresos en el '
+                'período seleccionado.'
                 '</div>',
                 unsafe_allow_html=True
             )
@@ -1161,7 +1459,7 @@ def modulo_productos_mas_menos_vendidos():
         st.markdown("---")
 
         # ========================================================
-        # TABLA COMPLETA - MAYORES INGRESOS
+        # TABLA MAYORES INGRESOS
         # ========================================================
 
         st.markdown(
@@ -1206,7 +1504,9 @@ def modulo_productos_mas_menos_vendidos():
 
             with col1:
 
-                row = top3_menos.iloc[0]
+                row = (
+                    top3_menos.iloc[0]
+                )
 
                 mostrar_top_card_ingresos(
                     producto=row[
@@ -1221,7 +1521,9 @@ def modulo_productos_mas_menos_vendidos():
 
             with col2:
 
-                row = top3_menos.iloc[1]
+                row = (
+                    top3_menos.iloc[1]
+                )
 
                 mostrar_top_card_ingresos(
                     producto=row[
@@ -1236,7 +1538,9 @@ def modulo_productos_mas_menos_vendidos():
 
             with col3:
 
-                row = top3_menos.iloc[2]
+                row = (
+                    top3_menos.iloc[2]
+                )
 
                 mostrar_top_card_ingresos(
                     producto=row[
@@ -1255,11 +1559,11 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
                 'ℹ️ Solo hay 2 productos '
                 'con ingresos en el período.'
@@ -1313,11 +1617,11 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
                 'ℹ️ Solo hay 1 producto '
                 'con ingresos en el período.'
@@ -1353,14 +1657,15 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
-                'ℹ️ No hay productos con ingresos '
-                'en el período seleccionado.'
+                'ℹ️ No hay productos '
+                'con ingresos en el '
+                'período seleccionado.'
                 '</div>',
                 unsafe_allow_html=True
             )
@@ -1368,7 +1673,7 @@ def modulo_productos_mas_menos_vendidos():
         st.markdown("---")
 
         # ========================================================
-        # TABLA COMPLETA - MENORES INGRESOS
+        # TABLA MENORES INGRESOS
         # ========================================================
 
         st.markdown(
@@ -1377,8 +1682,7 @@ def modulo_productos_mas_menos_vendidos():
         )
 
         if not (
-            df_menores_ingresos
-            .empty
+            df_menores_ingresos.empty
         ):
 
             st.dataframe(
@@ -1397,14 +1701,15 @@ def modulo_productos_mas_menos_vendidos():
 
             st.markdown(
                 '<div style="'
-                'background-color: #d1ecf1; '
-                'color: #0c5460; '
-                'padding: 12px; '
-                'border-radius: 8px; '
-                'border-left: 4px solid #17a2b8;'
+                'background-color:#d1ecf1;'
+                'color:#0c5460;'
+                'padding:12px;'
+                'border-radius:8px;'
+                'border-left:4px solid #17a2b8;'
                 '">'
-                'ℹ️ No hay productos con ingresos '
-                'en el período seleccionado.'
+                'ℹ️ No hay productos '
+                'con ingresos en el '
+                'período seleccionado.'
                 '</div>',
                 unsafe_allow_html=True
             )
