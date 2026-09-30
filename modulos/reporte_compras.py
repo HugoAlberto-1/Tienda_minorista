@@ -19,8 +19,7 @@ def configurar_estilo():
     COLOR_BORDER = "#e0e0e0"
     COLOR_BUTTON = "#1e3a5f"
 
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <style>
 
         .stApp {{
@@ -90,7 +89,7 @@ def configurar_estilo():
         }}
 
         /* ============================================================
-           FECHA
+           FECHAS
            ============================================================ */
 
         .stDateInput input {{
@@ -99,74 +98,47 @@ def configurar_estilo():
         }}
 
         /* ============================================================
-           SELECTBOX
+           SELECTBOX - ESTILO FINAL
            FONDO BLANCO + TEXTO NEGRO + FLECHA NEGRA
            ============================================================ */
 
-        .stSelectbox > div > div {{
-            background-color: white !important;
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+        div[data-testid="stSelectbox"] [role="combobox"],
+        div[data-testid="stSelectbox"] [aria-haspopup="listbox"] {{
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            border-color: #d0d7de !important;
             border-radius: 8px !important;
-            border: 1px solid #d0d7de !important;
-        }}
-
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] > div {{
-            background-color: white !important;
-            border-radius: 8px !important;
-            border: 1px solid #d0d7de !important;
-            color: #333333 !important;
-        }}
-
-        div[data-testid="stSelectbox"]
-        div[role="combobox"] {{
-            background-color: white !important;
-            color: #333333 !important;
-            -webkit-text-fill-color: #333333 !important;
-        }}
-
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] > div > div {{
-            color: #333333 !important;
-            -webkit-text-fill-color: #333333 !important;
-        }}
-
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] > div > div > div {{
-            color: #333333 !important;
-            -webkit-text-fill-color: #333333 !important;
-        }}
-
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] span {{
-            color: #333333 !important;
-            -webkit-text-fill-color: #333333 !important;
             opacity: 1 !important;
         }}
 
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] input {{
-            color: #333333 !important;
-            -webkit-text-fill-color: #333333 !important;
-            background-color: white !important;
-        }}
-
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] input::placeholder {{
-            color: #666666 !important;
-            -webkit-text-fill-color: #666666 !important;
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div *,
+        div[data-testid="stSelectbox"] [role="combobox"] *,
+        div[data-testid="stSelectbox"] [aria-haspopup="listbox"] * {{
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
             opacity: 1 !important;
         }}
 
-        div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] svg {{
-            fill: #333333 !important;
-            color: #333333 !important;
+        div[data-testid="stSelectbox"] input {{
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+            -webkit-text-fill-color: #1a1a1a !important;
+            opacity: 1 !important;
+        }}
+
+        div[data-testid="stSelectbox"] svg {{
+            color: #1a1a1a !important;
+            fill: #1a1a1a !important;
         }}
 
         div[data-testid="stSelectbox"]
-        div[data-baseweb="select"] > div:focus-within {{
-            background-color: white !important;
-            border-color: #bfc7d1 !important;
+        [data-baseweb="select"] > div:focus-within {{
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border-color: #b8c0c8 !important;
             box-shadow: none !important;
         }}
 
@@ -225,9 +197,7 @@ def configurar_estilo():
         }}
 
         </style>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
 
 def reporte_compras():
@@ -267,7 +237,8 @@ def reporte_compras():
 
         st.markdown(
             '<div class="info-box">'
-            '👑 <strong>Administrador</strong> - Puedes filtrar por tienda'
+            '👑 <strong>Administrador</strong> - '
+            'Puedes filtrar por tienda'
             '</div>',
             unsafe_allow_html=True
         )
@@ -311,8 +282,7 @@ def reporte_compras():
 
                 if (
                     tienda_seleccionada
-                    ==
-                    "Todas las tiendas"
+                    == "Todas las tiendas"
                 ):
 
                     id_tienda_usar = None
@@ -358,7 +328,8 @@ def reporte_compras():
 
         st.markdown(
             f'<div class="info-box">'
-            f'🏪 <strong>Tienda:</strong> {nombre_tienda}'
+            f'🏪 <strong>Tienda:</strong> '
+            f'{nombre_tienda}'
             f'</div>',
             unsafe_allow_html=True
         )
@@ -388,7 +359,8 @@ def reporte_compras():
     if fecha_inicio > fecha_fin:
 
         st.error(
-            "❌ La fecha de inicio no puede ser mayor que la fecha de fin."
+            "❌ La fecha de inicio no puede "
+            "ser mayor que la fecha de fin."
         )
 
         return
@@ -451,7 +423,7 @@ def reporte_compras():
         cursor = con.cursor()
 
         # ============================================================
-        # TOTAL GENERAL
+        # OBTENER TOTAL GENERAL
         # ============================================================
 
         if id_tienda_usar is None:
@@ -512,7 +484,7 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND c.Tipo_Compra = %s
+                      AND c.Tipo_Compra = %s
                 """
 
                 cursor.execute(
@@ -551,7 +523,7 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND pc.id_tienda = %s
+                      AND pc.id_tienda = %s
                 """
 
                 cursor.execute(
@@ -585,8 +557,8 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND pc.id_tienda = %s
-                    AND c.Tipo_Compra = %s
+                      AND pc.id_tienda = %s
+                      AND c.Tipo_Compra = %s
                 """
 
                 cursor.execute(
@@ -599,9 +571,7 @@ def reporte_compras():
                     )
                 )
 
-        total_row = (
-            cursor.fetchone()
-        )
+        total_row = cursor.fetchone()
 
         gran_total = (
             float(total_row[0])
@@ -627,7 +597,6 @@ def reporte_compras():
 
                 query_detalle = """
                     SELECT
-
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
@@ -681,7 +650,6 @@ def reporte_compras():
 
                 query_detalle = """
                     SELECT
-
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
@@ -722,7 +690,7 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND c.Tipo_Compra = %s
+                      AND c.Tipo_Compra = %s
 
                     ORDER BY c.Fecha DESC
                 """
@@ -745,7 +713,6 @@ def reporte_compras():
 
                 query_detalle = """
                     SELECT
-
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
@@ -775,7 +742,7 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND pc.id_tienda = %s
+                      AND pc.id_tienda = %s
 
                     ORDER BY c.Fecha DESC
                 """
@@ -793,7 +760,6 @@ def reporte_compras():
 
                 query_detalle = """
                     SELECT
-
                         c.Id_compra,
                         c.Fecha,
                         pc.cod_barra,
@@ -825,9 +791,8 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND pc.id_tienda = %s
-
-                    AND c.Tipo_Compra = %s
+                      AND pc.id_tienda = %s
+                      AND c.Tipo_Compra = %s
 
                     ORDER BY c.Fecha DESC
                 """
@@ -842,9 +807,7 @@ def reporte_compras():
                     )
                 )
 
-        rows_detalle = (
-            cursor.fetchall()
-        )
+        rows_detalle = cursor.fetchall()
 
         if rows_detalle:
 
@@ -910,13 +873,9 @@ def reporte_compras():
                 )
 
                 st.warning(
-                    f"⚠️ Número inesperado de columnas: "
-                    f"{num_cols}"
+                    f"⚠️ Número inesperado "
+                    f"de columnas: {num_cols}"
                 )
-
-            # ========================================================
-            # FORMATEAR FECHA
-            # ========================================================
 
             df_detalle[
                 "Fecha"
@@ -925,10 +884,6 @@ def reporte_compras():
             ).dt.strftime(
                 "%Y-%m-%d"
             )
-
-            # ========================================================
-            # FORMATEAR VALORES MONETARIOS
-            # ========================================================
 
             df_detalle[
                 "Precio Unitario"
@@ -1044,7 +999,7 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND c.Tipo_Compra = %s
+                      AND c.Tipo_Compra = %s
 
                     GROUP BY
                         t.nombre,
@@ -1093,7 +1048,9 @@ def reporte_compras():
                         df,
                         x="Tienda",
                         y="Total_Compras",
-                        title="Total de Compras por Tienda",
+                        title=(
+                            "Total de Compras por Tienda"
+                        ),
                         color="Tipo_Compra",
                         color_discrete_map={
                             "Propia": "#2ecc71",
@@ -1131,7 +1088,9 @@ def reporte_compras():
                         df,
                         x="Tienda",
                         y="Total_Compras",
-                        title="Total de Compras por Tienda",
+                        title=(
+                            "Total de Compras por Tienda"
+                        ),
                         color="Total_Compras",
                         color_continuous_scale="Blues",
                         text=df[
@@ -1148,7 +1107,9 @@ def reporte_compras():
 
                 fig.update_layout(
                     xaxis_title="Tienda",
-                    yaxis_title="Total de Compras ($)",
+                    yaxis_title=(
+                        "Total de Compras ($)"
+                    ),
                     height=500,
                 )
 
@@ -1210,7 +1171,7 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND pc.id_tienda = %s
+                      AND pc.id_tienda = %s
 
                     GROUP BY
                         YEAR(c.Fecha),
@@ -1284,9 +1245,8 @@ def reporte_compras():
                     WHERE DATE(c.Fecha)
                           BETWEEN %s AND %s
 
-                    AND pc.id_tienda = %s
-
-                    AND c.Tipo_Compra = %s
+                      AND pc.id_tienda = %s
+                      AND c.Tipo_Compra = %s
 
                     GROUP BY
                         YEAR(c.Fecha),
@@ -1332,7 +1292,8 @@ def reporte_compras():
                     ].astype(float)
 
                     st.markdown(
-                        f"### 📊 Análisis de Compras Mensuales - "
+                        f"### 📊 Análisis de "
+                        f"Compras Mensuales - "
                         f"{filtro_tienda}"
                     )
 
@@ -1340,7 +1301,9 @@ def reporte_compras():
                         df,
                         x="Nombre_Mes",
                         y="Total_Compras",
-                        title="Total de Compras por Mes",
+                        title=(
+                            "Total de Compras por Mes"
+                        ),
                         color="Tipo_Compra",
                         color_discrete_map={
                             "Propia": "#2ecc71",
@@ -1372,7 +1335,8 @@ def reporte_compras():
                     ].astype(float)
 
                     st.markdown(
-                        f"### 📊 Análisis de Compras Mensuales - "
+                        f"### 📊 Análisis de "
+                        f"Compras Mensuales - "
                         f"{filtro_tienda}"
                     )
 
@@ -1380,7 +1344,9 @@ def reporte_compras():
                         df,
                         x="Nombre_Mes",
                         y="Total_Compras",
-                        title="Total de Compras por Mes",
+                        title=(
+                            "Total de Compras por Mes"
+                        ),
                         color="Total_Compras",
                         color_continuous_scale="Blues",
                         text=df[
@@ -1397,7 +1363,9 @@ def reporte_compras():
 
                 fig.update_layout(
                     xaxis_title="Mes",
-                    yaxis_title="Total de Compras ($)",
+                    yaxis_title=(
+                        "Total de Compras ($)"
+                    ),
                     height=500,
                 )
 
@@ -1432,9 +1400,6 @@ def reporte_compras():
         st.markdown(
             "## 💰 TOTAL GENERAL DE COMPRAS"
         )
-
-        # Se construye en una sola cadena HTML para evitar
-        # que Streamlit interprete el CSS como texto.
 
         html_total = (
             f"<div style='"
@@ -1475,8 +1440,10 @@ def reporte_compras():
 
         st.markdown("---")
 
-        col1, col2, col3 = st.columns(
-            [1, 2, 1]
+        col1, col2, col3 = (
+            st.columns(
+                [1, 2, 1]
+            )
         )
 
         with col2:
@@ -1505,7 +1472,8 @@ def reporte_compras():
     except Exception as e:
 
         st.error(
-            f"❌ Error al generar el reporte: {e}"
+            f"❌ Error al generar "
+            f"el reporte: {e}"
         )
 
     finally:
@@ -1518,4 +1486,5 @@ def reporte_compras():
 
 
 def modulo_reporte_compras():
+
     reporte_compras()
