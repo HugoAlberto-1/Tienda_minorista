@@ -39,7 +39,7 @@ UNIDADES_PESO = [
 ]
 
 
-# Porcentaje acordado para el stock de seguridad: 2 % de la mediana
+# Porcentaje acordado para el inventario de seguridad: 2 % de la mediana
 # de las ventas MENSUALES del historial completo por producto y tienda.
 PORCENTAJE_SEGURIDAD = 0.02
 
@@ -356,7 +356,7 @@ def ajustar_compra_operativa(valor, medida):
     - Para productos manejados por peso:
       conserva los decimales.
 
-    Esta función NO modifica el punto de reorden, el stock de seguridad,
+    Esta función NO modifica el punto de reorden, el inventario de seguridad,
     la demanda ni ningún otro cálculo del modelo.
     """
     try:
@@ -582,35 +582,73 @@ def obtener_lead_times():
     proveedor ni se asigna un plazo fijo cuando falta la relación.
     """
     columnas = ["Código", "id_tienda", "Proveedor", "Lead time"]
+
     conn = obtener_conexion()
+
     if not conn:
         st.error("No se pudo conectar para consultar los proveedores.")
         return pd.DataFrame(columns=columnas)
+
     cursor = conn.cursor()
+
     try:
         cursor.execute("""
-            SELECT pc.cod_barra, pc.id_tienda, c.id_proveedor,
-                   pr.lead_time, c.Fecha, c.Id_compra
+            SELECT
+                pc.cod_barra,
+                pc.id_tienda,
+                c.id_proveedor,
+                pr.lead_time,
+                c.Fecha,
+                c.Id_compra
             FROM ProductoxCompra pc
-            INNER JOIN Compra c ON pc.Id_compra = c.Id_compra
-            LEFT JOIN Proveedor pr ON c.id_proveedor = pr.id_proveedor
+            INNER JOIN Compra c
+                ON pc.Id_compra = c.Id_compra
+            LEFT JOIN Proveedor pr
+                ON c.id_proveedor = pr.id_proveedor
             ORDER BY c.Fecha DESC, c.Id_compra DESC
         """)
+
         registros = cursor.fetchall()
-        datos = pd.DataFrame(registros, columns=[
-            "Código", "id_tienda", "Proveedor", "Lead time",
-            "Fecha compra", "ID compra"
-        ])
+
+        datos = pd.DataFrame(
+            registros,
+            columns=[
+                "Código",
+                "id_tienda",
+                "Proveedor",
+                "Lead time",
+                "Fecha compra",
+                "ID compra"
+            ]
+        )
+
         if datos.empty:
             return pd.DataFrame(columns=columnas)
+
         # Primera compra = la más reciente (sin mezclar proveedores).
-        datos = datos.drop_duplicates(["Código", "id_tienda"], keep="first")
-        datos["Lead time"] = pd.to_numeric(datos["Lead time"], errors="coerce")
-        datos.loc[datos["Lead time"] <= 0, "Lead time"] = np.nan
+        datos = datos.drop_duplicates(
+            ["Código", "id_tienda"],
+            keep="first"
+        )
+
+        datos["Lead time"] = pd.to_numeric(
+            datos["Lead time"],
+            errors="coerce"
+        )
+
+        datos.loc[
+            datos["Lead time"] <= 0,
+            "Lead time"
+        ] = np.nan
+
         return datos[columnas]
+
     except Exception as e:
-        st.error(f"❌ No se pudo obtener el lead time de proveedores: {e}")
+        st.error(
+            f"❌ No se pudo obtener el tiempo de entrega de proveedores: {e}"
+        )
         return pd.DataFrame(columns=columnas)
+
     finally:
         cursor.close()
         conn.close()
@@ -656,10 +694,11 @@ def obtener_ventas():
         )
 
         if not df.empty:
-            # Comparar ventas por día completo, no por hora. Así las
-            # ventas de hoy no quedan fuera del pronóstico por usar
-            # fecha_fin como fecha a medianoche.
-            df["Fecha"] = pd.to_datetime(df["Fecha"]).dt.normalize()
+            df["Fecha"] = (
+                pd.to_datetime(df["Fecha"])
+                .dt.normalize()
+            )
+
             df["Cantidad"] = pd.to_numeric(
                 df["Cantidad"],
                 errors="coerce"
@@ -698,19 +737,12 @@ def calcular_pronostico_30_dias(
 
     Se divide el historial reciente en tres bloques:
 
-    últimos 30 días        -> peso 50 %
-    de 31 a 60 días        -> peso 30 %
-    de 61 a 90 días        -> peso 20 %
+    últimos 30 días -> peso 50 %
+    de 31 a 60 días -> peso 30 %
+    de 61 a 90 días -> peso 20 %
 
     Si el usuario selecciona menos historial, igualmente se utiliza
     la información disponible.
-
-    Devuelve:
-        pronostico_30_dias
-        demanda_diaria
-        ventas_30
-        ventas_60
-        ventas_90
     """
 
     if ventas_producto.empty:
@@ -749,7 +781,6 @@ def calcular_pronostico_30_dias(
         float(ventas_90_total - ventas_60_total)
     )
 
-    # Si tenemos 90 días completos:
     if dias_historial >= 90:
         pronostico_30 = (
             bloque_1 * 0.50 +
@@ -766,11 +797,10 @@ def calcular_pronostico_30_dias(
     else:
         pronostico_30 = bloque_1
 
-    # Evitar que una caída repentina deje pronóstico totalmente
-    # desconectado del promedio histórico.
     ventas_historial = ventas_producto[
         ventas_producto["Fecha"] >= (
-            fecha_fin - pd.Timedelta(days=dias_historial - 1)
+            fecha_fin -
+            pd.Timedelta(days=dias_historial - 1)
         )
     ]["Cantidad_Base"].sum()
 
@@ -782,14 +812,18 @@ def calcular_pronostico_30_dias(
     else:
         promedio_historico_30 = 0
 
-    # Combinamos tendencia reciente + histórico
-    if pronostico_30 > 0 and promedio_historico_30 > 0:
+    if (
+        pronostico_30 > 0
+        and promedio_historico_30 > 0
+    ):
         pronostico_final = (
             pronostico_30 * 0.70 +
             promedio_historico_30 * 0.30
         )
+
     elif pronostico_30 > 0:
         pronostico_final = pronostico_30
+
     else:
         pronostico_final = promedio_historico_30
 
@@ -805,13 +839,15 @@ def calcular_pronostico_30_dias(
 
 
 # ============================================================
-# STOCK DE SEGURIDAD:
-# MESES COMPLETOS + RESPALDO PROVISIONAL DEL MES ACTUAL
+# INVENTARIO DE SEGURIDAD
 # ============================================================
 
-def calcular_seguridad_mensual(ventas_producto, fecha_fin):
+def calcular_seguridad_mensual(
+    ventas_producto,
+    fecha_fin
+):
     """
-    Calcula la base y el stock de seguridad del producto/tienda.
+    Calcula la base y el inventario de seguridad del producto/tienda.
 
     REGLAS:
 
@@ -819,27 +855,25 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
        - Se calcula el total vendido por cada mes completo.
        - Se incluyen meses intermedios sin ventas como 0.
        - Se obtiene la mediana de esos totales mensuales.
-       - Stock de seguridad = mediana * 2 %.
+       - Inventario de seguridad = mediana * 2 %.
 
     2. Si NO existe ningún mes completo, pero sí existen ventas
        en el mes actual:
        - Se usa provisionalmente la mediana de las cantidades
          de las ventas individuales registradas en el mes actual.
-       - Stock de seguridad = mediana provisional * 2 %.
+       - Inventario de seguridad = mediana provisional * 2 %.
 
     3. Si no existe ninguna venta:
        - Se devuelve NaN para mostrar "Sin datos".
-
-    Devuelve:
-        mediana_base
-        stock_seguridad
-        meses_completos
     """
 
     if ventas_producto.empty:
         return np.nan, np.nan, 0
 
-    fecha = pd.Timestamp(fecha_fin).normalize()
+    fecha = pd.Timestamp(
+        fecha_fin
+    ).normalize()
+
     datos = ventas_producto.copy()
 
     datos["Fecha"] = pd.to_datetime(
@@ -860,11 +894,10 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
     if datos.empty:
         return np.nan, np.nan, 0
 
-    inicio_mes_actual = fecha.replace(day=1)
+    inicio_mes_actual = fecha.replace(
+        day=1
+    )
 
-    # --------------------------------------------------------
-    # CASO A: existen meses completos
-    # --------------------------------------------------------
     datos_completos = datos[
         datos["Fecha"] < inicio_mes_actual
     ].copy()
@@ -872,16 +905,22 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
     if not datos_completos.empty:
 
         datos_completos["Mes"] = (
-            datos_completos["Fecha"].dt.to_period("M")
+            datos_completos[
+                "Fecha"
+            ].dt.to_period("M")
         )
 
         totales_mensuales = (
             datos_completos
-            .groupby("Mes")["Cantidad_Base"]
+            .groupby("Mes")[
+                "Cantidad_Base"
+            ]
             .sum()
         )
 
-        ultimo_mes_completo = fecha.to_period("M") - 1
+        ultimo_mes_completo = (
+            fecha.to_period("M") - 1
+        )
 
         meses = pd.period_range(
             start=totales_mensuales.index.min(),
@@ -889,14 +928,21 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
             freq="M"
         )
 
-        # Los meses intermedios sin ventas cuentan como 0.
-        totales_mensuales = totales_mensuales.reindex(
-            meses,
-            fill_value=0.0
+        totales_mensuales = (
+            totales_mensuales.reindex(
+                meses,
+                fill_value=0.0
+            )
         )
 
-        mediana = float(totales_mensuales.median())
-        stock_seguridad = mediana * PORCENTAJE_SEGURIDAD
+        mediana = float(
+            totales_mensuales.median()
+        )
+
+        stock_seguridad = (
+            mediana *
+            PORCENTAJE_SEGURIDAD
+        )
 
         return (
             mediana,
@@ -904,9 +950,6 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
             len(totales_mensuales)
         )
 
-    # --------------------------------------------------------
-    # CASO B: no hay meses completos, pero sí ventas este mes
-    # --------------------------------------------------------
     datos_mes_actual = datos[
         (datos["Fecha"] >= inicio_mes_actual) &
         (datos["Fecha"] <= fecha)
@@ -915,11 +958,14 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
     if not datos_mes_actual.empty:
 
         mediana_provisional = float(
-            datos_mes_actual["Cantidad_Base"].median()
+            datos_mes_actual[
+                "Cantidad_Base"
+            ].median()
         )
 
         stock_seguridad = (
-            mediana_provisional * PORCENTAJE_SEGURIDAD
+            mediana_provisional *
+            PORCENTAJE_SEGURIDAD
         )
 
         return (
@@ -928,9 +974,6 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
             0
         )
 
-    # --------------------------------------------------------
-    # CASO C: no hay ventas
-    # --------------------------------------------------------
     return np.nan, np.nan, 0
 
 
@@ -938,18 +981,16 @@ def calcular_seguridad_mensual(ventas_producto, fecha_fin):
 # CLASIFICACIÓN DE ROTACIÓN
 # ============================================================
 
-def clasificar_rotacion(cobertura_dias, demanda_diaria, stock):
-    """
-    La clasificación se basa principalmente en cuántos días
-    duraría el inventario al ritmo pronosticado.
-
-    No necesariamente significa "bueno/malo":
-    una rotación alta indica que el producto sale rápidamente.
-    """
-
+def clasificar_rotacion(
+    cobertura_dias,
+    demanda_diaria,
+    stock
+):
     if demanda_diaria <= 0:
+
         if stock > 0:
             return "🔴 Sin movimiento"
+
         return "⚪ Sin historial"
 
     if cobertura_dias <= 15:
@@ -981,18 +1022,30 @@ def construir_analisis(
     cobertura_objetivo,
     dias_limpieza,
 ):
+
     if productos.empty:
         return pd.DataFrame()
 
     resultados = []
 
-    fecha_fin = pd.Timestamp(fecha_fin)
-    fecha_inicio = fecha_fin - pd.Timedelta(
-        days=dias_historial - 1
+    fecha_fin = pd.Timestamp(
+        fecha_fin
     )
-    # La relación proveedor-producto se conserva por tienda.
+
+    fecha_inicio = (
+        fecha_fin -
+        pd.Timedelta(
+            days=dias_historial - 1
+        )
+    )
+
     productos = productos.merge(
-        lead_times, how="left", on=["Código", "id_tienda"],
+        lead_times,
+        how="left",
+        on=[
+            "Código",
+            "id_tienda"
+        ],
         validate="many_to_one"
     )
 
@@ -1001,70 +1054,94 @@ def construir_analisis(
         codigo = prod["Código"]
         id_tienda = prod["id_tienda"]
 
-        compras_prod = compras[
-            (compras["Código"] == codigo) &
-            (compras["id_tienda"] == id_tienda)
-        ].copy() if not compras.empty else pd.DataFrame()
+        compras_prod = (
+            compras[
+                (compras["Código"] == codigo) &
+                (compras["id_tienda"] == id_tienda)
+            ].copy()
+            if not compras.empty
+            else pd.DataFrame()
+        )
 
-        ventas_prod = ventas[
-            (ventas["Código"] == codigo) &
-            (ventas["id_tienda"] == id_tienda)
-        ].copy() if not ventas.empty else pd.DataFrame()
-
-        # ----------------------------------------------------
-        # Tipo de medida
-        # ----------------------------------------------------
+        ventas_prod = (
+            ventas[
+                (ventas["Código"] == codigo) &
+                (ventas["id_tienda"] == id_tienda)
+            ].copy()
+            if not ventas.empty
+            else pd.DataFrame()
+        )
 
         unidades_compras = (
-            compras_prod["Unidad"].tolist()
+            compras_prod[
+                "Unidad"
+            ].tolist()
             if not compras_prod.empty
             else []
         )
 
         unidades_ventas = (
-            ventas_prod["Unidad"].tolist()
+            ventas_prod[
+                "Unidad"
+            ].tolist()
             if not ventas_prod.empty
             else []
         )
 
-        medida = determinar_tipo_medida(
-            prod["Categoría"],
-            unidades_compras,
-            unidades_ventas,
+        medida = (
+            determinar_tipo_medida(
+                prod["Categoría"],
+                unidades_compras,
+                unidades_ventas,
+            )
         )
 
-        # ----------------------------------------------------
-        # Stock actual = TODAS las compras - TODAS las ventas
-        # ----------------------------------------------------
+        # ====================================================
+        # INVENTARIO ACTUAL
+        # ====================================================
 
         total_comprado = (
-            compras_prod["Cantidad_Base"].sum()
+            compras_prod[
+                "Cantidad_Base"
+            ].sum()
             if not compras_prod.empty
             else 0
         )
 
         total_vendido = (
-            ventas_prod["Cantidad_Base"].sum()
+            ventas_prod[
+                "Cantidad_Base"
+            ].sum()
             if not ventas_prod.empty
             else 0
         )
 
         stock = max(
             0,
-            float(total_comprado) - float(total_vendido)
+            float(total_comprado) -
+            float(total_vendido)
         )
 
-        # ----------------------------------------------------
-        # Historial para pronóstico
-        # ----------------------------------------------------
-
         if not ventas_prod.empty:
-            ventas_periodo = ventas_prod[
-                (ventas_prod["Fecha"] >= fecha_inicio) &
-                (ventas_prod["Fecha"] <= fecha_fin)
-            ].copy()
+
+            ventas_periodo = (
+                ventas_prod[
+                    (
+                        ventas_prod["Fecha"] >=
+                        fecha_inicio
+                    ) &
+                    (
+                        ventas_prod["Fecha"] <=
+                        fecha_fin
+                    )
+                ]
+                .copy()
+            )
+
         else:
-            ventas_periodo = pd.DataFrame()
+            ventas_periodo = (
+                pd.DataFrame()
+            )
 
         (
             pronostico_30,
@@ -1078,221 +1155,298 @@ def construir_analisis(
             dias_historial,
         )
 
-        # ----------------------------------------------------
-        # Última venta y días sin vender
-        # ----------------------------------------------------
-
         if not ventas_prod.empty:
-            ultima_venta = pd.to_datetime(
-                ventas_prod["Fecha"]
-            ).max()
+
+            ultima_venta = (
+                pd.to_datetime(
+                    ventas_prod["Fecha"]
+                ).max()
+            )
 
             dias_sin_venta = max(
                 0,
-                (fecha_fin.normalize() -
-                 ultima_venta.normalize()).days
+                (
+                    fecha_fin.normalize() -
+                    ultima_venta.normalize()
+                ).days
             )
+
         else:
             ultima_venta = pd.NaT
             dias_sin_venta = None
 
-        # ----------------------------------------------------
-        # Cobertura
-        # ----------------------------------------------------
-
         if demanda_diaria > 0:
-            cobertura_dias = stock / demanda_diaria
+            cobertura_dias = (
+                stock /
+                demanda_diaria
+            )
+
         else:
             cobertura_dias = np.inf
 
-        # ----------------------------------------------------
-        # Rotación %
-        #
-        # Mide qué porcentaje del inventario que estuvo disponible
-        # durante los últimos 30 días realmente salió por ventas.
-        #
-        # Inventario disponible 30d = stock actual + ventas reales 30d
-        # Rotación % = ventas reales 30d / inventario disponible 30d * 100
-        #
-        # Ejemplos:
-        # - 0 %  -> el producto no se movió.
-        # - 50 % -> se vendió la mitad de lo que estuvo disponible.
-        # - 90 % -> el producto tuvo una salida muy alta.
-        #
-        # Se usan ventas REALES, no el pronóstico, para que el indicador
-        # refleje el movimiento observado del producto en el inventario.
-        # ----------------------------------------------------
-
-        inventario_disponible_30 = float(stock) + float(ventas_30)
+        inventario_disponible_30 = (
+            float(stock) +
+            float(ventas_30)
+        )
 
         if inventario_disponible_30 > 0:
+
             rotacion_pct = (
-                float(ventas_30) / inventario_disponible_30
+                float(ventas_30) /
+                inventario_disponible_30
             ) * 100
+
         else:
             rotacion_pct = 0.0
 
-        # Protección ante pequeñas diferencias numéricas.
-        rotacion_pct = min(100.0, max(0.0, rotacion_pct))
-
-        rotacion_estado = clasificar_rotacion(
-            cobertura_dias,
-            demanda_diaria,
-            stock,
-        )
-
-        # ----------------------------------------------------
-        # Reorden = demanda diaria * LT del proveedor + SS mensual.
-        # Mediana: TODOS los meses completos del historial de ventas.
-        # ----------------------------------------------------
-        mediana_mensual, stock_seguridad, meses_historial = (
-            calcular_seguridad_mensual(ventas_prod, fecha_fin)
-        )
-        lead_time = pd.to_numeric(prod["Lead time"], errors="coerce")
-        datos_reorden_ok = (
-            pd.notna(lead_time) and lead_time > 0 and
-            pd.notna(stock_seguridad)
-        )
-        if datos_reorden_ok:
-            punto_reorden = demanda_diaria * float(lead_time) + stock_seguridad
-            stock_objetivo = (
-                demanda_diaria * (cobertura_objetivo + float(lead_time))
-                + stock_seguridad
+        rotacion_pct = min(
+            100.0,
+            max(
+                0.0,
+                rotacion_pct
             )
-            compra_sugerida = max(0.0, stock_objetivo - stock)
+        )
+
+        rotacion_estado = (
+            clasificar_rotacion(
+                cobertura_dias,
+                demanda_diaria,
+                stock,
+            )
+        )
+
+        (
+            mediana_mensual,
+            stock_seguridad,
+            meses_historial
+        ) = calcular_seguridad_mensual(
+            ventas_prod,
+            fecha_fin
+        )
+
+        lead_time = pd.to_numeric(
+            prod["Lead time"],
+            errors="coerce"
+        )
+
+        datos_reorden_ok = (
+            pd.notna(lead_time)
+            and lead_time > 0
+            and pd.notna(
+                stock_seguridad
+            )
+        )
+
+        if datos_reorden_ok:
+
+            punto_reorden = (
+                demanda_diaria *
+                float(lead_time) +
+                stock_seguridad
+            )
+
+            stock_objetivo = (
+                demanda_diaria *
+                (
+                    cobertura_objetivo +
+                    float(lead_time)
+                )
+                +
+                stock_seguridad
+            )
+
+            compra_sugerida = max(
+                0.0,
+                stock_objetivo - stock
+            )
+
         else:
-            # No presentar un cero inventado ni recomendar compras con
-            # proveedor / historial mensual incompletos.
+
             punto_reorden = np.nan
             stock_objetivo = np.nan
             compra_sugerida = np.nan
 
-        # ----------------------------------------------------
-        # Próximo reorden
-        # ----------------------------------------------------
+        if (
+            not datos_reorden_ok
+            or demanda_diaria <= 0
+        ):
 
-        if not datos_reorden_ok or demanda_diaria <= 0:
-            dias_para_reorden = np.inf
+            dias_para_reorden = (
+                np.inf
+            )
 
         elif stock <= punto_reorden:
             dias_para_reorden = 0
 
         else:
             dias_para_reorden = (
-                stock - punto_reorden
-            ) / demanda_diaria
-
-        # ----------------------------------------------------
-        # Acción / decisión
-        # ----------------------------------------------------
+                (
+                    stock -
+                    punto_reorden
+                ) /
+                demanda_diaria
+            )
 
         accion = ""
         prioridad = 99
 
-        # No asignar una recomendación cuantitativa si faltan datos.
         if not datos_reorden_ok:
-            accion = "⚪ Revisar datos de reorden"
+
+            accion = (
+                "⚪ Revisar datos de reorden"
+            )
+
             prioridad = 7
 
-        # Producto con stock pero sin ventas
-        elif stock > 0 and demanda_diaria <= 0:
+        elif (
+            stock > 0
+            and demanda_diaria <= 0
+        ):
 
             if (
                 dias_sin_venta is None
-                or dias_sin_venta >= dias_limpieza
+                or
+                dias_sin_venta >=
+                dias_limpieza
             ):
-                accion = "🧹 Limpieza de inventario"
+
+                accion = (
+                    "🧹 Limpieza de inventario"
+                )
+
                 prioridad = 5
+
             else:
-                accion = "🚫 No comprar"
+
+                accion = (
+                    "🚫 No comprar"
+                )
+
                 prioridad = 4
 
             compra_sugerida = 0
 
-        # Lleva demasiado tiempo sin vender
         elif (
-            stock > 0 and
-            dias_sin_venta is not None and
-            dias_sin_venta >= dias_limpieza
+            stock > 0
+            and dias_sin_venta
+            is not None
+            and dias_sin_venta >=
+            dias_limpieza
         ):
-            accion = "🧹 Limpieza de inventario"
+
+            accion = (
+                "🧹 Limpieza de inventario"
+            )
+
             prioridad = 5
             compra_sugerida = 0
 
-        # Reorden inmediato
-        elif demanda_diaria > 0 and stock <= punto_reorden:
-            accion = "🔴 Comprar ahora"
+        elif (
+            demanda_diaria > 0
+            and stock <=
+            punto_reorden
+        ):
+
+            accion = (
+                "🔴 Comprar ahora"
+            )
+
             prioridad = 1
 
-        # Próximo a reorden
-        elif demanda_diaria > 0 and dias_para_reorden <= 14:
-            accion = "🟡 Próximo a comprar"
+        elif (
+            demanda_diaria > 0
+            and dias_para_reorden <= 14
+        ):
+
+            accion = (
+                "🟡 Próximo a comprar"
+            )
+
             prioridad = 2
 
-        # Inventario excesivo
         elif (
-            demanda_diaria > 0 and
-            cobertura_dias > 90
+            demanda_diaria > 0
+            and cobertura_dias > 90
         ):
-            accion = "🚫 No comprar"
+
+            accion = (
+                "🚫 No comprar"
+            )
+
             prioridad = 4
             compra_sugerida = 0
 
-        # Stock superior al deseable
         elif (
-            demanda_diaria > 0 and
-            cobertura_dias > 60
+            demanda_diaria > 0
+            and cobertura_dias > 60
         ):
-            accion = "🟠 Reducir compra"
+
+            accion = (
+                "🟠 Reducir compra"
+            )
+
             prioridad = 3
 
-            # Si la sugerencia matemática dio algo,
-            # reducimos todavía más la reposición.
             compra_sugerida = max(
                 0,
-                compra_sugerida * 0.50
+                compra_sugerida *
+                0.50
             )
 
         else:
-            accion = "🟢 Mantener"
+
+            accion = (
+                "🟢 Mantener"
+            )
+
             prioridad = 6
 
-        # ----------------------------------------------------
-        # Texto próximo reorden
-        # ----------------------------------------------------
-
         if not datos_reorden_ok:
-            proximo_reorden_texto = "Sin datos"
 
-        elif demanda_diaria <= 0:
-            proximo_reorden_texto = "No comprar"
-
-        elif dias_para_reorden <= 0:
-            proximo_reorden_texto = "Ahora"
-
-        elif dias_para_reorden < 1:
-            proximo_reorden_texto = "< 1 día"
-
-        else:
-            proximo_reorden_texto = formatear_dias(
-                dias_para_reorden
+            proximo_reorden_texto = (
+                "Sin datos"
             )
 
-        # ----------------------------------------------------
-        # Tendencia reciente
-        # ----------------------------------------------------
+        elif demanda_diaria <= 0:
+
+            proximo_reorden_texto = (
+                "No comprar"
+            )
+
+        elif dias_para_reorden <= 0:
+
+            proximo_reorden_texto = (
+                "Ahora"
+            )
+
+        elif dias_para_reorden < 1:
+
+            proximo_reorden_texto = (
+                "< 1 día"
+            )
+
+        else:
+
+            proximo_reorden_texto = (
+                formatear_dias(
+                    dias_para_reorden
+                )
+            )
 
         ventas_anteriores_30 = max(
             0,
-            ventas_60 - ventas_30
+            ventas_60 -
+            ventas_30
         )
 
         if ventas_anteriores_30 > 0:
+
             variacion = (
                 (
                     ventas_30 -
                     ventas_anteriores_30
-                ) /
+                )
+                /
                 ventas_anteriores_30
             ) * 100
 
@@ -1304,142 +1458,282 @@ def construir_analisis(
 
         if variacion > 15:
             tendencia = "⬆️ Creciendo"
+
         elif variacion < -15:
             tendencia = "⬇️ Disminuyendo"
+
         else:
             tendencia = "➡️ Estable"
 
-        # ----------------------------------------------------
-        # Compra sugerida operativa
-        # ----------------------------------------------------
-        # Se conserva la cantidad matemática exacta para no alterar
-        # las fórmulas ni la lógica del modelo.
-        compra_sugerida_exacta = compra_sugerida
+        compra_sugerida_exacta = (
+            compra_sugerida
+        )
 
-        # Únicamente la cantidad que se mostrará/recomendará para comprar
-        # se redondea hacia arriba cuando el producto se maneja por unidades.
-        # Los productos por peso conservan sus decimales.
-        compra_sugerida_operativa = ajustar_compra_operativa(
-            compra_sugerida_exacta,
-            medida
+        compra_sugerida_operativa = (
+            ajustar_compra_operativa(
+                compra_sugerida_exacta,
+                medida
+            )
         )
 
         resultados.append({
-            "ID Producto": prod["ID Producto"],
-            "Código": codigo,
-            "Producto": prod["Producto"],
-            "Categoría": prod["Categoría"],
-            "id_tienda": id_tienda,
-            "Tienda": prod["Tienda"],
 
-            "Medida": medida,
-            "Proveedor": prod["Proveedor"],
-            "Lead time": float(lead_time) if pd.notna(lead_time) else np.nan,
-            "Mediana mensual": round(mediana_mensual, 2),
-            "Stock seguridad": round(stock_seguridad, 2),
-            "Meses historial": meses_historial,
+            "ID Producto":
+                prod["ID Producto"],
 
-            "Stock": round(stock, 2),
+            "Código":
+                codigo,
 
-            "Ventas 30d": round(ventas_30, 2),
-            "Ventas 60d": round(ventas_60, 2),
-            "Ventas 90d": round(ventas_90, 2),
+            "Producto":
+                prod["Producto"],
 
-            "Pronóstico 30d": round(pronostico_30, 2),
-            "Demanda diaria": round(demanda_diaria, 4),
+            "Categoría":
+                prod["Categoría"],
 
-            "Cobertura días": (
-                round(cobertura_dias, 1)
-                if np.isfinite(cobertura_dias)
-                else np.inf
-            ),
+            "id_tienda":
+                id_tienda,
 
-            "Cobertura": (
-                formatear_dias(cobertura_dias)
-                if np.isfinite(cobertura_dias)
-                else "Sin movimiento"
-            ),
+            "Tienda":
+                prod["Tienda"],
 
-            "Rotación %": round(rotacion_pct, 1),
-            "Nivel rotación": rotacion_estado,
+            "Medida":
+                medida,
 
-            "Punto reorden": round(punto_reorden, 2),
-            "Stock objetivo": round(stock_objetivo, 2),
+            "Proveedor":
+                prod["Proveedor"],
 
-            # Valor matemático sin redondear para auditoría/cálculos internos.
-            "Compra sugerida exacta": round(compra_sugerida_exacta, 2),
+            "Lead time":
+                (
+                    float(lead_time)
+                    if pd.notna(
+                        lead_time
+                    )
+                    else np.nan
+                ),
 
-            # Valor operativo: unidades enteras hacia arriba; peso con decimales.
-            "Compra sugerida": round(compra_sugerida_operativa, 2),
+            "Mediana mensual":
+                round(
+                    mediana_mensual,
+                    2
+                ),
 
-            "Días para reorden": (
-                round(dias_para_reorden, 1)
-                if np.isfinite(dias_para_reorden)
-                else np.inf
-            ),
+            "Stock seguridad":
+                round(
+                    stock_seguridad,
+                    2
+                ),
 
-            "Próximo reorden": proximo_reorden_texto,
+            "Meses historial":
+                meses_historial,
 
-            "Última venta": (
-                ultima_venta.strftime("%Y-%m-%d")
-                if pd.notna(ultima_venta)
-                else "Nunca"
-            ),
+            "Stock":
+                round(
+                    stock,
+                    2
+                ),
 
-            "Días sin vender": (
-                dias_sin_venta
-                if dias_sin_venta is not None
-                else np.inf
-            ),
+            "Ventas 30d":
+                round(
+                    ventas_30,
+                    2
+                ),
 
-            "Tendencia": tendencia,
-            "Variación reciente %": round(variacion, 1),
+            "Ventas 60d":
+                round(
+                    ventas_60,
+                    2
+                ),
 
-            "Acción": accion,
-            "Prioridad": prioridad,
+            "Ventas 90d":
+                round(
+                    ventas_90,
+                    2
+                ),
+
+            "Pronóstico 30d":
+                round(
+                    pronostico_30,
+                    2
+                ),
+
+            "Demanda diaria":
+                round(
+                    demanda_diaria,
+                    4
+                ),
+
+            "Cobertura días":
+                (
+                    round(
+                        cobertura_dias,
+                        1
+                    )
+                    if np.isfinite(
+                        cobertura_dias
+                    )
+                    else np.inf
+                ),
+
+            "Cobertura":
+                (
+                    formatear_dias(
+                        cobertura_dias
+                    )
+                    if np.isfinite(
+                        cobertura_dias
+                    )
+                    else
+                    "Sin movimiento"
+                ),
+
+            "Rotación %":
+                round(
+                    rotacion_pct,
+                    1
+                ),
+
+            "Nivel rotación":
+                rotacion_estado,
+
+            "Punto reorden":
+                round(
+                    punto_reorden,
+                    2
+                ),
+
+            "Stock objetivo":
+                round(
+                    stock_objetivo,
+                    2
+                ),
+
+            "Compra sugerida exacta":
+                round(
+                    compra_sugerida_exacta,
+                    2
+                ),
+
+            "Compra sugerida":
+                round(
+                    compra_sugerida_operativa,
+                    2
+                ),
+
+            "Días para reorden":
+                (
+                    round(
+                        dias_para_reorden,
+                        1
+                    )
+                    if np.isfinite(
+                        dias_para_reorden
+                    )
+                    else np.inf
+                ),
+
+            "Próximo reorden":
+                proximo_reorden_texto,
+
+            "Última venta":
+                (
+                    ultima_venta.strftime(
+                        "%Y-%m-%d"
+                    )
+                    if pd.notna(
+                        ultima_venta
+                    )
+                    else "Nunca"
+                ),
+
+            "Días sin vender":
+                (
+                    dias_sin_venta
+                    if dias_sin_venta
+                    is not None
+                    else np.inf
+                ),
+
+            "Tendencia":
+                tendencia,
+
+            "Variación reciente %":
+                round(
+                    variacion,
+                    1
+                ),
+
+            "Acción":
+                accion,
+
+            "Prioridad":
+                prioridad,
         })
 
-    return pd.DataFrame(resultados)
+    return pd.DataFrame(
+        resultados
+    )
 
 
 # ============================================================
-# MATRIZ PRODUCTO x TIENDA (VISTA PRINCIPAL)
+# MATRIZ PRODUCTO x TIENDA
 # ============================================================
 
-# Etiquetas amigables -> columna real del análisis.
 MAPA_INDICADORES = {
-    "Stock actual": "Stock",
-    "Duración del inventario": "Cobertura",
-    "Rotación 30 días": "Rotación %",
-    "Rotación (nivel)": "Nivel rotación",
-    "Punto de reorden": "Punto reorden",
-    "Stock de seguridad": "Stock seguridad",
-    "Mediana mensual": "Mediana mensual",
-    "Lead time (días)": "Lead time",
-    "Compra sugerida": "Compra sugerida",
-    "Recomendación": "Acción",
-    "Tendencia": "Tendencia",
-    "Próximo reorden": "Próximo reorden",
+
+    "Inventario actual":
+        "Stock",
+
+    "Duración del inventario":
+        "Cobertura",
+
+    "Rotación 30 días":
+        "Rotación %",
+
+    "Rotación (nivel)":
+        "Nivel rotación",
+
+    "Punto de reorden":
+        "Punto reorden",
+
+    "Inventario de seguridad":
+        "Stock seguridad",
+
+    "Mediana mensual":
+        "Mediana mensual",
+
+    "Tiempo de entrega (días)":
+        "Lead time",
+
+    "Compra sugerida":
+        "Compra sugerida",
+
+    "Recomendación":
+        "Acción",
+
+    "Tendencia":
+        "Tendencia",
+
+    "Próximo reorden":
+        "Próximo reorden",
 }
 
-# Indicadores que representan una cantidad de producto y por lo
-# tanto deben mostrarse con su unidad (lb / uds).
+
 INDICADORES_CANTIDAD = [
-    "Stock actual",
+    "Inventario actual",
     "Punto de reorden",
-    "Stock de seguridad",
+    "Inventario de seguridad",
     "Mediana mensual",
     "Compra sugerida",
 ]
 
-# Set fijo de indicadores que se muestran en las tablas principales.
+
 INDICADORES_DEFAULT = [
-    "Stock actual",
+    "Inventario actual",
     "Rotación 30 días",
     "Duración del inventario",
     "Punto de reorden",
-    "Stock de seguridad",
-    "Lead time (días)",
+    "Inventario de seguridad",
+    "Tiempo de entrega (días)",
     "Compra sugerida",
     "Recomendación",
 ]
@@ -1454,71 +1748,139 @@ def construir_tabla_indicadores(
     ascendente=True,
     rotacion_numerica=False,
 ):
-    """
-    Arma una tabla ya formateada a partir de un subconjunto que
-    representa UNA sola tienda o UN solo producto:
-
-    - Si df_subset ya está filtrado a una tienda, usa
-      columna_fila="Producto" -> una fila por producto de esa tienda.
-    - Si df_subset ya está filtrado a un producto, usa
-      columna_fila="Tienda" -> una fila por tienda donde existe
-      ese producto, para poder compararlas entre sí.
-    """
 
     if df_subset.empty:
         return pd.DataFrame()
 
-    df_subset = df_subset.copy()
+    df_subset = (
+        df_subset.copy()
+    )
 
-    if orden_por is not None and orden_por in df_subset.columns:
-        df_subset = df_subset.sort_values(
-            orden_por,
-            ascending=ascendente
+    if (
+        orden_por is not None
+        and orden_por
+        in df_subset.columns
+    ):
+
+        df_subset = (
+            df_subset.sort_values(
+                orden_por,
+                ascending=ascendente
+            )
         )
+
     else:
-        df_subset = df_subset.sort_values(columna_fila)
 
-    df_subset = df_subset.reset_index(drop=True)
+        df_subset = (
+            df_subset.sort_values(
+                columna_fila
+            )
+        )
 
-    columnas_extra = columnas_extra or []
+    df_subset = (
+        df_subset.reset_index(
+            drop=True
+        )
+    )
 
-    resultado = df_subset[[columna_fila] + columnas_extra].copy()
+    columnas_extra = (
+        columnas_extra or []
+    )
+
+    resultado = (
+        df_subset[
+            [
+                columna_fila
+            ]
+            +
+            columnas_extra
+        ].copy()
+    )
 
     for indicador in indicadores:
 
-        columna_origen = MAPA_INDICADORES[indicador]
+        columna_origen = (
+            MAPA_INDICADORES[
+                indicador
+            ]
+        )
 
-        if indicador in INDICADORES_CANTIDAD:
-            resultado[indicador] = df_subset.apply(
-                lambda r: formatear_cantidad(
-                    r[columna_origen],
-                    r["Medida"]
-                ),
+        if indicador in (
+            INDICADORES_CANTIDAD
+        ):
+
+            resultado[
+                indicador
+            ] = df_subset.apply(
+
+                lambda r:
+                    formatear_cantidad(
+                        r[
+                            columna_origen
+                        ],
+                        r["Medida"]
+                    ),
+
                 axis=1,
             )
 
-        elif indicador == "Lead time (días)":
-            resultado[indicador] = df_subset[columna_origen].apply(
-                lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
+        elif (
+            indicador ==
+            "Tiempo de entrega (días)"
+        ):
+
+            resultado[
+                indicador
+            ] = df_subset[
+                columna_origen
+            ].apply(
+
+                lambda x:
+                    f"{x:g} días"
+                    if pd.notna(x)
+                    else "Sin datos"
             )
 
-        elif indicador == "Rotación 30 días":
+        elif (
+            indicador ==
+            "Rotación 30 días"
+        ):
+
             if rotacion_numerica:
-                # Se conserva exactamente el valor ya calculado en "Rotación %".
-                # Solo se mantiene numérico para visualizarlo como barra.
-                resultado[indicador] = pd.to_numeric(
-                    df_subset[columna_origen],
+
+                resultado[
+                    indicador
+                ] = pd.to_numeric(
+
+                    df_subset[
+                        columna_origen
+                    ],
+
                     errors="coerce"
-                ).fillna(0.0)
+
+                ).fillna(
+                    0.0
+                )
+
             else:
-                resultado[indicador] = df_subset[
+
+                resultado[
+                    indicador
+                ] = df_subset[
                     columna_origen
                 ].apply(
-                    lambda x: f"{x:.1f}%"
+
+                    lambda x:
+                        f"{x:.1f}%"
                 )
 
         else:
-            resultado[indicador] = df_subset[columna_origen]
+
+            resultado[
+                indicador
+            ] = df_subset[
+                columna_origen
+            ]
 
     return resultado
 
@@ -1530,19 +1892,27 @@ def calcular_altura_tabla(
     minimo=120,
     maximo=480,
 ):
-    """
-    Calcula una altura razonable para st.dataframe según la
-    cantidad de filas que va a mostrar, para no dejar espacio en
-    blanco cuando hay pocos productos ni cortar la tabla cuando
-    hay muchos (a partir de cierto punto se activa el scroll).
-    """
 
     if n_filas <= 0:
         return minimo
 
-    altura = alto_encabezado + (n_filas * alto_fila)
+    altura = (
+        alto_encabezado +
+        (
+            n_filas *
+            alto_fila
+        )
+    )
 
-    return int(min(maximo, max(minimo, altura)))
+    return int(
+        min(
+            maximo,
+            max(
+                minimo,
+                altura
+            )
+        )
+    )
 
 
 # ============================================================
@@ -1550,47 +1920,86 @@ def calcular_altura_tabla(
 # ============================================================
 
 def preparar_tabla_decision(df):
+
     if df.empty:
         return pd.DataFrame()
 
     tabla = df.copy()
 
-    tabla["Stock actual"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Stock"],
-            r["Medida"]
-        ),
+    tabla[
+        "Inventario actual"
+    ] = tabla.apply(
+
+        lambda r:
+            formatear_cantidad(
+                r["Stock"],
+                r["Medida"]
+            ),
+
         axis=1,
     )
 
-    tabla["Pronóstico"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Pronóstico 30d"],
-            r["Medida"]
-        ),
+    tabla[
+        "Pronóstico"
+    ] = tabla.apply(
+
+        lambda r:
+            formatear_cantidad(
+                r["Pronóstico 30d"],
+                r["Medida"]
+            ),
+
         axis=1,
     )
 
-    tabla["Reorden"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Punto reorden"],
-            r["Medida"]
-        ),
+    tabla[
+        "Reorden"
+    ] = tabla.apply(
+
+        lambda r:
+            formatear_cantidad(
+                r["Punto reorden"],
+                r["Medida"]
+            ),
+
         axis=1,
     )
 
-    tabla["Stock seguridad"] = tabla.apply(
-        lambda r: formatear_cantidad(r["Stock seguridad"], r["Medida"]), axis=1
-    )
-    tabla["Lead time (días)"] = tabla["Lead time"].apply(
-        lambda x: f"{x:g} días" if pd.notna(x) else "Sin datos"
+    tabla[
+        "Inventario de seguridad"
+    ] = tabla.apply(
+
+        lambda r:
+            formatear_cantidad(
+                r["Stock seguridad"],
+                r["Medida"]
+            ),
+
+        axis=1,
     )
 
-    tabla["Comprar"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Compra sugerida"],
-            r["Medida"]
-        ),
+    tabla[
+        "Tiempo de entrega (días)"
+    ] = tabla[
+        "Lead time"
+    ].apply(
+
+        lambda x:
+            f"{x:g} días"
+            if pd.notna(x)
+            else "Sin datos"
+    )
+
+    tabla[
+        "Comprar"
+    ] = tabla.apply(
+
+        lambda r:
+            formatear_cantidad(
+                r["Compra sugerida"],
+                r["Medida"]
+            ),
+
         axis=1,
     )
 
@@ -1598,44 +2007,62 @@ def preparar_tabla_decision(df):
         "Producto",
         "Código",
         "Tienda",
-        "Stock actual",
+        "Inventario actual",
         "Cobertura",
         "Nivel rotación",
         "Pronóstico",
         "Reorden",
-        "Stock seguridad",
-        "Lead time (días)",
+        "Inventario de seguridad",
+        "Tiempo de entrega (días)",
         "Comprar",
         "Próximo reorden",
         "Tendencia",
         "Acción",
     ]
 
-    return tabla[columnas].rename(columns={"Acción": "Recomendación"})
+    return (
+        tabla[
+            columnas
+        ]
+        .rename(
+            columns={
+                "Acción":
+                    "Recomendación"
+            }
+        )
+    )
 
 
 def preparar_tabla_limpieza(df):
-    """
-    Tabla enfocada en responder una sola pregunta por producto/tienda:
-    ¿sigue teniendo sentido seguir vendiendo esto, o se debería retirar?
-    """
 
     if df.empty:
         return pd.DataFrame()
 
     tabla = df.copy()
 
-    tabla["Stock actual"] = tabla.apply(
-        lambda r: formatear_cantidad(
-            r["Stock"],
-            r["Medida"]
-        ),
+    tabla[
+        "Inventario actual"
+    ] = tabla.apply(
+
+        lambda r:
+            formatear_cantidad(
+                r["Stock"],
+                r["Medida"]
+            ),
+
         axis=1,
     )
 
-    tabla["¿Sigue vendiendo?"] = np.where(
-        tabla["Demanda diaria"] > 0,
+    tabla[
+        "¿Sigue vendiendo?"
+    ] = np.where(
+
+        tabla[
+            "Demanda diaria"
+        ] > 0,
+
         "Sí, pero muy poco",
+
         "No",
     )
 
@@ -1643,21 +2070,36 @@ def preparar_tabla_limpieza(df):
         "Producto",
         "Código",
         "Tienda",
-        "Stock actual",
+        "Inventario actual",
         "Última venta",
         "Días sin vender",
         "¿Sigue vendiendo?",
         "Acción",
     ]
 
-    return tabla[columnas].rename(columns={"Acción": "Recomendación"})
+    return (
+        tabla[
+            columnas
+        ]
+        .rename(
+            columns={
+                "Acción":
+                    "Recomendación"
+            }
+        )
+    )
 
 
 # ============================================================
 # TARJETAS DE RESUMEN
 # ============================================================
 
-def tarjeta_resumen(icono, valor, etiqueta):
+def tarjeta_resumen(
+    icono,
+    valor,
+    etiqueta
+):
+
     st.markdown(
         f"""
         <div class="metric-card">
@@ -1679,7 +2121,9 @@ def modulo_pronosticos():
     configurar_estilo()
 
     st.markdown(
-        '<div class="pronostico-title">📈 Pronóstico e inventario</div>',
+        '<div class="pronostico-title">'
+        '📈 Pronóstico e inventario'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -1692,32 +2136,44 @@ def modulo_pronosticos():
         unsafe_allow_html=True,
     )
 
-    # Versión interna del módulo: decisiones por tienda · v2
+    filtros_principales = (
+        st.container()
+    )
 
-    # Contenedores reservados para controlar el orden visual:
-    # 1. filtros principales
-    # 2. configuración avanzada
-    # 3. información de la tienda / administrador y datos de reorden
-    # 4. sección de atención
-    filtros_principales = st.container()
-    configuracion_avanzada = st.container()
-    contexto_tienda = st.container()
-    atencion_principal = st.container()
+    configuracion_avanzada = (
+        st.container()
+    )
 
-    # --------------------------------------------------------
-    # Validación
-    # --------------------------------------------------------
+    contexto_tienda = (
+        st.container()
+    )
 
-    if not st.session_state.get("logueado"):
+    atencion_principal = (
+        st.container()
+    )
+
+    # ========================================================
+    # VALIDACIÓN
+    # ========================================================
+
+    if not st.session_state.get(
+        "logueado"
+    ):
+
         st.error(
-            "❌ Debes iniciar sesión para acceder a este módulo."
+            "❌ Debes iniciar sesión "
+            "para acceder a este módulo."
         )
 
         if st.button(
             "⬅ Volver al menú principal",
             key="volver_pronostico_login"
         ):
-            st.session_state["module"] = None
+
+            st.session_state[
+                "module"
+            ] = None
+
             st.rerun()
 
         return
@@ -1727,119 +2183,186 @@ def modulo_pronosticos():
         ""
     )
 
-    id_tienda_sesion = st.session_state.get(
-        "id_tienda"
+    id_tienda_sesion = (
+        st.session_state.get(
+            "id_tienda"
+        )
     )
 
-    nombre_tienda_sesion = st.session_state.get(
-        "nombre_tienda",
-        "Mi Tienda"
+    nombre_tienda_sesion = (
+        st.session_state.get(
+            "nombre_tienda",
+            "Mi Tienda"
+        )
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # CONFIGURACIÓN AVANZADA
-    # --------------------------------------------------------
+    # ========================================================
 
     with configuracion_avanzada:
-        with st.expander("⚙️ Configuración avanzada", expanded=False):
 
-            p1, p2 = st.columns(2)
+        with st.expander(
+            "⚙️ Configuración avanzada",
+            expanded=False
+        ):
+
+            p1, p2 = (
+                st.columns(2)
+            )
 
             with p1:
-                dias_historial = st.selectbox(
-                    "Historial de ventas",
-                    [30, 60, 90, 180, 365],
-                    index=2,
-                    format_func=lambda x: f"{x} días",
-                    help=(
-                        "Período utilizado para analizar "
-                        "la demanda reciente."
-                    ),
+
+                dias_historial = (
+                    st.selectbox(
+                        "Historial de ventas",
+                        [
+                            30,
+                            60,
+                            90,
+                            180,
+                            365
+                        ],
+                        index=2,
+                        format_func=(
+                            lambda x:
+                                f"{x} días"
+                        ),
+                        help=(
+                            "Período utilizado "
+                            "para analizar la "
+                            "demanda reciente."
+                        ),
+                    )
                 )
 
             with p2:
-                cobertura_objetivo = st.number_input(
-                    "Cobertura objetivo",
-                    min_value=7,
-                    max_value=180,
-                    value=30,
-                    step=1,
-                    help=(
-                        "Cantidad de días que deseas cubrir "
-                        "con cada reposición."
-                    ),
+
+                cobertura_objetivo = (
+                    st.number_input(
+                        "Cobertura objetivo",
+                        min_value=7,
+                        max_value=180,
+                        value=30,
+                        step=1,
+                        help=(
+                            "Cantidad de días "
+                            "que deseas cubrir "
+                            "con cada reposición."
+                        ),
+                    )
                 )
 
-            dias_limpieza = st.slider(
-                "Limpieza después de",
-                min_value=30,
-                max_value=365,
-                value=90,
-                step=15,
-                format="%d días sin ventas",
-                help=(
-                    "Cantidad de días sin ventas a partir de la cual "
-                    "un producto puede considerarse para limpieza de inventario."
-                ),
+            dias_limpieza = (
+                st.slider(
+                    "Limpieza después de",
+                    min_value=30,
+                    max_value=365,
+                    value=90,
+                    step=15,
+                    format="%d días sin ventas",
+                    help=(
+                        "Cantidad de días sin ventas "
+                        "a partir de la cual un producto "
+                        "puede considerarse para "
+                        "limpieza de inventario."
+                    ),
+                )
             )
 
+    fecha_fin = (
+        datetime.now().date()
+    )
 
-
-    fecha_fin = datetime.now().date()
-
-    # --------------------------------------------------------
-    # Carga de información
-    # --------------------------------------------------------
+    # ========================================================
+    # CARGA DE INFORMACIÓN
+    # ========================================================
 
     with st.spinner(
         "Analizando compras, ventas e inventario..."
     ):
 
         tiendas = obtener_tiendas()
-        productos = obtener_productos()
-        compras = obtener_compras()
-        ventas = obtener_ventas()
-        lead_times = obtener_lead_times()
+
+        productos = (
+            obtener_productos()
+        )
+
+        compras = (
+            obtener_compras()
+        )
+
+        ventas = (
+            obtener_ventas()
+        )
+
+        lead_times = (
+            obtener_lead_times()
+        )
 
     if productos.empty:
+
         st.warning(
-            "⚠️ No se encontraron productos registrados."
+            "⚠️ No se encontraron "
+            "productos registrados."
         )
+
         return
 
     if tiendas.empty:
+
         st.warning(
-            "⚠️ No se encontraron tiendas activas."
+            "⚠️ No se encontraron "
+            "tiendas activas."
         )
+
         return
 
-    # --------------------------------------------------------
-    # Restricciones por usuario
-    # --------------------------------------------------------
+    # ========================================================
+    # RESTRICCIONES POR USUARIO
+    # ========================================================
 
     if rol != "Administrador":
 
-        productos = productos[
-            productos["id_tienda"] ==
-            id_tienda_sesion
-        ].copy()
+        productos = (
+            productos[
+                productos[
+                    "id_tienda"
+                ] ==
+                id_tienda_sesion
+            ].copy()
+        )
 
-        tiendas = tiendas[
-            tiendas["id_tienda"] ==
-            id_tienda_sesion
-        ].copy()
+        tiendas = (
+            tiendas[
+                tiendas[
+                    "id_tienda"
+                ] ==
+                id_tienda_sesion
+            ].copy()
+        )
 
         if not compras.empty:
-            compras = compras[
-                compras["id_tienda"] ==
-                id_tienda_sesion
-            ].copy()
+
+            compras = (
+                compras[
+                    compras[
+                        "id_tienda"
+                    ] ==
+                    id_tienda_sesion
+                ].copy()
+            )
 
         if not ventas.empty:
-            ventas = ventas[
-                ventas["id_tienda"] ==
-                id_tienda_sesion
-            ].copy()
+
+            ventas = (
+                ventas[
+                    ventas[
+                        "id_tienda"
+                    ] ==
+                    id_tienda_sesion
+                ].copy()
+            )
 
         mensaje_contexto_tienda = f"""
             <div class="info-box">
@@ -1849,6 +2372,7 @@ def modulo_pronosticos():
         """
 
     else:
+
         mensaje_contexto_tienda = """
             <div class="info-box">
                 👑 <strong>Administrador:</strong>
@@ -1856,9 +2380,9 @@ def modulo_pronosticos():
             </div>
         """
 
-    # --------------------------------------------------------
-    # Construcción del análisis
-    # --------------------------------------------------------
+    # ========================================================
+    # CONSTRUCCIÓN DEL ANÁLISIS
+    # ========================================================
 
     df = construir_analisis(
         productos=productos,
@@ -1872,9 +2396,12 @@ def modulo_pronosticos():
     )
 
     if df.empty:
+
         st.warning(
-            "⚠️ No fue posible construir el análisis."
+            "⚠️ No fue posible "
+            "construir el análisis."
         )
+
         return
 
     # ========================================================
@@ -1882,9 +2409,12 @@ def modulo_pronosticos():
     # ========================================================
 
     categoria_lista = (
-        ["Todas"] +
+        ["Todas"]
+        +
         sorted(
-            df["Categoría"]
+            df[
+                "Categoría"
+            ]
             .dropna()
             .astype(str)
             .unique()
@@ -1892,132 +2422,256 @@ def modulo_pronosticos():
         )
     )
 
-    # El administrador puede ver una tienda específica o una vista global.
-    # Usamos claves de texto para TODAS las opciones del selectbox.
-    # Esto evita mezclar "Todas" (str) con id_tienda (int) dentro del widget.
-    tiendas_disponibles = tiendas.sort_values("Tienda").drop_duplicates("id_tienda")
+    tiendas_disponibles = (
+        tiendas
+        .sort_values(
+            "Tienda"
+        )
+        .drop_duplicates(
+            "id_tienda"
+        )
+    )
 
     if tiendas_disponibles.empty:
-        st.info("No hay tiendas disponibles para el análisis.")
+
+        st.info(
+            "No hay tiendas disponibles "
+            "para el análisis."
+        )
+
         return
 
-    nombres_por_id = dict(zip(
-        tiendas_disponibles["id_tienda"],
-        tiendas_disponibles["Tienda"]
-    ))
+    nombres_por_id = dict(
+        zip(
+            tiendas_disponibles[
+                "id_tienda"
+            ],
+            tiendas_disponibles[
+                "Tienda"
+            ]
+        )
+    )
 
-    # Clave interna -> id real de tienda.
     id_por_clave = {
-        f"tienda_{id_tienda}": id_tienda
-        for id_tienda in tiendas_disponibles["id_tienda"].tolist()
+
+        f"tienda_{id_tienda}":
+            id_tienda
+
+        for id_tienda
+        in tiendas_disponibles[
+            "id_tienda"
+        ].tolist()
     }
 
-    # Clave interna -> texto que verá el usuario.
     etiqueta_por_clave = {
-        f"tienda_{id_tienda}": nombre
-        for id_tienda, nombre in zip(
-            tiendas_disponibles["id_tienda"],
-            tiendas_disponibles["Tienda"]
+
+        f"tienda_{id_tienda}":
+            nombre
+
+        for id_tienda, nombre
+        in zip(
+            tiendas_disponibles[
+                "id_tienda"
+            ],
+            tiendas_disponibles[
+                "Tienda"
+            ]
         )
     }
 
     if rol == "Administrador":
-        opciones_tiendas = ["__TODAS__"] + list(id_por_clave.keys())
-        etiqueta_por_clave["__TODAS__"] = "Todas"
-    else:
-        opciones_tiendas = list(id_por_clave.keys())
 
-    # Los controles se dibujan dentro del contenedor reservado justo
-    # debajo del encabezado, aunque los datos ya hayan sido cargados.
+        opciones_tiendas = (
+            ["__TODAS__"]
+            +
+            list(
+                id_por_clave.keys()
+            )
+        )
+
+        etiqueta_por_clave[
+            "__TODAS__"
+        ] = "Todas"
+
+    else:
+
+        opciones_tiendas = (
+            list(
+                id_por_clave.keys()
+            )
+        )
+
     with filtros_principales:
-        filtro_tienda, filtro_categoria = st.columns(2)
+
+        filtro_tienda, filtro_categoria = (
+            st.columns(2)
+        )
 
         with filtro_tienda:
-            opcion_tienda = st.selectbox(
-                "🏪 Tienda",
-                opciones_tiendas,
-                index=0,
-                format_func=lambda clave: etiqueta_por_clave.get(
-                    clave,
-                    clave
-                ),
-                # Nueva key para que Streamlit no reutilice el estado
-                # anterior del selectbox.
-                key="tienda_analisis_pronostico_v2",
+
+            opcion_tienda = (
+                st.selectbox(
+                    "🏪 Tienda",
+                    opciones_tiendas,
+                    index=0,
+                    format_func=(
+                        lambda clave:
+                            etiqueta_por_clave.get(
+                                clave,
+                                clave
+                            )
+                    ),
+                    key=(
+                        "tienda_analisis_"
+                        "pronostico_v2"
+                    ),
+                )
             )
 
         with filtro_categoria:
-            categoria = st.selectbox(
-                "📁 Categoría",
-                categoria_lista,
-                key="categoria_pronostico",
+
+            categoria = (
+                st.selectbox(
+                    "📁 Categoría",
+                    categoria_lista,
+                    key=(
+                        "categoria_pronostico"
+                    ),
+                )
             )
 
-        if opcion_tienda == "__TODAS__":
-            tienda_seleccionada = "Todas"
-            nombre_tienda_seleccionada = "Todas las tiendas"
+        if (
+            opcion_tienda ==
+            "__TODAS__"
+        ):
+
+            tienda_seleccionada = (
+                "Todas"
+            )
+
+            nombre_tienda_seleccionada = (
+                "Todas las tiendas"
+            )
+
         else:
-            tienda_seleccionada = id_por_clave[opcion_tienda]
-            nombre_tienda_seleccionada = nombres_por_id[tienda_seleccionada]
+
+            tienda_seleccionada = (
+                id_por_clave[
+                    opcion_tienda
+                ]
+            )
+
+            nombre_tienda_seleccionada = (
+                nombres_por_id[
+                    tienda_seleccionada
+                ]
+            )
 
         categoria_texto = (
+
             "Todas las categorías"
+
             if categoria == "Todas"
+
             else categoria
         )
 
         st.caption(
-            f"Analizando: {nombre_tienda_seleccionada} · {categoria_texto}"
+            f"Analizando: "
+            f"{nombre_tienda_seleccionada} "
+            f"· {categoria_texto}"
         )
 
     df_filtrado = df.copy()
 
     if categoria != "Todas":
-        df_filtrado = df_filtrado[
-            df_filtrado["Categoría"] == categoria
-        ]
 
-    # Vista principal:
-    # - "Todas" -> reúne las filas de todas las tiendas.
-    # - tienda específica -> conserva exactamente el filtro anterior.
-    if tienda_seleccionada == "Todas":
-        df_tienda_vista = df_filtrado.copy()
+        df_filtrado = (
+            df_filtrado[
+                df_filtrado[
+                    "Categoría"
+                ] == categoria
+            ]
+        )
+
+    if (
+        tienda_seleccionada ==
+        "Todas"
+    ):
+
+        df_tienda_vista = (
+            df_filtrado.copy()
+        )
+
     else:
-        df_tienda_vista = df_filtrado[
-            df_filtrado["id_tienda"] == tienda_seleccionada
-        ].copy()
+
+        df_tienda_vista = (
+            df_filtrado[
+                df_filtrado[
+                    "id_tienda"
+                ] ==
+                tienda_seleccionada
+            ].copy()
+        )
 
     # ========================================================
-    # CONTEXTO DE LA TIENDA Y DATOS DE REORDEN
+    # CONTEXTO TIENDA Y DATOS DE REORDEN
     # ========================================================
 
-    pendientes = df_tienda_vista[
-        df_tienda_vista["Acción"] == "⚪ Revisar datos de reorden"
-    ]
+    pendientes = (
+        df_tienda_vista[
+            df_tienda_vista[
+                "Acción"
+            ] ==
+            "⚪ Revisar datos de reorden"
+        ]
+    )
 
     with contexto_tienda:
+
         st.markdown(
             mensaje_contexto_tienda,
             unsafe_allow_html=True,
         )
 
         if not pendientes.empty:
-            if tienda_seleccionada == "Todas":
-                alcance_pendientes = "en la vista global"
+
+            if (
+                tienda_seleccionada ==
+                "Todas"
+            ):
+
+                alcance_pendientes = (
+                    "en la vista global"
+                )
+
             else:
-                alcance_pendientes = f"de {nombre_tienda_seleccionada}"
+
+                alcance_pendientes = (
+                    f"de "
+                    f"{nombre_tienda_seleccionada}"
+                )
 
             st.warning(
-                f"⚠️ {len(pendientes)} producto(s) {alcance_pendientes} sin lead time válido o "
-                "sin historial de ventas suficiente para calcular el stock de seguridad. "
-                "El reorden se muestra como 'Sin datos'. Se usa el proveedor de la "
-                "compra más reciente."
+                f"⚠️ {len(pendientes)} "
+                f"producto(s) "
+                f"{alcance_pendientes} "
+                f"sin tiempo de entrega válido "
+                f"o sin historial de ventas "
+                f"suficiente para calcular el "
+                f"inventario de seguridad. "
+                f"El reorden se muestra como "
+                f"'Sin datos'. Se usa el proveedor "
+                f"de la compra más reciente."
             )
 
             with st.expander(
-                f"⚪ Revisar datos de reorden ({len(pendientes)})"
+                f"⚪ Revisar datos de reorden "
+                f"({len(pendientes)})"
             ):
+
                 st.dataframe(
+
                     pendientes[
                         [
                             "Producto",
@@ -2027,7 +2681,13 @@ def modulo_pronosticos():
                             "Lead time",
                             "Meses historial",
                         ]
-                    ],
+                    ].rename(
+                        columns={
+                            "Lead time":
+                                "Tiempo de entrega"
+                        }
+                    ),
+
                     use_container_width=True,
                     hide_index=True,
                 )
@@ -2035,93 +2695,168 @@ def modulo_pronosticos():
     # ========================================================
     # ¿QUÉ NECESITA ATENCIÓN?
     # ========================================================
-    # Los conteos usan exactamente la clasificación ya calculada
-    # en la columna "Acción"; no modifican ninguna condición.
+
     comprar_ahora = int(
-        df_tienda_vista["Acción"].eq("🔴 Comprar ahora").sum()
-    )
-    proximos = int(
-        df_tienda_vista["Acción"].eq("🟡 Próximo a comprar").sum()
-    )
-    reducir = int(
-        df_tienda_vista["Acción"].eq("🟠 Reducir compra").sum()
-    )
-    no_comprar = int(
-        df_tienda_vista["Acción"].eq("🚫 No comprar").sum()
-    )
-    limpieza = int(
-        df_tienda_vista["Acción"].eq("🧹 Limpieza de inventario").sum()
-    )
-    mantener = int(
-        df_tienda_vista["Acción"].eq("🟢 Mantener").sum()
+        df_tienda_vista[
+            "Acción"
+        ].eq(
+            "🔴 Comprar ahora"
+        ).sum()
     )
 
-    def texto_productos(cantidad):
-        return "producto" if cantidad == 1 else "productos"
+    proximos = int(
+        df_tienda_vista[
+            "Acción"
+        ].eq(
+            "🟡 Próximo a comprar"
+        ).sum()
+    )
+
+    reducir = int(
+        df_tienda_vista[
+            "Acción"
+        ].eq(
+            "🟠 Reducir compra"
+        ).sum()
+    )
+
+    no_comprar = int(
+        df_tienda_vista[
+            "Acción"
+        ].eq(
+            "🚫 No comprar"
+        ).sum()
+    )
+
+    limpieza = int(
+        df_tienda_vista[
+            "Acción"
+        ].eq(
+            "🧹 Limpieza de inventario"
+        ).sum()
+    )
+
+    mantener = int(
+        df_tienda_vista[
+            "Acción"
+        ].eq(
+            "🟢 Mantener"
+        ).sum()
+    )
+
+    def texto_productos(
+        cantidad
+    ):
+
+        return (
+            "producto"
+            if cantidad == 1
+            else "productos"
+        )
 
     with atencion_principal:
+
         st.markdown(
-            '<div class="section-title">🚨 ¿Qué necesita atención?</div>',
+            '<div class="section-title">'
+            '🚨 ¿Qué necesita atención?'
+            '</div>',
             unsafe_allow_html=True,
         )
 
-        a1, a2, a3, a4, a5 = st.columns(5)
+        a1, a2, a3, a4, a5 = (
+            st.columns(5)
+        )
 
         with a1:
+
             st.markdown(
                 f'''
                 <div class="attention-card critical">
-                    <div class="attention-card-title">🔴 Comprar ahora</div>
-                    <div class="attention-card-number">{comprar_ahora}</div>
-                    <div class="attention-card-text">{texto_productos(comprar_ahora)}</div>
+                    <div class="attention-card-title">
+                        🔴 Comprar ahora
+                    </div>
+                    <div class="attention-card-number">
+                        {comprar_ahora}
+                    </div>
+                    <div class="attention-card-text">
+                        {texto_productos(comprar_ahora)}
+                    </div>
                 </div>
                 ''',
                 unsafe_allow_html=True,
             )
 
         with a2:
+
             st.markdown(
                 f'''
                 <div class="attention-card warning">
-                    <div class="attention-card-title">🟡 Próximos a comprar</div>
-                    <div class="attention-card-number">{proximos}</div>
-                    <div class="attention-card-text">{texto_productos(proximos)}</div>
+                    <div class="attention-card-title">
+                        🟡 Próximos a comprar
+                    </div>
+                    <div class="attention-card-number">
+                        {proximos}
+                    </div>
+                    <div class="attention-card-text">
+                        {texto_productos(proximos)}
+                    </div>
                 </div>
                 ''',
                 unsafe_allow_html=True,
             )
 
         with a3:
+
             st.markdown(
                 f'''
                 <div class="attention-card orange">
-                    <div class="attention-card-title">🟠 Reducir compra</div>
-                    <div class="attention-card-number">{reducir}</div>
-                    <div class="attention-card-text">{texto_productos(reducir)}</div>
+                    <div class="attention-card-title">
+                        🟠 Reducir compra
+                    </div>
+                    <div class="attention-card-number">
+                        {reducir}
+                    </div>
+                    <div class="attention-card-text">
+                        {texto_productos(reducir)}
+                    </div>
                 </div>
                 ''',
                 unsafe_allow_html=True,
             )
 
         with a4:
+
             st.markdown(
                 f'''
                 <div class="attention-card stop">
-                    <div class="attention-card-title">🚫 No comprar</div>
-                    <div class="attention-card-number">{no_comprar}</div>
-                    <div class="attention-card-text">{texto_productos(no_comprar)}</div>
+                    <div class="attention-card-title">
+                        🚫 No comprar
+                    </div>
+                    <div class="attention-card-number">
+                        {no_comprar}
+                    </div>
+                    <div class="attention-card-text">
+                        {texto_productos(no_comprar)}
+                    </div>
                 </div>
                 ''',
                 unsafe_allow_html=True,
             )
 
         with a5:
+
             st.markdown(
                 f'''
                 <div class="attention-card cleanup">
-                    <div class="attention-card-title">🧹 Limpieza de inventario</div>
-                    <div class="attention-card-number">{limpieza}</div>
-                    <div class="attention-card-text">{texto_productos(limpieza)}</div>
+                    <div class="attention-card-title">
+                        🧹 Limpieza de inventario
+                    </div>
+                    <div class="attention-card-number">
+                        {limpieza}
+                    </div>
+                    <div class="attention-card-text">
+                        {texto_productos(limpieza)}
+                    </div>
                 </div>
                 ''',
                 unsafe_allow_html=True,
@@ -2130,7 +2865,9 @@ def modulo_pronosticos():
         st.markdown(
             f'''
             <div class="maintain-card">
-                🟢 <strong>Mantener:</strong> {mantener} {texto_productos(mantener)}
+                🟢 <strong>Mantener:</strong>
+                {mantener}
+                {texto_productos(mantener)}
                 con nivel de inventario razonable.
             </div>
             ''',
@@ -2138,12 +2875,16 @@ def modulo_pronosticos():
         )
 
     # ========================================================
-    # PESTAÑAS PRINCIPALES DEL DASHBOARD
+    # PESTAÑAS PRINCIPALES
     # ========================================================
 
     st.markdown("---")
 
-    tab_inventario, tab_comparar, tab_recomendaciones = st.tabs(
+    (
+        tab_inventario,
+        tab_comparar,
+        tab_recomendaciones
+    ) = st.tabs(
         [
             "📦 Inventario y reorden",
             "📊 Comparar tiendas",
@@ -2152,93 +2893,153 @@ def modulo_pronosticos():
     )
 
     # ========================================================
-    # PESTAÑA 1: INVENTARIO Y REORDEN
+    # PESTAÑA 1
     # ========================================================
 
     with tab_inventario:
 
         st.markdown(
-            f'<div class="section-title">📦 Inventario y reorden · {nombre_tienda_seleccionada}</div>',
+            f'<div class="section-title">'
+            f'📦 Inventario y reorden · '
+            f'{nombre_tienda_seleccionada}'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
-        if tienda_seleccionada == "Todas":
+        if (
+            tienda_seleccionada ==
+            "Todas"
+        ):
+
             st.caption(
-                "Vista global de productos de todas las tiendas. "
-                "La columna Tienda permite identificar a qué ubicación pertenece cada registro. "
-                "La categoría seleccionada también se aplica a esta tabla."
+                "Vista global de productos "
+                "de todas las tiendas. "
+                "La columna Tienda permite "
+                "identificar a qué ubicación "
+                "pertenece cada registro. "
+                "La categoría seleccionada "
+                "también se aplica a esta tabla."
             )
+
         else:
+
             st.caption(
-                f"Productos de {nombre_tienda_seleccionada}. "
-                "La categoría seleccionada también se aplica a esta tabla."
+                f"Productos de "
+                f"{nombre_tienda_seleccionada}. "
+                f"La categoría seleccionada "
+                f"también se aplica a esta tabla."
             )
 
         if df_tienda_vista.empty:
-            if tienda_seleccionada == "Todas":
+
+            if (
+                tienda_seleccionada ==
+                "Todas"
+            ):
+
                 st.info(
-                    "No hay productos de esta categoría en las tiendas disponibles."
+                    "No hay productos de esta "
+                    "categoría en las tiendas "
+                    "disponibles."
                 )
+
             else:
+
                 st.info(
-                    "No hay productos de esta categoría en la tienda seleccionada."
+                    "No hay productos de esta "
+                    "categoría en la tienda "
+                    "seleccionada."
                 )
+
         else:
+
             columnas_extra_tabla = (
-                ["Tienda", "Código"]
-                if tienda_seleccionada == "Todas"
-                else ["Código"]
+
+                [
+                    "Tienda",
+                    "Código"
+                ]
+
+                if (
+                    tienda_seleccionada ==
+                    "Todas"
+                )
+
+                else [
+                    "Código"
+                ]
             )
 
-            tabla_tienda = construir_tabla_indicadores(
-                df_tienda_vista,
-                columna_fila="Producto",
-                indicadores=INDICADORES_DEFAULT,
-                columnas_extra=columnas_extra_tabla,
-                orden_por="Producto",
-                rotacion_numerica=True,
+            tabla_tienda = (
+                construir_tabla_indicadores(
+                    df_tienda_vista,
+                    columna_fila="Producto",
+                    indicadores=(
+                        INDICADORES_DEFAULT
+                    ),
+                    columnas_extra=(
+                        columnas_extra_tabla
+                    ),
+                    orden_por="Producto",
+                    rotacion_numerica=True,
+                )
             )
 
             st.dataframe(
                 tabla_tienda,
                 use_container_width=True,
                 hide_index=True,
-                height=calcular_altura_tabla(len(tabla_tienda)),
+                height=(
+                    calcular_altura_tabla(
+                        len(
+                            tabla_tienda
+                        )
+                    )
+                ),
                 column_config={
-                    "Rotación 30 días": st.column_config.ProgressColumn(
-                        "Rotación 30 días",
-                        help=(
-                            "Porcentaje del inventario disponible que salió "
-                            "por ventas durante los últimos 30 días. "
-                            "0 % = poco movimiento; 100 % = movimiento muy alto."
+
+                    "Rotación 30 días":
+                        st.column_config.ProgressColumn(
+
+                            "Rotación 30 días",
+
+                            help=(
+                                "Porcentaje del inventario "
+                                "disponible que salió por "
+                                "ventas durante los últimos "
+                                "30 días. 0 % = poco "
+                                "movimiento; 100 % = "
+                                "movimiento muy alto."
+                            ),
+
+                            min_value=0,
+                            max_value=100,
+                            format="%.1f%%",
                         ),
-                        min_value=0,
-                        max_value=100,
-                        format="%.1f%%",
-                    ),
                 },
             )
 
         with st.expander(
             "ℹ️ ¿Cómo interpretar estos indicadores?"
         ):
+
             st.markdown(
                 """
-                **Stock actual:** cantidad disponible actualmente.
+                **Inventario actual:** cantidad disponible actualmente.
 
                 **Rotación 30 días:** porcentaje del inventario disponible que
                 realmente salió por ventas durante los últimos 30 días.
 
                 **Duración del inventario:** tiempo aproximado que durará el
-                stock actual al ritmo pronosticado de ventas.
+                inventario actual al ritmo pronosticado de ventas.
 
                 **Punto de reorden:** nivel de inventario en el cual debe
                 comenzar una nueva compra.
 
-                **Stock de seguridad:** reserva adicional utilizada para
+                **Inventario de seguridad:** reserva adicional utilizada para
                 protegerse ante variaciones de demanda.
 
-                **Lead time:** días que tarda el proveedor en entregar.
+                **Tiempo de entrega:** días que tarda el proveedor en entregar.
 
                 **Compra sugerida:** cantidad estimada que debería comprarse
                 para alcanzar la cobertura objetivo. Cuando el producto se maneja
@@ -2256,42 +3057,65 @@ def modulo_pronosticos():
     with tab_comparar:
 
         st.markdown(
-            '<div class="section-title">📊 Comparar rotación entre tiendas</div>',
+            '<div class="section-title">'
+            '📊 Comparar rotación entre tiendas'
+            '</div>',
             unsafe_allow_html=True,
         )
 
         st.caption(
-            "Selecciona un producto para comparar su movimiento real "
-            "durante los últimos 30 días entre las tiendas donde está registrado."
+            "Selecciona un producto para comparar "
+            "su movimiento real durante los últimos "
+            "30 días entre las tiendas donde está "
+            "registrado."
         )
 
-        productos_disponibles = sorted(
-            df_filtrado["Producto"]
-            .dropna()
-            .unique()
-            .tolist()
+        productos_disponibles = (
+            sorted(
+                df_filtrado[
+                    "Producto"
+                ]
+                .dropna()
+                .unique()
+                .tolist()
+            )
         )
 
         if not productos_disponibles:
+
             st.info(
-                "No hay productos disponibles con los filtros actuales."
+                "No hay productos disponibles "
+                "con los filtros actuales."
             )
+
         else:
-            producto_comparar = st.selectbox(
-                "📦 Producto",
-                productos_disponibles,
-                key="producto_comparar_pronostico",
+
+            producto_comparar = (
+                st.selectbox(
+                    "📦 Producto",
+                    productos_disponibles,
+                    key=(
+                        "producto_comparar_"
+                        "pronostico"
+                    ),
+                )
             )
 
-            df_producto_comparar = df_filtrado[
-                df_filtrado["Producto"] == producto_comparar
-            ].copy()
+            df_producto_comparar = (
+                df_filtrado[
+                    df_filtrado[
+                        "Producto"
+                    ] ==
+                    producto_comparar
+                ].copy()
+            )
 
-            # La gráfica utiliza directamente "Rotación %", ya calculada
-            # por el modelo. No se vuelve a calcular la rotación.
             grafica_rotacion = (
                 df_producto_comparar[
-                    ["Tienda", "Rotación %"]
+                    [
+                        "Tienda",
+                        "Rotación %"
+                    ]
                 ]
                 .sort_values(
                     "Rotación %",
@@ -2299,7 +3123,8 @@ def modulo_pronosticos():
                 )
                 .rename(
                     columns={
-                        "Rotación %": "Rotación 30 días"
+                        "Rotación %":
+                            "Rotación 30 días"
                     }
                 )
             )
@@ -2311,83 +3136,143 @@ def modulo_pronosticos():
                 use_container_width=True,
             )
 
-            # Se mantiene la misma validación actual para determinar
-            # si existe información útil de movimiento.
-            df_valido = df_producto_comparar[
-                (
-                    df_producto_comparar["Stock"] +
-                    df_producto_comparar["Ventas 30d"]
-                ) > 0
-            ].copy()
+            df_valido = (
+                df_producto_comparar[
+                    (
+                        df_producto_comparar[
+                            "Stock"
+                        ]
+                        +
+                        df_producto_comparar[
+                            "Ventas 30d"
+                        ]
+                    ) > 0
+                ].copy()
+            )
 
             if df_valido.empty:
+
                 st.info(
-                    "Este producto no tiene inventario ni ventas recientes "
-                    "en las tiendas donde está registrado."
+                    "Este producto no tiene "
+                    "inventario ni ventas recientes "
+                    "en las tiendas donde está "
+                    "registrado."
                 )
 
-            elif df_valido["Ventas 30d"].max() <= 0:
+            elif (
+                df_valido[
+                    "Ventas 30d"
+                ].max() <= 0
+            ):
+
                 st.info(
-                    "Este producto tiene inventario registrado, pero no presenta "
-                    "ventas en los últimos 30 días en ninguna tienda."
+                    "Este producto tiene inventario "
+                    "registrado, pero no presenta "
+                    "ventas en los últimos 30 días "
+                    "en ninguna tienda."
                 )
 
             else:
-                fila_mejor = df_valido.sort_values(
-                    "Rotación %",
-                    ascending=False,
-                ).iloc[0]
+
+                fila_mejor = (
+                    df_valido
+                    .sort_values(
+                        "Rotación %",
+                        ascending=False,
+                    )
+                    .iloc[0]
+                )
 
                 st.success(
-                    f"📈 **Mayor movimiento:** este producto presenta su mayor "
-                    f"rotación en **{fila_mejor['Tienda']}**, con "
-                    f"**{fila_mejor['Rotación %']:.1f}%**."
+                    f"📈 **Mayor movimiento:** "
+                    f"este producto presenta su "
+                    f"mayor rotación en "
+                    f"**{fila_mejor['Tienda']}**, "
+                    f"con **"
+                    f"{fila_mejor['Rotación %']:.1f}%"
+                    f"**."
                 )
 
                 if len(df_valido) > 1:
-                    fila_peor = df_valido.sort_values(
-                        "Rotación %",
-                        ascending=True,
-                    ).iloc[0]
 
-                    if fila_peor["Tienda"] != fila_mejor["Tienda"]:
+                    fila_peor = (
+                        df_valido
+                        .sort_values(
+                            "Rotación %",
+                            ascending=True,
+                        )
+                        .iloc[0]
+                    )
+
+                    if (
+                        fila_peor[
+                            "Tienda"
+                        ]
+                        !=
+                        fila_mejor[
+                            "Tienda"
+                        ]
+                    ):
+
                         st.info(
-                            f"🐢 **Menor movimiento:** este producto presenta su "
-                            f"menor rotación en **{fila_peor['Tienda']}**, con "
-                            f"**{fila_peor['Rotación %']:.1f}%**."
+                            f"🐢 **Menor movimiento:** "
+                            f"este producto presenta su "
+                            f"menor rotación en "
+                            f"**{fila_peor['Tienda']}**, "
+                            f"con **"
+                            f"{fila_peor['Rotación %']:.1f}%"
+                            f"**."
                         )
 
-            tabla_producto = construir_tabla_indicadores(
-                df_producto_comparar,
-                columna_fila="Tienda",
-                indicadores=INDICADORES_DEFAULT,
-                orden_por="Rotación %",
-                ascendente=False,
-                rotacion_numerica=True,
+            tabla_producto = (
+                construir_tabla_indicadores(
+                    df_producto_comparar,
+                    columna_fila="Tienda",
+                    indicadores=(
+                        INDICADORES_DEFAULT
+                    ),
+                    orden_por="Rotación %",
+                    ascendente=False,
+                    rotacion_numerica=True,
+                )
             )
 
             st.dataframe(
                 tabla_producto,
                 use_container_width=True,
                 hide_index=True,
-                height=calcular_altura_tabla(len(tabla_producto)),
+                height=(
+                    calcular_altura_tabla(
+                        len(
+                            tabla_producto
+                        )
+                    )
+                ),
                 column_config={
-                    "Rotación 30 días": st.column_config.ProgressColumn(
-                        "Rotación 30 días",
-                        help=(
-                            "Movimiento real del producto durante los "
-                            "últimos 30 días."
+
+                    "Rotación 30 días":
+                        st.column_config.ProgressColumn(
+
+                            "Rotación 30 días",
+
+                            help=(
+                                "Movimiento real del "
+                                "producto durante los "
+                                "últimos 30 días."
+                            ),
+
+                            min_value=0,
+                            max_value=100,
+                            format="%.1f%%",
                         ),
-                        min_value=0,
-                        max_value=100,
-                        format="%.1f%%",
-                    ),
                 },
             )
 
             st.caption(
-                "La gráfica y la tabla están ordenadas desde la tienda con "
-                "mayor Rotación 30 días hasta la de menor rotación."
+                "La gráfica y la tabla están "
+                "ordenadas desde la tienda con "
+                "mayor Rotación 30 días hasta "
+                "la de menor rotación."
             )
 
     # ========================================================
@@ -2397,43 +3282,82 @@ def modulo_pronosticos():
     with tab_recomendaciones:
 
         st.markdown(
-            f'<div class="section-title">🧠 Recomendaciones · {nombre_tienda_seleccionada}</div>',
+            f'<div class="section-title">'
+            f'🧠 Recomendaciones · '
+            f'{nombre_tienda_seleccionada}'
+            f'</div>',
             unsafe_allow_html=True,
         )
 
-        if tienda_seleccionada == "Todas":
+        if (
+            tienda_seleccionada ==
+            "Todas"
+        ):
+
             st.caption(
-                "Productos de todas las tiendas, agrupados por acción. "
-                "Las tablas conservan la columna Tienda para identificar cada registro. "
-                "La categoría seleccionada también se aplica a estas recomendaciones."
-            )
-        else:
-            st.caption(
-                f"Productos de {nombre_tienda_seleccionada}, agrupados por acción. "
-                "La categoría seleccionada también se aplica a estas recomendaciones."
+                "Productos de todas las tiendas, "
+                "agrupados por acción. "
+                "Las tablas conservan la columna "
+                "Tienda para identificar cada "
+                "registro. La categoría seleccionada "
+                "también se aplica a estas "
+                "recomendaciones."
             )
 
-        rec_tab1, rec_tab2, rec_tab3, rec_tab4, rec_tab5, rec_tab6 = st.tabs(
+        else:
+
+            st.caption(
+                f"Productos de "
+                f"{nombre_tienda_seleccionada}, "
+                f"agrupados por acción. "
+                f"La categoría seleccionada "
+                f"también se aplica a estas "
+                f"recomendaciones."
+            )
+
+        (
+            rec_tab1,
+            rec_tab2,
+            rec_tab3,
+            rec_tab4,
+            rec_tab5,
+            rec_tab6
+        ) = st.tabs(
             [
-                f"🔴 Comprar ahora ({comprar_ahora})",
-                f"🟡 Próximos ({proximos})",
-                f"🟠 Reducir compra ({reducir})",
-                f"🚫 No comprar ({no_comprar})",
-                f"🧹 Limpieza ({limpieza})",
-                f"🟢 Mantener ({mantener})",
+                f"🔴 Comprar ahora "
+                f"({comprar_ahora})",
+
+                f"🟡 Próximos "
+                f"({proximos})",
+
+                f"🟠 Reducir compra "
+                f"({reducir})",
+
+                f"🚫 No comprar "
+                f"({no_comprar})",
+
+                f"🧹 Limpieza "
+                f"({limpieza})",
+
+                f"🟢 Mantener "
+                f"({mantener})",
             ]
         )
 
-        # ----------------------------------------------------
+        # ====================================================
         # COMPRAR AHORA
-        # ----------------------------------------------------
+        # ====================================================
 
         with rec_tab1:
 
-            datos = df_tienda_vista[
-                df_tienda_vista["Acción"] ==
-                "🔴 Comprar ahora"
-            ].copy()
+            datos = (
+                df_tienda_vista[
+                    df_tienda_vista[
+                        "Acción"
+                    ] ==
+                    "🔴 Comprar ahora"
+                ].copy()
+            )
 
             datos = datos.sort_values(
                 [
@@ -2444,62 +3368,83 @@ def modulo_pronosticos():
             )
 
             if datos.empty:
+
                 st.success(
-                    "✅ Ningún producto requiere compra inmediata."
+                    "✅ Ningún producto requiere "
+                    "compra inmediata."
                 )
+
             else:
+
                 st.warning(
                     f"⚠️ {len(datos)} producto(s) "
-                    "alcanzaron su punto de reorden."
+                    f"alcanzaron su punto de reorden."
                 )
 
                 st.dataframe(
-                    preparar_tabla_decision(datos),
+                    preparar_tabla_decision(
+                        datos
+                    ),
                     use_container_width=True,
                     hide_index=True,
                 )
 
-        # ----------------------------------------------------
+        # ====================================================
         # PRÓXIMOS
-        # ----------------------------------------------------
+        # ====================================================
 
         with rec_tab2:
 
-            datos = df_tienda_vista[
-                df_tienda_vista["Acción"] ==
-                "🟡 Próximo a comprar"
-            ].copy()
+            datos = (
+                df_tienda_vista[
+                    df_tienda_vista[
+                        "Acción"
+                    ] ==
+                    "🟡 Próximo a comprar"
+                ].copy()
+            )
 
             datos = datos.sort_values(
                 "Días para reorden"
             )
 
             if datos.empty:
+
                 st.success(
-                    "✅ No hay compras próximas detectadas."
+                    "✅ No hay compras próximas "
+                    "detectadas."
                 )
+
             else:
+
                 st.info(
-                    "Estos productos todavía tienen inventario, "
-                    "pero se aproximan al nivel de reorden."
+                    "Estos productos todavía tienen "
+                    "inventario, pero se aproximan "
+                    "al nivel de reorden."
                 )
 
                 st.dataframe(
-                    preparar_tabla_decision(datos),
+                    preparar_tabla_decision(
+                        datos
+                    ),
                     use_container_width=True,
                     hide_index=True,
                 )
 
-        # ----------------------------------------------------
+        # ====================================================
         # REDUCIR COMPRA
-        # ----------------------------------------------------
+        # ====================================================
 
         with rec_tab3:
 
-            datos = df_tienda_vista[
-                df_tienda_vista["Acción"] ==
-                "🟠 Reducir compra"
-            ].copy()
+            datos = (
+                df_tienda_vista[
+                    df_tienda_vista[
+                        "Acción"
+                    ] ==
+                    "🟠 Reducir compra"
+                ].copy()
+            )
 
             datos = datos.sort_values(
                 "Cobertura días",
@@ -2507,32 +3452,43 @@ def modulo_pronosticos():
             )
 
             if datos.empty:
+
                 st.success(
-                    "✅ No se detectaron compras que deban reducirse."
+                    "✅ No se detectaron compras "
+                    "que deban reducirse."
                 )
+
             else:
+
                 st.warning(
-                    "Estos productos tienen más inventario del "
-                    "necesario respecto a su ritmo actual de venta "
-                    "en esa tienda."
+                    "Estos productos tienen más "
+                    "inventario del necesario "
+                    "respecto a su ritmo actual "
+                    "de venta en esa tienda."
                 )
 
                 st.dataframe(
-                    preparar_tabla_decision(datos),
+                    preparar_tabla_decision(
+                        datos
+                    ),
                     use_container_width=True,
                     hide_index=True,
                 )
 
-        # ----------------------------------------------------
+        # ====================================================
         # NO COMPRAR
-        # ----------------------------------------------------
+        # ====================================================
 
         with rec_tab4:
 
-            datos = df_tienda_vista[
-                df_tienda_vista["Acción"] ==
-                "🚫 No comprar"
-            ].copy()
+            datos = (
+                df_tienda_vista[
+                    df_tienda_vista[
+                        "Acción"
+                    ] ==
+                    "🚫 No comprar"
+                ].copy()
+            )
 
             datos = datos.sort_values(
                 "Cobertura días",
@@ -2540,31 +3496,41 @@ def modulo_pronosticos():
             )
 
             if datos.empty:
+
                 st.success(
-                    "✅ No hay productos marcados como 'No comprar'."
+                    "✅ No hay productos marcados "
+                    "como 'No comprar'."
                 )
+
             else:
+
                 st.error(
-                    "No se recomienda reabastecer estos productos "
-                    "por el momento."
+                    "No se recomienda reabastecer "
+                    "estos productos por el momento."
                 )
 
                 st.dataframe(
-                    preparar_tabla_decision(datos),
+                    preparar_tabla_decision(
+                        datos
+                    ),
                     use_container_width=True,
                     hide_index=True,
                 )
 
-        # ----------------------------------------------------
+        # ====================================================
         # LIMPIEZA
-        # ----------------------------------------------------
+        # ====================================================
 
         with rec_tab5:
 
-            datos = df_tienda_vista[
-                df_tienda_vista["Acción"] ==
-                "🧹 Limpieza de inventario"
-            ].copy()
+            datos = (
+                df_tienda_vista[
+                    df_tienda_vista[
+                        "Acción"
+                    ] ==
+                    "🧹 Limpieza de inventario"
+                ].copy()
+            )
 
             datos = datos.sort_values(
                 "Días sin vender",
@@ -2572,17 +3538,25 @@ def modulo_pronosticos():
             )
 
             if datos.empty:
+
                 st.success(
-                    "✅ No se detectaron productos para limpieza."
-                )
-            else:
-                st.error(
-                    "Estos productos tienen inventario pero llevan "
-                    "demasiado tiempo sin venderse en esa tienda."
+                    "✅ No se detectaron productos "
+                    "para limpieza."
                 )
 
-                tabla_limpieza = preparar_tabla_limpieza(
-                    datos
+            else:
+
+                st.error(
+                    "Estos productos tienen "
+                    "inventario pero llevan "
+                    "demasiado tiempo sin venderse "
+                    "en esa tienda."
+                )
+
+                tabla_limpieza = (
+                    preparar_tabla_limpieza(
+                        datos
+                    )
                 )
 
                 st.dataframe(
@@ -2601,38 +3575,43 @@ def modulo_pronosticos():
                     """
                 )
 
-        # ----------------------------------------------------
+        # ====================================================
         # MANTENER
-        # ----------------------------------------------------
+        # ====================================================
 
         with rec_tab6:
 
-            datos = df_tienda_vista[
-                df_tienda_vista["Acción"] ==
-                "🟢 Mantener"
-            ].copy()
+            datos = (
+                df_tienda_vista[
+                    df_tienda_vista[
+                        "Acción"
+                    ] ==
+                    "🟢 Mantener"
+                ].copy()
+            )
 
             if datos.empty:
+
                 st.info(
-                    "No hay productos clasificados como mantener."
+                    "No hay productos clasificados "
+                    "como mantener."
                 )
+
             else:
+
                 st.success(
-                    "✅ Estos productos presentan un nivel de "
-                    "inventario razonable según su demanda."
+                    "✅ Estos productos presentan "
+                    "un nivel de inventario "
+                    "razonable según su demanda."
                 )
 
                 st.dataframe(
-                    preparar_tabla_decision(datos),
+                    preparar_tabla_decision(
+                        datos
+                    ),
                     use_container_width=True,
                     hide_index=True,
                 )
-
-    # ========================================================
-    # EXPLICACIÓN DEL MODELO
-    # ========================================================
-
-    
 
     # ========================================================
     # VOLVER
@@ -2640,25 +3619,31 @@ def modulo_pronosticos():
 
     st.markdown("---")
 
-    col1, col2, col3 = st.columns(
-        [1, 2, 1]
+    col1, col2, col3 = (
+        st.columns(
+            [1, 2, 1]
+        )
     )
 
     with col2:
+
         if st.button(
             "⬅ Volver al menú principal",
             use_container_width=True,
             key="volver_menu_pronosticos"
         ):
-            st.session_state["module"] = None
+
+            st.session_state[
+                "module"
+            ] = None
+
             st.rerun()
 
 
 # ============================================================
 # ALIAS
 # ============================================================
-# Esto permite que puedas importarlo con cualquiera de estos
-# dos nombres dependiendo de cómo armes app.py.
 
 def pronosticos():
     modulo_pronosticos()
+       
